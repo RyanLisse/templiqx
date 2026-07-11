@@ -1,0 +1,10 @@
+{
+  "inputs": {
+    "document_id": "SYN-DOC-0001",
+    "fragment_id": "clause-2",
+    "document_text": "De overeenkomst gaat in op 1 september 2026 en eindigt op 31 augustus 2027. De looptijd bedraagt twaalf maanden. De opzegdatum is 31 mei 2027."
+  },
+  "context": {
+    "matter_reference": "SYN-2026-0042"
+  }
+}

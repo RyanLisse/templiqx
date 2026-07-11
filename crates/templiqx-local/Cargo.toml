@@ -1,0 +1,23 @@
+[package]
+name = "templiqx-local"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+templiqx-application = { path = "../templiqx-application" }
+templiqx-contracts = { path = "../templiqx-contracts" }
+templiqx-core = { path = "../templiqx-core" }
+templiqx-ports = { path = "../templiqx-ports" }
+templiqx-docx-v5 = { path = "../../adapters/templiqx-docx-v5" }
+fs2.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

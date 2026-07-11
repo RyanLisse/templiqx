@@ -1,0 +1,69 @@
+api_version: templiqx/v1alpha1
+id: greeting
+version: 0.1.0
+description: Produce a typed greeting.
+inputs:
+  name:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Recipient name
+context:
+  organization:
+    schema:
+      type: string
+    required: true
+    description: Organization name
+capabilities:
+  - structured_output
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "You write concise greetings."
+  - role: user
+    content:
+      - kind: component
+        name: salutation
+        with:
+          recipient:
+            kind: ref
+            path: inputs.name
+      - kind: text
+        value: " for "
+      - kind: interpolate
+        expression:
+          kind: ref
+          path: context.organization
+        filters: [trim]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [greeting]
+  properties:
+    greeting:
+      type: string
+runtime_policy:
+  temperature: 0
+extensions: {}
+components:
+  salutation:
+    - kind: text
+      value: "Hello "
+    - kind: interpolate
+      expression:
+        kind: ref
+        path: recipient
+      filters: [trim]
+provenance:
+  owner: templiqx
+  classification: synthetic
+evals:
+  - id: ryan
+    inputs:
+      name: Ryan
+    context:
+      organization: Blinqx
+    fake_output:
+      greeting: Hello Ryan

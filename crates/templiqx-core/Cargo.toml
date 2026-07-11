@@ -1,0 +1,19 @@
+[package]
+name = "templiqx-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+templiqx-contracts = { path = "../templiqx-contracts" }
+jsonschema.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+semver.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

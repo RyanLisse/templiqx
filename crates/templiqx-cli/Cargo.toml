@@ -1,0 +1,23 @@
+[package]
+name = "templiqx-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "templiqx"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+templiqx-application = { path = "../templiqx-application" }
+templiqx-contracts = { path = "../templiqx-contracts" }
+templiqx-local = { path = "../templiqx-local" }
+templiqx-ports = { path = "../templiqx-ports" }
+
+[lints]
+workspace = true

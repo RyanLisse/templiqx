@@ -1,0 +1,23 @@
+api_version: templiqx/v1alpha1
+package: crm3
+version: 0.1.0
+description: Synthetic Basenet CRM3 conformance package; contains no Basenet runtime dependency or production data.
+contracts:
+  - bli-61-date-term-extraction
+  - bli-62-document-drafting
+components: []
+evals:
+  - evals/bli-61-request.json
+  - evals/bli-61-output.json
+  - evals/bli-62-request.json
+  - evals/bli-62-output.json
+migrations:
+  - migrations/v5-aliases.json
+templates:
+  - templates/v5-contract-template.docx
+  - baselines/v5-contract-approved.docx
+provenance:
+  owner: templiqx
+  pilot: Basenet CRM3
+  classification: synthetic
+

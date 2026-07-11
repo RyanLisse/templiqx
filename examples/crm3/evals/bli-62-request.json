@@ -1,0 +1,48 @@
+{
+  "inputs": {
+    "extracted_facts": {
+      "effective_date": "2026-09-01",
+      "end_date": "2027-08-31",
+      "term_months": 12,
+      "notice_date": "2027-05-31",
+      "evidence": [
+        {
+          "field": "effective_date",
+          "document_id": "SYN-DOC-0001",
+          "fragment_id": "clause-2",
+          "start_offset": 27,
+          "end_offset": 43,
+          "quote_sha256": "f36295a8293cb1e891373f4e64f211deaff2ac9e15211fda895608eddc4cdcca"
+        },
+        {
+          "field": "end_date",
+          "document_id": "SYN-DOC-0001",
+          "fragment_id": "clause-2",
+          "start_offset": 58,
+          "end_offset": 74,
+          "quote_sha256": "af7819cb59d72c4865699b1784c643d07c94251cda8e91b26ddc8e1f3743f5c8"
+        },
+        {
+          "field": "term_months",
+          "document_id": "SYN-DOC-0001",
+          "fragment_id": "clause-2",
+          "start_offset": 97,
+          "end_offset": 111,
+          "quote_sha256": "b75db1c6de0d19bab191e38f0fb7f28c5a01612ac7eacb628f7dd98aac52bdc5"
+        },
+        {
+          "field": "notice_date",
+          "document_id": "SYN-DOC-0001",
+          "fragment_id": "clause-2",
+          "start_offset": 130,
+          "end_offset": 141,
+          "quote_sha256": "4520d61c576b45c2fdaf7351002217dcee1f93eefa11615451c008750c5e842f"
+        }
+      ]
+    }
+  },
+  "context": {
+    "client_name": "Voorbeeldhandel B.V.",
+    "matter_reference": "SYN-2026-0042"
+  }
+}

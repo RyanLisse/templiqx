@@ -1,0 +1,22 @@
+[package]
+name = "templiqx-docx-v5"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+quick-xml = "0.41"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+templiqx-ports = { path = "../../crates/templiqx-ports" }
+tempfile = "3.27"
+thiserror = "2.0"
+zip = { version = "8.6", default-features = false, features = ["deflate"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"

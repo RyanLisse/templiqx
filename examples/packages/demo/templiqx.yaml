@@ -1,0 +1,12 @@
+api_version: templiqx/v1alpha1
+package: demo
+version: 0.1.0
+description: Standalone deterministic conformance example
+contracts:
+  - greeting
+components: []
+evals: []
+migrations: []
+templates: []
+provenance:
+  source: templiqx

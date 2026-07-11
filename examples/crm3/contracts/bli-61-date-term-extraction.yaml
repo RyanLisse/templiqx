@@ -1,0 +1,96 @@
+api_version: templiqx/v1alpha1
+id: bli-61-date-term-extraction
+version: 0.1.0
+description: Extract typed contract dates and duration from synthetic Dutch legal text.
+inputs:
+  document_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Stable synthetic source document identifier used by every evidence link.
+  fragment_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Stable fragment identifier whose text is supplied in document_text.
+  document_text:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Synthetic Dutch agreement text to inspect.
+context:
+  matter_reference:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Host-owned opaque matter reference.
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Extraheer uitsluitend expliciete datums en looptijd. Geef bewijsverwijzingen, verzin niets."
+  - role: user
+    content:
+      - kind: text
+        value: "Zaak: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.matter_reference }
+        filters: [trim]
+      - kind: text
+        value: "\nDocument:\n"
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.document_text }
+        filters: [trim]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [effective_date, end_date, term_months, notice_date, evidence]
+  properties:
+    effective_date: { type: string, format: date }
+    end_date: { type: string, format: date }
+    term_months: { type: integer, minimum: 1 }
+    notice_date: { type: string, format: date }
+    evidence:
+      type: array
+      minItems: 4
+      items:
+        type: object
+        additionalProperties: false
+        required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
+        properties:
+          field: { type: string, enum: [effective_date, end_date, term_months, notice_date] }
+          document_id: { type: string, minLength: 1 }
+          fragment_id: { type: string, minLength: 1 }
+          start_offset: { type: integer, minimum: 0 }
+          end_offset: { type: integer, minimum: 1 }
+          quote_sha256: { type: string, minLength: 64, maxLength: 64 }
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  issue: BLI-61
+  classification: synthetic
+evals:
+  - id: synthetic-fixed-term
+    inputs:
+      document_id: SYN-DOC-0001
+      fragment_id: clause-2
+      document_text: "De overeenkomst gaat in op 1 september 2026 en eindigt op 31 augustus 2027. De looptijd bedraagt twaalf maanden. De opzegdatum is 31 mei 2027."
+    context:
+      matter_reference: SYN-2026-0042
+    fake_output:
+      effective_date: "2026-09-01"
+      end_date: "2027-08-31"
+      term_months: 12
+      notice_date: "2027-05-31"
+      evidence:
+        - { field: effective_date, document_id: SYN-DOC-0001, fragment_id: clause-2, start_offset: 27, end_offset: 43, quote_sha256: f36295a8293cb1e891373f4e64f211deaff2ac9e15211fda895608eddc4cdcca }
+        - { field: end_date, document_id: SYN-DOC-0001, fragment_id: clause-2, start_offset: 58, end_offset: 74, quote_sha256: af7819cb59d72c4865699b1784c643d07c94251cda8e91b26ddc8e1f3743f5c8 }
+        - { field: term_months, document_id: SYN-DOC-0001, fragment_id: clause-2, start_offset: 97, end_offset: 111, quote_sha256: b75db1c6de0d19bab191e38f0fb7f28c5a01612ac7eacb628f7dd98aac52bdc5 }
+        - { field: notice_date, document_id: SYN-DOC-0001, fragment_id: clause-2, start_offset: 130, end_offset: 141, quote_sha256: 4520d61c576b45c2fdaf7351002217dcee1f93eefa11615451c008750c5e842f }

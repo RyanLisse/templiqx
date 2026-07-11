@@ -1,0 +1,128 @@
+api_version: templiqx/v1alpha1
+id: bli-62-document-drafting
+version: 0.1.0
+description: Draft a typed Dutch contract summary from schema-valid extracted facts.
+inputs:
+  extracted_facts:
+    schema:
+      type: object
+      additionalProperties: false
+      required: [effective_date, end_date, term_months, notice_date, evidence]
+      properties:
+        effective_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        term_months: { type: integer, minimum: 1 }
+        notice_date: { type: string, format: date }
+        evidence:
+          type: array
+          minItems: 4
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
+            properties:
+              field: { type: string }
+              document_id: { type: string }
+              fragment_id: { type: string }
+              start_offset: { type: integer, minimum: 0 }
+              end_offset: { type: integer, minimum: 1 }
+              quote_sha256: { type: string, minLength: 64, maxLength: 64 }
+    required: true
+    description: Output accepted from the BLI-61 extraction contract after schema validation.
+context:
+  client_name:
+    schema: { type: string, minLength: 1 }
+    required: true
+    description: Synthetic client display name.
+  matter_reference:
+    schema: { type: string, minLength: 1 }
+    required: true
+    description: Host-owned opaque matter reference.
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Maak een zakelijke Nederlandse conceptsamenvatting. Gebruik alleen de gevalideerde feiten."
+  - role: user
+    content:
+      - kind: text
+        value: "Cliënt: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.client_name }
+        filters: [trim]
+      - kind: text
+        value: "\nZaak: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.matter_reference }
+        filters: [trim]
+      - kind: text
+        value: "\nGevalideerde feiten: "
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.extracted_facts }
+        filters: [json]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [title, summary, merge_data]
+  properties:
+    title: { type: string, minLength: 1 }
+    summary: { type: string, minLength: 1 }
+    merge_data:
+      type: object
+      additionalProperties: false
+      required: [client, agreement, case]
+      properties:
+        client:
+          type: object
+          additionalProperties: false
+          required: [name]
+          properties: { name: { type: string } }
+        agreement:
+          type: object
+          additionalProperties: false
+          required: [start_date, end_date, term_months, notice_date]
+          properties:
+            start_date: { type: string }
+            end_date: { type: string }
+            term_months: { type: integer }
+            notice_date: { type: string }
+        case:
+          type: object
+          additionalProperties: false
+          required: [reference]
+          properties: { reference: { type: string } }
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  issue: BLI-62
+  classification: synthetic
+evals:
+  - id: synthetic-draft
+    inputs:
+      extracted_facts:
+        effective_date: "2026-09-01"
+        end_date: "2027-08-31"
+        term_months: 12
+        notice_date: "2027-05-31"
+        evidence:
+          - { field: effective_date, document_id: SYN-DOC-0001, fragment_id: clause-2, start_offset: 27, end_offset: 43, quote_sha256: f36295a8293cb1e891373f4e64f211deaff2ac9e15211fda895608eddc4cdcca }
+          - { field: end_date, document_id: SYN-DOC-0001, fragment_id: clause-2, start_offset: 58, end_offset: 74, quote_sha256: af7819cb59d72c4865699b1784c643d07c94251cda8e91b26ddc8e1f3743f5c8 }
+          - { field: term_months, document_id: SYN-DOC-0001, fragment_id: clause-2, start_offset: 97, end_offset: 111, quote_sha256: b75db1c6de0d19bab191e38f0fb7f28c5a01612ac7eacb628f7dd98aac52bdc5 }
+          - { field: notice_date, document_id: SYN-DOC-0001, fragment_id: clause-2, start_offset: 130, end_offset: 141, quote_sha256: 4520d61c576b45c2fdaf7351002217dcee1f93eefa11615451c008750c5e842f }
+    context:
+      client_name: Voorbeeldhandel B.V.
+      matter_reference: SYN-2026-0042
+    fake_output:
+      title: Concept contractsamenvatting
+      summary: "De overeenkomst loopt van 1 september 2026 tot en met 31 augustus 2027, heeft een looptijd van twaalf maanden en een opzegdatum van 31 mei 2027."
+      merge_data:
+        client: { name: Voorbeeldhandel B.V. }
+        agreement:
+          start_date: 1 september 2026
+          end_date: 31 augustus 2027
+          term_months: 12
+          notice_date: 31 mei 2027
+        case: { reference: SYN-2026-0042 }

@@ -1,0 +1,18 @@
+{
+  "title": "Concept contractsamenvatting",
+  "summary": "De overeenkomst loopt van 1 september 2026 tot en met 31 augustus 2027, heeft een looptijd van twaalf maanden en een opzegdatum van 31 mei 2027.",
+  "merge_data": {
+    "client": {
+      "name": "Voorbeeldhandel B.V."
+    },
+    "agreement": {
+      "start_date": "1 september 2026",
+      "end_date": "31 augustus 2027",
+      "term_months": 12,
+      "notice_date": "31 mei 2027"
+    },
+    "case": {
+      "reference": "SYN-2026-0042"
+    }
+  }
+}
