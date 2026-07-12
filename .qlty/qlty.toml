@@ -65,6 +65,9 @@ default = true
 name = "clippy"
 
 [[plugin]]
+name = "hadolint"
+
+[[plugin]]
 name = "osv-scanner"
 
 [[plugin]]
@@ -73,6 +76,9 @@ mode = "comment"
 
 [[plugin]]
 name = "shellcheck"
+
+[[plugin]]
+name = "shfmt"
 
 [[plugin]]
 name = "trufflehog"

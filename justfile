@@ -5,6 +5,7 @@ verify:
     ./scripts/check-boundaries.sh
 
 verify-deploy:
+    helm lint charts/templiqx -f charts/templiqx/values-mock.yaml
     ./scripts/docker-smoke.sh
     ./scripts/kind-smoke.sh
     ./scripts/supply-chain-smoke.sh

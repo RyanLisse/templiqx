@@ -12,7 +12,7 @@ HTTP_GOLDEN="$REPO_ROOT/scripts/golden/http-conformance.json"
 HTTP_RECEIPT="$ARTIFACT_DIR/http-receipt.json"
 
 skip_env() {
-  if [[ "${CI:-}" == "true" ]]; then
+  if [[ ${CI:-} == "true" ]]; then
     printf 'FAIL command=./scripts/docker-smoke.sh reason=%s missing=%s\n' "$1" "$2" >&2
     exit 1
   fi
@@ -26,25 +26,25 @@ docker info >/dev/null 2>&1 || skip_env "Docker daemon unavailable" "docker-daem
 docker compose version >/dev/null 2>&1 || skip_env "missing Docker Compose plugin" "docker-compose"
 
 resolve_docker_platform() {
-if [[ -n "${TEMPLIQX_DOCKER_PLATFORM:-}" ]]; then
-printf '%s\n' "$TEMPLIQX_DOCKER_PLATFORM"
-return
-fi
+  if [[ -n ${TEMPLIQX_DOCKER_PLATFORM:-} ]]; then
+    printf '%s\n' "$TEMPLIQX_DOCKER_PLATFORM"
+    return
+  fi
 
-local docker_arch
-docker_arch="$(docker info --format '{{.Architecture}}')"
-case "$docker_arch" in
-amd64|x86_64)
-printf 'linux/amd64\n'
-;;
-arm64|aarch64)
-printf 'linux/arm64\n'
-;;
-*)
-printf 'FAIL command=./scripts/docker-smoke.sh reason=unsupported Docker server architecture arch=%s override=TEMPLIQX_DOCKER_PLATFORM\n' "$docker_arch" >&2
-exit 1
-;;
-esac
+  local docker_arch
+  docker_arch="$(docker info --format '{{.Architecture}}')"
+  case "$docker_arch" in
+  amd64 | x86_64)
+    printf 'linux/amd64\n'
+    ;;
+  arm64 | aarch64)
+    printf 'linux/arm64\n'
+    ;;
+  *)
+    printf 'FAIL command=./scripts/docker-smoke.sh reason=unsupported Docker server architecture arch=%s override=TEMPLIQX_DOCKER_PLATFORM\n' "$docker_arch" >&2
+    exit 1
+    ;;
+  esac
 }
 
 DOCKER_PLATFORM="$(resolve_docker_platform)"
@@ -74,7 +74,7 @@ set +e
 docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock run --rm --no-deps conformance | tee "$HTTP_RECEIPT"
 compose_status=${PIPESTATUS[0]}
 set -e
-(( compose_status == 0 )) || exit "$compose_status"
+((compose_status == 0)) || exit "$compose_status"
 jq -S . "$HTTP_RECEIPT" >/tmp/templiqx-http-receipt.sorted
 jq -S . "$HTTP_GOLDEN" >/tmp/templiqx-http-golden.sorted
 cmp /tmp/templiqx-http-receipt.sorted /tmp/templiqx-http-golden.sorted
@@ -98,6 +98,22 @@ cmp "$LOCAL_RECEIPT" "$CONTAINER_RECEIPT"
 test -s "$CONTAINER_WORKSPACE/crm3/crm3-conformance/rendered.docx"
 test ! -e "$REPO_ROOT/examples/crm3/crm3-conformance/rendered.docx"
 
+# MCP transport is stdio-only: send a real initialize handshake and check the
+# hardened container returns a matching JSON-RPC response before EOF closes it.
+MCP_INITIALIZE='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"docker-smoke","version":"0.0.0"}}}'
+MCP_RESPONSE="$(printf '%s\n' "$MCP_INITIALIZE" | docker run --rm -i \
+  --read-only \
+  --user 65532:65532 \
+  --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --entrypoint /usr/local/bin/templiqx-mcp \
+  --mount "type=bind,src=$REPO_ROOT/examples,dst=/packages,readonly" \
+  "$IMAGE" \
+  /packages)"
+printf '%s\n' "$MCP_RESPONSE" | jq -e '.result.serverInfo.name == "templiqx-mcp"' >/dev/null
+
+printf 'docker smoke: mcp_stdio_initialize=ok\n'
+
 run_failure_smoke() {
   local profile="$1"
   local service="$2"
@@ -107,7 +123,7 @@ run_failure_smoke() {
   docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile "$profile" run --rm --no-deps "$service" | tee "$log_file"
   local status=${PIPESTATUS[0]}
   set -e
-  if (( status != 2 )); then
+  if ((status != 2)); then
     printf 'FAIL command=./scripts/docker-smoke.sh reason=%s profile=%s exit=%s\n' \
       "expected failure exit code 2" "$profile" "$status" >&2
     exit 1
