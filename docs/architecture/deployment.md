@@ -39,7 +39,11 @@ verify artifacts with:
 The smoke script asserts SBOM generation, Grype high/critical gate, and (in CI)
 `artifacts/supply-chain/build-metadata.json` plus `provenance.json` linkage.
 Package manifest signing is documented in
-[`adr-package-trust.md`](adr-package-trust.md).
+[`adr-package-trust.md`](adr-package-trust.md). Product-direction seams
+(tool-contract refs, streaming port, observability) are in
+[`adr-tool-contract-refs.md`](adr-tool-contract-refs.md),
+[`adr-streaming-runtime-port.md`](adr-streaming-runtime-port.md), and
+[`observability.md`](observability.md).
 
 Host integration procedures: [`../guides/host-integration.md`](../guides/host-integration.md).
 

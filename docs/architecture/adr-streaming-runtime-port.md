@@ -2,9 +2,9 @@
 
 ## Status
 
-Proposed (2026-07-12) — design only, no implementation scheduled before P1
-closes. Live streaming proof needs a host-owned adapter (R12 status:
-"Partially — live streaming proof needs host").
+Accepted (2026-07-12) — design only; trait implementation deferred until a
+host-owned streaming adapter is needed. Live streaming proof still needs a
+host (R12 status: "Partially — live streaming proof needs host").
 
 ## Context
 

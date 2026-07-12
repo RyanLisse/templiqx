@@ -5,11 +5,16 @@ IMAGE="${IMAGE:-templiqx:pre-crm3}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="$REPO_ROOT/artifacts/docker-smoke"
 LOCAL_WORKSPACE="$ARTIFACT_DIR/local-workspace"
-CONTAINER_WORKSPACE="$ARTIFACT_DIR/container-workspace"
+CONTAINER_WORKSPACE="$(mktemp -d "${TMPDIR:-/tmp}/templiqx-docker-smoke-XXXXXX")"
 LOCAL_RECEIPT="$ARTIFACT_DIR/local-receipt.json"
 CONTAINER_RECEIPT="$CONTAINER_WORKSPACE/receipt.json"
 HTTP_GOLDEN="$REPO_ROOT/scripts/golden/http-conformance.json"
 HTTP_RECEIPT="$ARTIFACT_DIR/http-receipt.json"
+
+cleanup() {
+  rm -rf "$CONTAINER_WORKSPACE"
+}
+trap cleanup EXIT
 
 skip_env() {
   if [[ ${CI:-} == "true" ]]; then
@@ -51,12 +56,7 @@ DOCKER_PLATFORM="$(resolve_docker_platform)"
 printf 'docker smoke: docker_platform=%s\n' "$DOCKER_PLATFORM"
 
 rm -rf "$ARTIFACT_DIR"
-mkdir -p "$LOCAL_WORKSPACE" "$CONTAINER_WORKSPACE"
-# The hardened container run below writes into this bind mount as UID 65532,
-# an account with no host-side entry. Linux enforces host file-mode bits on
-# bind mounts, so without this the mkdir's default mode (owned by the CI
-# runner user) denies that UID write access; macOS Docker Desktop doesn't
-# enforce this the same way, which is why it only surfaces on Linux CI.
+mkdir -p "$LOCAL_WORKSPACE"
 chmod 0777 "$CONTAINER_WORKSPACE"
 
 cargo run -q -p templiqx-cli -- \

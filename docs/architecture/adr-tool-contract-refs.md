@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (2026-07-12) — design only, no implementation scheduled before P1 closes.
+Accepted (2026-07-12) — design only; implementation deferred post-P2.
 
 ## Context
 

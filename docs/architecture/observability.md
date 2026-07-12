@@ -2,10 +2,10 @@
 
 ## Status
 
-R10 design doc (2026-07-12). The optional Langfuse adapter this doc describes
-merged into `main` the same day (`adapters/templiqx-runtime-langfuse`,
-`6da11b2`); live-trace verification against a real Langfuse project still
-needs a host, so R10 stays "partially" done until a host runs it end to end.
+Accepted (2026-07-12). The optional Langfuse adapter this doc describes merged
+into `main` the same day (`adapters/templiqx-runtime-langfuse`, `6da11b2`);
+live-trace verification against a real Langfuse project still needs a host, so
+R10 implementation proof stays host-gated while the seam design is complete.
 
 ## What Templiqx core emits today
 

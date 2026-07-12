@@ -1,6 +1,6 @@
 ---
 date: 2026-07-12
-status: draft
+status: complete
 type: feat
 origin: docs/specs/pre-crm3-readiness-docker-kubernetes.html
 requirements:
@@ -12,9 +12,9 @@ requirements:
 
 ## Summary
 
-**NL:** Pre-CRM3 readiness staat op ~98% (79× gereed, 0× wip, 1× open in `docs/specs/pre-crm3-readiness-docker-kubernetes.html`). Dit plan sluit de resterende **standalone** productiegaten: supply-chain attestatie, fresh-clone reproduceerbaarheid, CI/`just`-pariteit, host-handoffdocumentatie, synthetische portability- en legacy-corpusuitbreiding, en package-trust design — **zonder** te wachten op CRM3 ModelGateway, tenant/auth of echte opco-data.
+**NL:** Pre-CRM3 readiness staat op ~99% voor standalone werk (79× gereed, 0× wip, 1× post-CRM3 in `docs/specs/pre-crm3-readiness-docker-kubernetes.html`). P0–P2 units zijn gesloten: supply-chain attestatie, fresh-clone reproduceerbaarheid, CI/`just`-pariteit, host-handoffdocumentatie, synthetische portability- en legacy-corpusuitbreiding, package-trust design, en P2 product-direction ADRs — **zonder** te wachten op CRM3 ModelGateway, tenant/auth of echte opco-data.
 
-**EN:** Pre-CRM3 readiness is ~95% complete. This plan closes remaining **standalone** production gaps: supply-chain attestation, fresh-clone reproducibility, CI/`just` parity, host handoff docs, synthetic portability and legacy corpus expansion, and package-trust design — **without** waiting for CRM3 ModelGateway, tenant/auth, or real opco data.
+**EN:** Pre-CRM3 readiness is ~99% complete for standalone work (79× done, 0× wip, 1× post-CRM3 in `docs/specs/pre-crm3-readiness-docker-kubernetes.html`). P0–P2 units are closed: supply-chain attestation, fresh-clone reproducibility, CI/`just` parity, host handoff docs, synthetic portability and legacy corpus expansion, package-trust design, and P2 product-direction ADRs (tool-contract refs, streaming port, observability seam) — **without** waiting for CRM3 ModelGateway, tenant/auth, or real opco data.
 
 **Estimated scope:** 8 implementation units across ~25–35 touched files · **Complexity: MEDIUM–HIGH**
 
@@ -459,9 +459,25 @@ flowchart TB
 
 ## Acceptance Checklist (plan-level)
 
-- [ ] P0: R1–R4 complete; HTML spec phase 6 wip items closed except post-CRM3 markers
-- [ ] P1: R5–R9 complete; synthetic portability and corpus measurable
-- [ ] P2: R10–R12 designs merged; R13–R15 explicitly remain host-blocked with documented handoff
-- [ ] `just verify` and CI gates aligned throughout
-- [ ] No regression in CRM3 grounded-evidence conformance
-- [ ] `./scripts/check-boundaries.sh` passes after all units
+- [x] P0: R1–R4 complete; HTML spec phase 6 wip items closed except post-CRM3 markers
+- [x] P1: R5–R9 complete; synthetic portability and corpus measurable
+- [x] P2: R10–R12 designs merged (`adr-tool-contract-refs.md`, `adr-streaming-runtime-port.md`, `observability.md`); Langfuse adapter merged (`6da11b2`); R13–R15 explicitly remain host-blocked with documented handoff
+- [x] `just verify` and CI gates aligned throughout
+- [x] No regression in CRM3 grounded-evidence conformance
+- [x] `./scripts/check-boundaries.sh` passes after all units
+
+## Completion log (2026-07-12)
+
+| Unit | Status | Evidence |
+|------|--------|----------|
+| U1 Fresh-clone gate | Done | `scripts/fresh-clone-verify.sh`, CI `fresh-clone` job |
+| U2 SLSA attestation | Done | BuildKit provenance + `scripts/supply-chain-smoke.sh` |
+| U3 `just verify` parity | Done | `justfile` includes qlty + `check-ci-gates.sh` |
+| U4 Host handoff | Done | `docs/guides/host-integration.md` |
+| U5 Synthetic opco | Done | `examples/packages/synthetic-opco/`, portability tests |
+| U6 Legacy/DOCX corpus | Done | `examples/legacy-corpus/`, expanded docx-v5 tests |
+| U7 Package trust v1 | Done | `docs/architecture/adr-package-trust.md`, signing stub |
+| U8 MCP + multi-scenario deploy | Done | `templiqx-mcp` Dockerfile target, scenario matrix |
+| U9 P2 design spikes | Done | Tool-ref/streaming/observability ADRs; Langfuse merged |
+
+**Host-blocked (unchanged):** R13 real second opco, R14 ModelGateway adapter, R15 human-review schema.

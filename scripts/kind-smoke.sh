@@ -63,17 +63,25 @@ fi
 
 kind load docker-image "$IMAGE" --name "$CLUSTER"
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n "$NAMESPACE" scale "deployment/$RELEASE-templiqx-mock-gateway" --replicas=1 2>/dev/null || true
 kubectl delete job -l "app.kubernetes.io/name=templiqx,templiqx.conformance/scenario" -n "$NAMESPACE" --ignore-not-found
 helm upgrade --install "$RELEASE" "$REPO_ROOT/charts/templiqx" \
   --namespace "$NAMESPACE" \
   -f "$REPO_ROOT/charts/templiqx/values-mock.yaml" \
-  --set image.pullPolicy=Never
+  --set image.pullPolicy=Never \
+  --wait --timeout 5m
 
 kubectl -n "$NAMESPACE" rollout status "deployment/$RELEASE-templiqx-mock-gateway" --timeout=120s
 
 SCENARIOS=(intake-document-01 draft-with-citations invalid-output-schema)
 for scenario in "${SCENARIOS[@]}"; do
   job_name="${RELEASE}-templiqx-conformance-${scenario//./-}"
+  for _ in {1..30}; do
+    if kubectl -n "$NAMESPACE" get "job/$job_name" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
   set +e
   kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$job_name" --timeout=180s
   scenario_wait=$?
@@ -97,7 +105,24 @@ printf 'kind smoke: http_conformance=true success=true log=%s\n' "$LOG_FILE"
 
 kubectl -n "$NAMESPACE" scale "deployment/$RELEASE-templiqx-mock-gateway" --replicas=0
 kubectl -n "$NAMESPACE" rollout status "deployment/$RELEASE-templiqx-mock-gateway" --timeout=120s
-kubectl -n "$NAMESPACE" delete job "$RELEASE-templiqx-conformance-gateway-down" --ignore-not-found
+# Terminating pods can keep serving until endpoints drain; wait for none left.
+for _ in {1..60}; do
+  if ! kubectl -n "$NAMESPACE" get endpoints "$RELEASE-templiqx-mock-gateway" \
+    -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null | grep -q .; then
+    break
+  fi
+  sleep 2
+done
+if kubectl -n "$NAMESPACE" get endpoints "$RELEASE-templiqx-mock-gateway" \
+  -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null | grep -q .; then
+  printf 'FAIL command=./scripts/kind-smoke.sh reason=mock-gateway endpoints still present after scale-to-zero\n' >&2
+  exit 1
+fi
+while kubectl -n "$NAMESPACE" get pods -l app.kubernetes.io/component=mock-gateway \
+  --field-selector=status.phase=Running -o name 2>/dev/null | grep -q .; do
+  sleep 2
+done
+kubectl -n "$NAMESPACE" delete job "${RELEASE}-conformance-gateway-down" --ignore-not-found --wait=true
 
 GATEWAY_DOWN_LOG="$ARTIFACT_DIR/gateway-down.log"
 cat <<EOF | kubectl apply -f -
@@ -138,15 +163,29 @@ spec:
               drop: ["ALL"]
 EOF
 
+for _ in {1..30}; do
+  if kubectl -n "$NAMESPACE" get "job/${RELEASE}-conformance-gateway-down" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+
 set +e
 kubectl -n "$NAMESPACE" wait --for=condition=failed "job/${RELEASE}-conformance-gateway-down" --timeout=180s
 gateway_down_wait=$?
 set -e
-if ((gateway_down_wait == 0)); then
-  :
-elif ! kubectl -n "$NAMESPACE" get "job/${RELEASE}-conformance-gateway-down" -o jsonpath='{.status.failed}' | grep -q '^[1-9]'; then
-  printf 'FAIL command=./scripts/kind-smoke.sh reason=gateway-down job did not fail\n' >&2
-  exit 1
+if ((gateway_down_wait != 0)); then
+  if kubectl -n "$NAMESPACE" get "job/${RELEASE}-conformance-gateway-down" -o jsonpath='{.status.succeeded}' 2>/dev/null | grep -q '^1'; then
+    printf 'FAIL command=./scripts/kind-smoke.sh reason=gateway-down job succeeded unexpectedly\n' >&2
+    kubectl -n "$NAMESPACE" logs "job/${RELEASE}-conformance-gateway-down" >&2 || true
+    exit 1
+  fi
+  if ! kubectl -n "$NAMESPACE" get "job/${RELEASE}-conformance-gateway-down" -o jsonpath='{.status.failed}' 2>/dev/null | grep -q '^[1-9]'; then
+    printf 'FAIL command=./scripts/kind-smoke.sh reason=gateway-down job did not fail\n' >&2
+    kubectl -n "$NAMESPACE" get "job/${RELEASE}-conformance-gateway-down" -o yaml >&2 || true
+    kubectl -n "$NAMESPACE" logs "job/${RELEASE}-conformance-gateway-down" >&2 || true
+    exit 1
+  fi
 fi
 kubectl -n "$NAMESPACE" logs "job/${RELEASE}-conformance-gateway-down" | tee "$GATEWAY_DOWN_LOG"
 if ! grep -F '"code":"TQX_HOST_RETRY_EXHAUSTED"' "$GATEWAY_DOWN_LOG" >/dev/null; then
