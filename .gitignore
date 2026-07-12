@@ -5,3 +5,8 @@ artifacts/
 
 .env
 sites
+
+# Local agent/tool runtime state — never source
+.omc/
+.omx/
+.cursor/hooks/state/
