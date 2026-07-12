@@ -61,6 +61,7 @@ contracts <- ports
 | `templiqx-cli`, `templiqx-mcp` | Transport surfaces; tool names match catalog exactly |
 | `templiqx-conformance` | CRM3 and failure-semantics tests |
 | `templiqx-mock`, `adapters/templiqx-runtime-http-mock` | Conformance adapters only |
+| `adapters/templiqx-runtime-langfuse` | Host-owned production `RuntimeAdapter`: real chat completion + best-effort Langfuse tracing. Never in default composition — construct explicitly in host code |
 | `adapters/templiqx-docx-v5` | Narrow DOCX V5 compat for CRM3 fixture — not general DOCX |
 | `tools/templiqx-mock-gateway`, `tools/templiqx-http-conformance` | Operational readiness tooling |
 
