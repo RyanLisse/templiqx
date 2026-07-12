@@ -19,5 +19,8 @@ templiqx-contracts = { path = "../templiqx-contracts" }
 templiqx-local = { path = "../templiqx-local" }
 templiqx-ports = { path = "../templiqx-ports" }
 
+[dev-dependencies]
+tempfile.workspace = true
+
 [lints]
 workspace = true

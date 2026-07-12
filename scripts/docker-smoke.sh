@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+IMAGE="${IMAGE:-templiqx:pre-crm3}"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ARTIFACT_DIR="$REPO_ROOT/artifacts/docker-smoke"
+LOCAL_WORKSPACE="$ARTIFACT_DIR/local-workspace"
+CONTAINER_WORKSPACE="$ARTIFACT_DIR/container-workspace"
+LOCAL_RECEIPT="$ARTIFACT_DIR/local-receipt.json"
+CONTAINER_RECEIPT="$CONTAINER_WORKSPACE/receipt.json"
+HTTP_GOLDEN="$REPO_ROOT/scripts/golden/http-conformance.json"
+HTTP_RECEIPT="$ARTIFACT_DIR/http-receipt.json"
+
+skip_env() {
+  if [[ "${CI:-}" == "true" ]]; then
+    printf 'FAIL command=./scripts/docker-smoke.sh reason=%s missing=%s\n' "$1" "$2" >&2
+    exit 1
+  fi
+  printf 'SKIP_ENV command=./scripts/docker-smoke.sh reason=%s missing=%s\n' "$1" "$2"
+  exit 0
+}
+
+command -v docker >/dev/null 2>&1 || skip_env "missing Docker CLI" "docker"
+command -v jq >/dev/null 2>&1 || skip_env "missing jq" "jq"
+docker info >/dev/null 2>&1 || skip_env "Docker daemon unavailable" "docker-daemon"
+docker compose version >/dev/null 2>&1 || skip_env "missing Docker Compose plugin" "docker-compose"
+
+resolve_docker_platform() {
+if [[ -n "${TEMPLIQX_DOCKER_PLATFORM:-}" ]]; then
+printf '%s\n' "$TEMPLIQX_DOCKER_PLATFORM"
+return
+fi
+
+local docker_arch
+docker_arch="$(docker info --format '{{.Architecture}}')"
+case "$docker_arch" in
+amd64|x86_64)
+printf 'linux/amd64\n'
+;;
+arm64|aarch64)
+printf 'linux/arm64\n'
+;;
+*)
+printf 'FAIL command=./scripts/docker-smoke.sh reason=unsupported Docker server architecture arch=%s override=TEMPLIQX_DOCKER_PLATFORM\n' "$docker_arch" >&2
+exit 1
+;;
+esac
+}
+
+DOCKER_PLATFORM="$(resolve_docker_platform)"
+printf 'docker smoke: docker_platform=%s\n' "$DOCKER_PLATFORM"
+
+rm -rf "$ARTIFACT_DIR"
+mkdir -p "$LOCAL_WORKSPACE" "$CONTAINER_WORKSPACE"
+
+cargo run -q -p templiqx-cli -- \
+  --root "$REPO_ROOT/examples" \
+  --json \
+  crm3-conformance \
+  --workspace "$LOCAL_WORKSPACE" \
+  --receipt "$LOCAL_RECEIPT" >/dev/null
+
+docker buildx build --load --platform "$DOCKER_PLATFORM" --target templiqx-cli -t "$IMAGE" "$REPO_ROOT"
+
+# Exercise the same HTTP adapter path used by the Helm job, not only the
+# local deterministic service path.
+docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock up -d mock-gateway
+for _ in {1..30}; do
+  curl -fsS "http://127.0.0.1:${TEMPLIQX_MOCK_GATEWAY_PORT:-18080}/health/ready" >/dev/null && break
+  sleep 1
+done
+curl -fsS "http://127.0.0.1:${TEMPLIQX_MOCK_GATEWAY_PORT:-18080}/health/ready" >/dev/null
+set +e
+docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock run --rm --no-deps conformance | tee "$HTTP_RECEIPT"
+compose_status=${PIPESTATUS[0]}
+set -e
+(( compose_status == 0 )) || exit "$compose_status"
+jq -S . "$HTTP_RECEIPT" >/tmp/templiqx-http-receipt.sorted
+jq -S . "$HTTP_GOLDEN" >/tmp/templiqx-http-golden.sorted
+cmp /tmp/templiqx-http-receipt.sorted /tmp/templiqx-http-golden.sorted
+docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock down --volumes
+
+docker run --rm \
+  --read-only \
+  --user 65532:65532 \
+  --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --mount "type=bind,src=$REPO_ROOT/examples,dst=/packages,readonly" \
+  --mount "type=bind,src=$CONTAINER_WORKSPACE,dst=/workspace" \
+  "$IMAGE" \
+  --root /packages \
+  --json \
+  crm3-conformance \
+  --workspace /workspace \
+  --receipt /workspace/receipt.json >/dev/null
+
+cmp "$LOCAL_RECEIPT" "$CONTAINER_RECEIPT"
+test -s "$CONTAINER_WORKSPACE/crm3/crm3-conformance/rendered.docx"
+test ! -e "$REPO_ROOT/examples/crm3/crm3-conformance/rendered.docx"
+printf 'docker smoke: receipt_match=true artifact=%s\n' "$CONTAINER_WORKSPACE/crm3/crm3-conformance/rendered.docx"

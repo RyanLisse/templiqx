@@ -1,0 +1,32 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "id": "missing-required-field",
+  "contract": "bli-61-date-term-extraction",
+  "kind": "missing",
+  "input": "../../evals/bli-61-request.json",
+  "expected_diagnostics": [
+    "TQX_RUNTIME_PERMANENT"
+  ],
+  "receipt_payload_policy": "no_successful_receipt",
+  "steps": [
+    {
+      "id": "request-received",
+      "kind": "request_received"
+    },
+    {
+      "id": "runtime-missing-required-field",
+      "kind": "runtime_failure",
+      "failure": {
+        "code": "TQX_RUNTIME_PERMANENT",
+        "detail": "runtime could not ground the required notice_date field"
+      }
+    }
+  ],
+  "expected_status": "failure",
+  "expected_failure": "TQX_RUNTIME_PERMANENT",
+  "evidence": [],
+  "document_expectation": {
+    "status": "not_applicable",
+    "unresolved_references": 0
+  },
+  "golden_receipt_fingerprint": "fcb5f3ff89d1cd269ea7168d28ecb5d4855841ac298979cb7daecbb3614880a5"}

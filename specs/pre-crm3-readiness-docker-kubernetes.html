@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Pre-CRM3 readiness, mocks, Docker en Kubernetes</title>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    themeVariables: {
+      background: "#f7faf9",
+      primaryColor: "#e8f5f1",
+      primaryTextColor: "#14231f",
+      primaryBorderColor: "#087f6d",
+      lineColor: "#52645f",
+      secondaryColor: "#eef2ff",
+      tertiaryColor: "#fff7ed",
+      fontFamily: "Inter, ui-sans-serif, system-ui"
+    }
+  });
+</script>
+<style>
+  :root {
+    --bg: #f7faf9;
+    --surface: #ffffff;
+    --ink: #14231f;
+    --muted: #52645f;
+    --line: #d5e1dd;
+    --accent: #087f6d;
+    --accent-2: #4f46e5;
+    --code-bg: #edf3f1;
+    --warn-bg: #fff7ed;
+    --danger-bg: #fff1f2;
+    --radius: 10px;
+    --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.58; }
+  main { width: min(1160px, calc(100% - 40px)); margin: 0 auto; padding: 40px 0 64px; }
+  header, section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; margin: 0 0 18px; }
+  h1, h2, h3, h4 { line-height: 1.2; margin: 0 0 12px; }
+  h1 { font-size: clamp(1.7rem, 4vw, 2.35rem); }
+  h2 { font-size: 1.38rem; color: var(--accent); }
+  h3 { font-size: 1.08rem; margin-top: 20px; }
+  h4 { font-size: 0.98rem; margin-top: 18px; }
+  p, ul, ol, dl, table, figure, details, pre { margin-top: 0; }
+  a { color: var(--accent); }
+  code { background: var(--code-bg); border-radius: 5px; font-family: var(--mono); font-size: 0.91em; padding: 0.12rem 0.32rem; }
+  pre code { background: transparent; padding: 0; }
+  .eyebrow { color: var(--accent); font-size: 0.82rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  .lead { font-size: 1.08rem; max-width: 860px; }
+  .meta dl { display: grid; grid-template-columns: minmax(130px, 180px) 1fr; gap: 8px 14px; }
+  .meta dt { color: var(--muted); font-weight: 700; }
+  .meta dd { margin: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+  th { background: #e8f5f1; }
+  figure { border: 1px solid var(--line); border-radius: var(--radius); margin: 18px 0; padding: 12px; background: #fbfdfc; }
+  img, .hero-image { display: block; width: 100%; max-width: 100%; border-radius: 7px; }
+  figcaption { color: var(--muted); font-size: 0.92rem; margin-top: 8px; }
+  details { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin: 10px 0; background: #fcfefd; }
+  summary { cursor: pointer; font-weight: 750; }
+  .phase { border-top: 4px solid var(--accent); padding-top: 18px; margin-top: 28px; }
+  .tag { border-radius: 999px; color: white; display: inline-block; font-size: 0.75rem; font-weight: 800; padding: 0.12rem 0.48rem; }
+  .tag.existing { background: var(--accent); }
+  .tag.new { background: var(--accent-2); }
+  .tag.external { background: #9a3412; }
+  .status { white-space: nowrap; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { margin: 0.48rem 0; }
+  .loop { background: var(--warn-bg); border: 1px solid #fed7aa; border-radius: var(--radius); padding: 12px 14px; margin-top: 14px; }
+  .callout { border-left: 4px solid var(--accent-2); background: #f5f3ff; padding: 13px 15px; margin: 14px 0; }
+  .boundary { border-left: 4px solid var(--accent); background: #edf9f6; padding: 13px 15px; margin: 14px 0; }
+  .warning { border-left: 4px solid #c2410c; background: var(--warn-bg); padding: 13px 15px; margin: 14px 0; }
+  .mermaid { background: #fbfdfc; border: 1px solid var(--line); border-radius: var(--radius); margin: 14px 0; padding: 18px; overflow-x: auto; }
+  .diagram-summary { border-left: 3px solid var(--accent); color: var(--muted); margin: 10px 0 0; padding-left: 12px; }
+  .code-block { background: #10211d; color: #d8fff4; border-radius: var(--radius); padding: 16px; overflow-x: auto; font-family: var(--mono); font-size: 0.88rem; }
+  .media-blocker { background: var(--danger-bg); border: 1px solid #fecdd3; border-radius: var(--radius); color: #7f1d1d; padding: 12px 14px; }
+  @media (max-width: 720px) {
+    main { width: min(100% - 24px, 1160px); padding-top: 24px; }
+    header, section { padding: 18px; }
+    table { display: block; overflow-x: auto; }
+    .meta dl { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Templiqx implementation handoff</p>
+    <h1>Plan: Pre-CRM3 readiness, mocks, Docker en Kubernetes</h1>
+    <p class="lead">Bouw een bewijsbare, provider-neutrale readinesslaag waarmee dezelfde synthetische CRM3-interactie lokaal, via CLI, via MCP, in Docker en in Kubernetes exact dezelfde semantische resultaten en fingerprints oplevert.</p>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt><dd>2026-07-11T13:48:33Z</dd>
+        <dt>modified</dt><dd>2026-07-11T13:48:33Z</dd>
+        <dt>commits</dt><dd>6c86955</dd>
+        <dt>agent name</dt><dd>Codex GPT-5</dd>
+        <dt>session id</dt><dd>omx-1783759846453-748cmj</dd>
+        <dt>back refs</dt><dd><code>docs/plans/2026-07-11-templiqx-poc-implementation-plan.md</code>, <code>docs/architecture/poc.md</code>, CRM3 ADR-0006, ADR-0007, ADR-0015 en ADR-0016</dd>
+        <dt>forward refs</dt><dd>Te vullen tijdens Build Plan met commits, image digest en conformance receipt</dd>
+      </dl>
+    </details>
+  </header>
+
+  <figure class="hero-media">
+    <img class="hero-image" src="pre-crm3-readiness-docker-kubernetes/hero.png" alt="AI-contract door een deterministische testlaag naar Docker en Kubernetes">
+    <figcaption>Conceptuele oriëntatie: één contractpakket beweegt door een gecontroleerde mock-runtime naar identieke lokale en containerized conformance-uitkomsten.</figcaption>
+  </figure>
+
+  <section id="purpose">
+    <h2>Doel en ideale toestand</h2>
+    <p>CRM3 is nog in ontwikkeling, maar Templiqx kan nu al bijna alle integratierisico's reduceren: contractspecificatie, foutsemantiek, actor-neutraliteit, deployment, supply-chain en reproduceerbaarheid. De ideale toestand is een clean checkout waarin <code>just verify</code>, een Docker smoke test en een kind-gebaseerde Kubernetes Job dezelfde package-, interaction-, output- en documentfingerprints produceren.</p>
+    <div class="boundary"><strong>Ideal State Criteria.</strong> Geen CRM3-code of provider-SDK in Templiqx; alle mockscenario's zijn deterministisch; package-input is read-only; gegenereerde artifacts gaan naar een aparte workspace; MCP blijft een edge-adapter; een mislukte assertion kan niet stil worden ingeslikt.</div>
+  </section>
+
+  <section id="problem">
+    <h2>Probleemkader</h2>
+    <p>De huidige POC bewijst contractvalidatie, fixture-output, grounded evidence, V5 DOCX-pariteit en Rust/CLI/MCP-pariteit. Hij bewijst nog niet hoe foutscenario's zich gedragen, hoe een host retry- en approvalbeleid toepast, of dezelfde flow standhoudt onder containerrestricties. De huidige lokale documentrenderer schrijft bovendien binnen de package-root; dat botst met een geharde read-only package mount.</p>
+    <ul>
+      <li><code>DeterministicFakeRuntime</code> accepteert één <code>fixture_output</code>, maar modelleert geen typed timeout, rate limit, provider failure of stream lifecycle.</li>
+      <li>De synthetische CRM3-package heeft twee happy-path evals; ambiguous, missing-term en invalid-output scenario's ontbreken.</li>
+      <li>Actor- en approvalbeleid hoort bij de host, maar de grens is nog niet als consumer contract bewezen.</li>
+      <li>Er zijn nog geen Dockerfile, Compose-profiel, Helm-chart, kind-smoke of image-security checks.</li>
+      <li>MCP gebruikt stdio en is daardoor geen zelfstandig Kubernetes Service-endpoint.</li>
+    </ul>
+  </section>
+
+  <section id="solution">
+    <h2>Oplossingsrichting</h2>
+    <p>Voeg een test-only scripted runtime en CRM3 scenario corpus toe, met een kleine host-conformance harness voor retries en proposal/approval. Verpak de bestaande binaries in een non-root multi-stage image. Gebruik Docker Compose voor lokale conformance en een Helm-chart voor een mock-gateway Deployment plus conformance Job. Houd alle Basenet-verantwoordelijkheden buiten de Templiqx core.</p>
+    <div class="warning"><strong>Architectuurcorrectie.</strong> Retrieval, Valkey/BullMQ, audit, permissions en proposal storage worden geen nieuwe Templiqx-coreports. CRM3 ADR-0006, ADR-0007 en ADR-0016 maken deze expliciet host-owned. Templiqx bevriest alleen de interaction boundary en levert conformance fixtures waarmee een host zijn adapters kan bewijzen.</div>
+  </section>
+
+  <section id="diagram">
+    <h2>Systeem- en deploymentgrenzen</h2>
+    <p>De mockroute bootst de toekomstige hostintegratie na zonder een productieprovider of CRM3-runtime in deze repository te trekken.</p>
+    <pre class="mermaid">
+flowchart LR
+  subgraph TQX["Templiqx standalone"]
+    PKG["CRM3 synthetic package"] --> APP["Actor-neutral application service"]
+    APP --> PORT["RuntimeAdapter port"]
+    APP --> DOC["DOCX adapter"]
+    APP --> SURF["Rust / CLI / MCP stdio"]
+  end
+
+  subgraph TEST["Conformance-only adapters"]
+    PORT --> SCRIPT["Scripted in-process runtime"]
+    PORT --> HTTP["HTTP mock runtime adapter"]
+    HTTP --> GATE["Mock gateway Deployment"]
+  end
+
+  subgraph HOST["CRM3 host ownership"]
+    MODEL["ModelGateway + anonymizer"]
+    RET["Permission-filtered retrieval"]
+    PROP["Proposal / approval / audit"]
+    QUEUE["BullMQ / Valkey workers"]
+    STORE["Document storage"]
+  end
+
+  PORT -. future host adapter .-> MODEL
+  MODEL --> RET
+  MODEL --> PROP
+  PROP --> QUEUE
+  QUEUE --> STORE
+    </pre>
+    <p class="diagram-summary">Templiqx compileert en valideert één modelinteractie. De mockadapters bewijzen transport- en failure-contracten. CRM3 blijft eigenaar van identiteit, autorisatie, retrieval, workflow, audit en storage.</p>
+
+    <h3>Approval- en retrygedrag</h3>
+    <pre class="mermaid">
+stateDiagram-v2
+  [*] --> Compiled
+  Compiled --> Executing
+  Executing --> Validated: schema-valid output
+  Executing --> Retryable: timeout or rate limit
+  Retryable --> Executing: host retry policy
+  Retryable --> Failed: attempts exhausted
+  Executing --> Failed: permanent provider error
+  Validated --> Proposed: host creates proposal
+  Proposed --> Rejected: human rejects or corrects
+  Proposed --> Approved: human approval event
+  Approved --> Committed: permission + idempotency pass
+  Committed --> [*]
+  Rejected --> [*]
+  Failed --> [*]
+    </pre>
+    <p class="diagram-summary">Templiqx valideert het modelresultaat; de host bepaalt retry, proposal, approval en commit. Een agent krijgt geen alternatieve commitroute.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope</h2>
+    <h3>In scope</h3>
+    <ul>
+      <li>Scripted mockscenario's voor generate, aggregate stream events en typed failures.</li>
+      <li>Vijf of meer synthetische CRM3-scenario's met grounded evidence en golden outputs.</li>
+      <li>Een host-conformance test voor actor parity, proposal/approval, wrong-tenant en idempotency.</li>
+      <li>Een backward-compatible lokale compositie naast een expliciete scripted compositie.</li>
+      <li>Multi-stage OCI-images voor CLI, MCP-stdio en conformance/mock-gateway.</li>
+      <li>Compose, Helm, kind smoke, SBOM, vulnerability scan en image digest verification.</li>
+      <li>Scheiding tussen read-only packages en writable render workspace.</li>
+    </ul>
+    <h3>Buiten scope</h3>
+    <ul>
+      <li>Een echte OpenAI, Anthropic, Gemini, Bedrock, Ollama of CRM3 ModelGateway-adapter.</li>
+      <li>CRM3 retrieval-, queue-, identity-, audit- of document-storage-implementaties.</li>
+      <li>Een productie-HTTP API voor Templiqx of remote MCP transport.</li>
+      <li>Autonome agent commits of een Templiqx-eigen authorization model.</li>
+      <li>Productieclaims op basis van synthetische fixtures.</li>
+      <li>Een volledige V1/V2/V5 legacy runtime of arbitrary DOCX compatibility.</li>
+    </ul>
+  </section>
+
+  <section id="traceability">
+    <h2>Requirements traceability</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Bron</th><th>Dekking</th><th>Acceptatiesignaal</th></tr></thead>
+      <tbody>
+        <tr><td>R1 — realistische mock-runtime</td><td>Gebruikersvraag; bestaande <code>DeterministicFakeRuntime</code></td><td>Fase 1</td><td>Elke failure class levert een stabiele code en exact verwachte receipt of fout.</td></tr>
+        <tr><td>R2 — BLI-61/BLI-62 corpus</td><td>CRM3 package en BLI-referenties</td><td>Fase 2</td><td>Happy, ambiguous, missing en invalid scenario's hebben harde assertions en golden fingerprints.</td></tr>
+        <tr><td>R3 — agent/mens capability peers</td><td>Templiqx capability map; CRM3 ADR-0016</td><td>Fase 3</td><td>Rust/CLI/MCP envelopes zijn gelijk; direct agent commit wordt door de host-harness geweigerd.</td></tr>
+        <tr><td>R4 — Docker-ready</td><td>Gebruikersvraag</td><td>Fase 4</td><td>Non-root image draait met read-only root filesystem en produceert dezelfde receipt.</td></tr>
+        <tr><td>R5 — Kubernetes-ready</td><td>Gebruikersvraag; BLI-5 platformrichting</td><td>Fase 5</td><td><code>helm lint</code>, <code>helm template</code> en kind Job slagen met restricted security context.</td></tr>
+        <tr><td>R6 — host-owned adapters</td><td>CRM3 ADR-0006, ADR-0007, ADR-0016</td><td>Besluit D2 en Fase 3</td><td>Dependency-check toont geen CRM3, BullMQ, OpenSearch of provider SDK in core crates.</td></tr>
+        <tr><td>R7 — leren van Vercel chatbot tests</td><td>Vercel chatbot commit <code>c2f8235e</code></td><td>Fase 1, 4 en research notes</td><td>Typed provider mock, explicit test routing en failure artifacts zijn aanwezig; permissieve patterns zijn afwezig.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="files">
+    <h2>Relevante bestanden</h2>
+    <h3>Bestaande Templiqx-bronnen</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>crates/templiqx-ports/src/lib.rs</code> — huidige <code>RuntimeAdapter</code>, package en renderer seams.</li>
+      <li><span class="tag existing">existing</span> <code>crates/templiqx-local/src/lib.rs</code> — lokale store en <code>DeterministicFakeRuntime</code>.</li>
+      <li><span class="tag existing">existing</span> <code>crates/templiqx-conformance/tests/crm3.rs</code> — grounded extraction, drafting, DOCX en surface parity.</li>
+      <li><span class="tag existing">existing</span> <code>crates/templiqx-mcp/tests/stdio.rs</code> — echte MCP-stdio subprocess proof.</li>
+      <li><span class="tag existing">existing</span> <code>examples/crm3/</code> — huidige package, evals, template en baseline.</li>
+      <li><span class="tag existing">existing</span> <code>scripts/check-boundaries.sh</code> — dependency enforcement.</li>
+      <li><span class="tag existing">existing</span> <code>justfile</code> — centrale verificatie-ingang.</li>
+    </ul>
+    <h3>Nieuwe implementatie-eenheden</h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>crates/templiqx-mock/</code> — scripted runtime, scenario schema en deterministic event/failure engine.</li>
+      <li><span class="tag new">new</span> <code>tools/templiqx-mock-gateway/</code> — conformance-only HTTP gateway met health endpoints; niet gelinkt vanuit core.</li>
+      <li><span class="tag new">new</span> <code>adapters/templiqx-runtime-http-mock/</code> — test-only HTTP client adapter voor container/netwerkproof.</li>
+      <li><span class="tag new">new</span> <code>examples/crm3/scenarios/</code> — requests, outputs, failures, stream events en golden receipts.</li>
+      <li><span class="tag new">new</span> <code>crates/templiqx-conformance/tests/crm3_failures.rs</code> — schema, timeout, retry, provider error en determinism.</li>
+      <li><span class="tag new">new</span> <code>crates/templiqx-conformance/tests/crm3_actor_boundary.rs</code> — lokale mock host policy; geen exported Templiqx auth API.</li>
+      <li><span class="tag new">new</span> <code>Dockerfile</code>, <code>.dockerignore</code>, <code>deploy/compose.yml</code> — hardened images en lokale mockrun.</li>
+      <li><span class="tag new">new</span> <code>charts/templiqx/</code> — mock-gateway Deployment en conformance Job zonder MCP Service.</li>
+      <li><span class="tag new">new</span> <code>scripts/docker-smoke.sh</code>, <code>scripts/kind-smoke.sh</code> — fingerprint parity en cluster proof.</li>
+      <li><span class="tag new">new</span> <code>.github/workflows/ci.yml</code> — Rust, image, Helm, kind, SBOM en scan gates.</li>
+      <li><span class="tag new">new</span> <code>docs/contracts/mock-scenarios-v1alpha1.md</code> — versioned scenarioformat en fouttaxonomie.</li>
+      <li><span class="tag new">new</span> <code>docs/architecture/deployment.md</code> — runtime modes, mounts, security en host ownership.</li>
+    </ul>
+    <h3>Externe evidence</h3>
+    <ul>
+      <li><span class="tag external">external</span> Basenet host repo <code>docs/decisions/proposed/0006-durable-workflows-bullmq-no-temporal.md</code>.</li>
+      <li><span class="tag external">external</span> Basenet host repo <code>docs/decisions/proposed/0007-retrieval-index-opensearch-hybrid.md</code>.</li>
+      <li><span class="tag external">external</span> Basenet host repo <code>docs/decisions/proposed/0016-agent-mcp-write-boundary.md</code>.</li>
+      <li><span class="tag external">external</span> <a href="https://github.com/vercel/chatbot/tree/c2f8235e1f3ea903ad8b7f61447c4f74164b5c58/tests">Vercel chatbot tests, commit c2f8235e</a>.</li>
+    </ul>
+  </section>
+
+  <section id="decisions">
+    <h2>Kernbesluiten</h2>
+    <details open>
+      <summary>D1 — Scripted scenarios, geen prompt-substring magie</summary>
+      <p>Elk scenario heeft een stabiele id en expliciete sequence: output, typed failure of stream events. De adapter selecteert op scenario-id vanuit testconfig, niet door prompttekst te inspecteren.</p>
+      <p><strong>Alternatieven:</strong> Vercels eenvoudige substring routing is handig voor UI-smokes, maar te impliciet voor juridische conformance. Randomized mocks zijn niet reproduceerbaar.</p>
+    </details>
+    <details open>
+      <summary>D2 — Host capabilities blijven buiten Templiqx core</summary>
+      <p><code>RuntimeAdapter</code> blijft de modelinteraction seam. Retrieval, queue, permission, audit, proposal en storage worden alleen beschreven en getest als consumer contract in de CRM3 harness.</p>
+      <p><strong>Alternatieven:</strong> zeven generieke ports aan Templiqx toevoegen zou de engine tot een CRM-platformkern maken en de opco-portability verlagen.</p>
+    </details>
+    <details open>
+      <summary>D3 — Retry wordt gesimuleerd, maar door de host bestuurd</summary>
+      <p>Templiqx levert stabiele timeout/rate-limit/unavailable fouten. De mock host bewijst retry-after en attempt limits. De application service start zelf geen workflow of verborgen retryloop.</p>
+      <p><strong>Alternatieven:</strong> retries in de engine dupliceren BullMQ/ModelGateway-beleid en maken receipts minder transparant.</p>
+    </details>
+    <details open>
+      <summary>D4 — Read-only packages, aparte writable workspace</summary>
+      <p>Containers mounten <code>/packages</code> read-only en <code>/work</code> writable. Runtime-artifacts behoren niet tot package identity. De lokale CLI behoudt backward compatibility via defaults, maar accepteert een expliciete workspace-root.</p>
+      <p><strong>Alternatieven:</strong> de package-root writable maken is eenvoudig, maar verzwakt supply-chain integriteit en read-only Kubernetes hardening.</p>
+    </details>
+    <details open>
+      <summary>D5 — Kubernetes Job plus mock-gateway Deployment; geen nep-MCP Service</summary>
+      <p>De chart deployt een test-only HTTP mock gateway voor network/failure proof en een Job die conformance uitvoert. MCP blijft stdio en wordt alleen door een host/sidecarproces gestart.</p>
+      <p><strong>Alternatieven:</strong> stdio achter een Service zetten werkt semantisch niet; nu remote MCP/SSE ontwerpen zou transportbesluit en authscope vooruitlopen.</p>
+    </details>
+    <details open>
+      <summary>D6 — Fingerprint parity is de release gate</summary>
+      <p>JSON wordt semantisch vergeleken; package- en artifactbytes worden exact gehasht. Lokale, Docker- en Kubernetes-runs moeten dezelfde verwachte receipt produceren, met uitsluitend expliciet genormaliseerde deploymentmetadata buiten de hash.</p>
+      <p><strong>Alternatieven:</strong> alleen exit code of “non-empty output” is onvoldoende om drift te detecteren.</p>
+    </details>
+  </section>
+
+  <section id="sequencing">
+    <h2>Afhankelijkheden en volgorde</h2>
+    <ol>
+      <li>Bevries scenarioformat en fouttaxonomie vóórdat Docker- of Helm-config daarnaar verwijst.</li>
+      <li>Bouw eerst de in-process scripted adapter; dit geeft snelle, hermetische contracttests.</li>
+      <li>Breid daarna het CRM3-corpus en de actor-boundary harness uit; deze leveren de golden receipts.</li>
+      <li>Splits package-input en workspace-output voordat read-only containerhardening wordt aangezet.</li>
+      <li>Bouw OCI-image en Compose-smoke; pas na bewezen containerpariteit volgt Helm.</li>
+      <li>Voeg de mock-gateway Deployment en kind Job toe; sluit af met CI, SBOM en scan.</li>
+      <li>Verbind pas later de echte CRM3 ModelGateway-adapter aan dezelfde contract suite.</li>
+    </ol>
+  </section>
+
+  <section id="phases">
+    <h2>Implementatiefasen</h2>
+    <p><strong>Uitvoeringsregel:</strong> voer fasen en taken van boven naar beneden uit. Status: <code>[]</code> idle · <code>[wip]</code> bezig · <code>[x]</code> gereed · <code>[f]</code> mislukt.</p>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Fase 1: Scripted runtime contract</h3>
+      <p>Maak failure- en eventgedrag expliciet zonder de productie-runtime of orchestration scope uit te breiden.</p>
+      <h4>1.1 Scenario DTO en parser</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Definieer <code>MockScenario</code>, <code>MockStep</code>, <code>MockFailure</code> en <code>MockEvent</code> met <code>deny_unknown_fields</code>.</li>
+        <li><code class="status">[]</code> Versioneer het format als <code>templiqx.mock/v1alpha1</code>.</li>
+        <li><code class="status">[]</code> Verbied negatieve delays, lege step sequences, dubbele event ids en finish-before-start.</li>
+      </ul>
+      <h4>1.2 Adapter en fouttaxonomie</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Implementeer een scripted in-process adapter met injected clock en zonder echte sleeps.</li>
+        <li><code class="status">[]</code> Modelleer <code>timeout</code>, <code>rate_limited</code>, <code>unavailable</code>, <code>invalid_response</code> en <code>permanent</code> als stabiele diagnostics.</li>
+        <li><code class="status">[]</code> Houd <code>DeterministicFakeRuntime</code> als backward-compatible facade voor bestaand <code>fixture_output</code>.</li>
+        <li><code class="status">[]</code> Neem generate- en stream-lifecycle fixtures over als concept uit Vercel, maar aggregeer ze deterministisch binnen de bestaande sync-port.</li>
+      </ul>
+      <h4>1.3 Testing strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-mock</code> — schema, event ordering, failure mapping en deterministic clock.</li>
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-local</code> — bestaande fixture-output blijft compatibel.</li>
+        <li><code class="status">[]</code> Herhaal elke scenario-run tweemaal en assert byte-identieke serialized receipts.</li>
+      </ul>
+      <div class="loop">🔁 Verlaat deze fase pas wanneer alle bestaande en nieuwe runtime-tests slagen zonder sleeps of netwerk.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Fase 2: Synthetic CRM3 corpus</h3>
+      <p>Vergroot de huidige happy path naar een failure- en ambiguitymatrix die BLI-61 en BLI-62 vroeg kan stabiliseren.</p>
+      <h4>2.1 Scenario-inventaris</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Voeg <code>intake-document-01</code> toe als nieuwe naam voor de huidige bewezen happy path zonder de bestaande eval te verwijderen.</li>
+        <li><code class="status">[]</code> Voeg <code>intake-document-ambiguous</code> toe met twee kandidaatdatums, confidence/risk flag en human-review expectation.</li>
+        <li><code class="status">[]</code> Voeg <code>intake-document-missing-term</code> toe waarbij geen termijn wordt verzonnen.</li>
+        <li><code class="status">[]</code> Voeg <code>intake-document-invalid-output</code> toe dat schema-validatie hard laat falen en drafting blokkeert.</li>
+        <li><code class="status">[]</code> Voeg <code>draft-with-citations</code> toe met meerdere fragments, UTF-8 offsets en quote hashes.</li>
+      </ul>
+      <h4>2.2 Golden receipts</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Leg per scenario request, expected output/failure, evidence, DOCX expectation en receipt vast.</li>
+        <li><code class="status">[]</code> Houd payloads uit receipts; alleen ids, versies, booleans, counts en fingerprints.</li>
+        <li><code class="status">[]</code> Laat drafting alleen starten na schema-valid extraction en grounded-evidence checks.</li>
+      </ul>
+      <h4>2.3 Testing strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test crm3_failures</code> — alle scenario's eindigen in de exact verwachte status.</li>
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test crm3</code> — bestaande 2-interaction DOCX-flow blijft groen.</li>
+        <li><code class="status">[]</code> Mutatietest: wijzig één source byte en bewijs dat evidence- of packagefingerprint verandert.</li>
+      </ul>
+      <div class="loop">🔁 Verlaat deze fase pas wanneer elke negatieve case een harde, specifieke assertion heeft.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Fase 3: CRM3 host-boundary conformance</h3>
+      <p>Bewijs agent/human parity en ADR-0016 zonder authorization of workflow aan de engine toe te voegen.</p>
+      <h4>3.1 Lokale mock host</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Definieer test-local actor context met tenant, actor id, actor kind en permission claims.</li>
+        <li><code class="status">[]</code> Laat human en agent dezelfde Templiqx application call uitvoeren en vergelijk envelopes.</li>
+        <li><code class="status">[]</code> Modelleer proposal records met input fingerprint, evidence refs, idempotency key en lifecycle status.</li>
+        <li><code class="status">[]</code> Weiger direct agent commit; laat approved commit alleen via mock host policy lopen.</li>
+      </ul>
+      <h4>3.2 Retry en isolation</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Bewijs rate-limit retry-after en max-attempt gedrag in de host-harness.</li>
+        <li><code class="status">[]</code> Bewijs dat permanent failures niet retried worden.</li>
+        <li><code class="status">[]</code> Voeg wrong-tenant en split-access scenarios toe die vóór modeluitvoering worden geweigerd.</li>
+        <li><code class="status">[]</code> Bewijs dat dubbele approval/commit met dezelfde idempotency key één side effect oplevert.</li>
+      </ul>
+      <h4>3.3 Testing strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test crm3_actor_boundary</code> — ADR-0016 consumer contract.</li>
+        <li><code class="status">[]</code> <code>./scripts/check-boundaries.sh</code> — geen host- of CRM3-import in core/runtime/MCP.</li>
+        <li><code class="status">[]</code> Assert dat een rejected proposal geen document, queue-item of audit-commitfixture maakt.</li>
+      </ul>
+      <div class="loop">🔁 Verlaat deze fase pas wanneer actor parity én policy ownership tegelijk bewezen zijn.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Fase 4: Docker en Compose</h3>
+      <p>Maak een herhaalbare OCI-build en draai dezelfde conformance onder restricted containerinstellingen.</p>
+      <h4>4.1 Image layout</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Bouw binaries in een pinned Rust builder stage en kopieer alleen CLI, MCP en conformance/mock-gateway naar runtime stages.</li>
+        <li><code class="status">[]</code> Gebruik numeric non-root UID/GID, geen shell in de minimale runtime indien debugbaarheid niet vereist is, en een read-only root filesystem.</li>
+        <li><code class="status">[]</code> Mount <code>/packages:ro</code> en <code>/work:rw</code>; wijzig document-output routing backward-compatible.</li>
+        <li><code class="status">[]</code> Voeg OCI labels, pinned base-image digest en build provenance toe.</li>
+      </ul>
+      <h4>4.2 Compose mock profile</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Start een mock-gateway met expliciete <code>TEMPLIQX_MOCK_SCENARIO_ROOT</code>.</li>
+        <li><code class="status">[]</code> Laat een one-shot conformance service wachten op gateway readiness en daarna exit 0/2.</li>
+        <li><code class="status">[]</code> Verzamel receipt en rendered artifact in een named work volume.</li>
+        <li><code class="status">[]</code> Voeg timeout en gateway-unavailable Compose-smokes toe zonder sleeps in testcode.</li>
+      </ul>
+      <h4>4.3 Testing strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>docker build --target templiqx-cli -t templiqx:dev .</code> — reproduceerbare CLI-image.</li>
+        <li><code class="status">[]</code> <code>docker compose -f deploy/compose.yml --profile mock up --abort-on-container-exit --exit-code-from conformance</code> — volledige mockflow.</li>
+        <li><code class="status">[]</code> <code>./scripts/docker-smoke.sh</code> — non-root, read-only, mounts en fingerprint parity.</li>
+      </ul>
+      <div class="loop">🔁 Verlaat deze fase pas wanneer lokale en container receipts semantisch identiek zijn.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Fase 5: Helm en Kubernetes</h3>
+      <p>Bewijs de operationele shape in kind zonder een productie-remote-MCP contract te verzinnen.</p>
+      <h4>5.1 Chart resources</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Maak een optionele mock-gateway Deployment en ClusterIP Service met live/readiness endpoints.</li>
+        <li><code class="status">[]</code> Maak een conformance Job met package ConfigMap/image fixture en writable <code>emptyDir</code>.</li>
+        <li><code class="status">[]</code> Voeg restricted <code>securityContext</code>, dropped capabilities, seccomp, resource requests/limits en read-only root filesystem toe.</li>
+        <li><code class="status">[]</code> Voeg default-deny NetworkPolicy toe die alleen Job→mock-gateway verkeer toestaat.</li>
+        <li><code class="status">[]</code> Laat Secrets uitsluitend als refs configureren; de mockrun heeft geen secrets nodig.</li>
+      </ul>
+      <h4>5.2 Cluster proof</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Laad de lokaal gebouwde image in kind, installeer de chart en wacht op Job completion.</li>
+        <li><code class="status">[]</code> Lees de receipt uit Job logs of artifact volume en vergelijk met de lokale golden receipt.</li>
+        <li><code class="status">[]</code> Verwijder de mock gateway tijdens een failure test en bewijs een expliciete retry-exhausted status.</li>
+        <li><code class="status">[]</code> Assert dat de chart geen MCP Service of ongeauthenticeerde algemene HTTP application API exposeert.</li>
+      </ul>
+      <h4>5.3 Testing strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>helm lint charts/templiqx</code> — chart structuur en values.</li>
+        <li><code class="status">[]</code> <code>helm template templiqx charts/templiqx -f charts/templiqx/values-mock.yaml</code> — renderbare manifests.</li>
+        <li><code class="status">[]</code> <code>./scripts/kind-smoke.sh</code> — echte clusterinstallatie, readiness en golden parity.</li>
+      </ul>
+      <div class="loop">🔁 Verlaat deze fase pas wanneer de Job onder restricted policy slaagt en cleanup idempotent is.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Fase 6: CI, supply chain en handoff</h3>
+      <p>Maak de readiness proof verplicht en overdraagbaar aan CRM3 en andere opco's.</p>
+      <h4>6.1 CI gates</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Draai Rust verification, Docker build/smoke, Helm lint/template en kind smoke als afzonderlijke jobs.</li>
+        <li><code class="status">[]</code> Genereer CycloneDX/SPDX SBOM en scan de finale image op high/critical vulnerabilities.</li>
+        <li><code class="status">[]</code> Upload receipts, Helm-render en failure logs altijd bij mislukking; upload geen prompts of klantpayloads.</li>
+        <li><code class="status">[]</code> Fail CI op focused/ignored tests en op golden updates zonder expliciete review marker.</li>
+      </ul>
+      <h4>6.2 Opco handoff</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Documenteer hoe een host zijn ModelGateway adapter tegen dezelfde scenarios test.</li>
+        <li><code class="status">[]</code> Publiceer de ownership matrix: engine, mock, host en deployment.</li>
+        <li><code class="status">[]</code> Leg exact vast welke synthetische proof later door echte CRM3-fixtures moet worden vervangen.</li>
+        <li><code class="status">[]</code> Selecteer na CRM3 één tweede opco-package als portability gate.</li>
+      </ul>
+      <h4>6.3 Testing strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>just verify</code> — volledige lokale workspace.</li>
+        <li><code class="status">[]</code> <code>just verify-deploy</code> — image, Compose, Helm en kind.</li>
+        <li><code class="status">[]</code> Fresh-clone run met lege Cargo/Docker cache — reproduceerbaarheid en ontbrekende lokale dependencies.</li>
+      </ul>
+      <div class="loop">🔁 Het plan is pas gebouwd wanneer een clean clone alle gates zonder lokale state doorloopt.</div>
+    </div>
+  </section>
+
+  <section id="validation">
+    <h2>Globale validation commands</h2>
+    <ul class="checklist">
+      <li><code class="status">[]</code> <code>cargo fmt --all -- --check</code> — formatting.</li>
+      <li><code class="status">[]</code> <code>cargo clippy --workspace --all-targets --all-features -- -D warnings</code> — strict lint.</li>
+      <li><code class="status">[]</code> <code>cargo test --workspace --all-features</code> — unit, integration, MCP en conformance.</li>
+      <li><code class="status">[]</code> <code>./scripts/check-boundaries.sh</code> — standalone dependencyrichting.</li>
+      <li><code class="status">[]</code> <code>./scripts/docker-smoke.sh</code> — hardened container parity.</li>
+      <li><code class="status">[]</code> <code>helm lint charts/templiqx</code> — chart quality.</li>
+      <li><code class="status">[]</code> <code>./scripts/kind-smoke.sh</code> — Kubernetes proof.</li>
+      <li><code class="status">[]</code> <code>just verify</code> en <code>just verify-deploy</code> — handoff entrypoints.</li>
+    </ul>
+    <div class="loop">🔁 Geen milestoneclaim zolang één command faalt of lokale/Docker/Kubernetes fingerprints afwijken.</div>
+  </section>
+
+  <section id="test-scenarios">
+    <h2>Concrete testscenario's</h2>
+    <table>
+      <thead><tr><th>Scenario</th><th>Risico</th><th>Testlocatie</th><th>Verwacht resultaat</th></tr></thead>
+      <tbody>
+        <tr><td>Happy extraction→draft→DOCX</td><td>End-to-end regressie</td><td><code>crates/templiqx-conformance/tests/crm3.rs</code></td><td>Schema-valid, grounded, OOXML equal en payload-free receipt.</td></tr>
+        <tr><td>Ambiguous date</td><td>Hallucinatie/overconfidence</td><td><code>crm3_failures.rs</code></td><td>Review-required uitkomst; geen silent date choice.</td></tr>
+        <tr><td>Missing term</td><td>Verzonnen termijn</td><td><code>crm3_failures.rs</code></td><td>Expliciet absent/unknown volgens schema; drafting houdt placeholder of blokkeert.</td></tr>
+        <tr><td>Invalid structured output</td><td>Schema bypass</td><td><code>crm3_failures.rs</code></td><td><code>output_schema_valid=false</code>; drafting en rendering worden niet aangeroepen.</td></tr>
+        <tr><td>Rate limited twice, then success</td><td>Retry semantics</td><td><code>crm3_actor_boundary.rs</code></td><td>Host respecteert retry-after; exact drie attempts; één final receipt.</td></tr>
+        <tr><td>Permanent provider failure</td><td>Retry storm</td><td><code>crm3_actor_boundary.rs</code></td><td>Geen retry; stabiele failure code; geen proposal.</td></tr>
+        <tr><td>Agent direct commit</td><td>ADR-0016 bypass</td><td><code>crm3_actor_boundary.rs</code></td><td>Denied; alleen approved proposal commit.</td></tr>
+        <tr><td>Wrong tenant retrieval context</td><td>Data leakage</td><td><code>crm3_actor_boundary.rs</code></td><td>Rejected vóór runtime invocation; attempt count blijft nul.</td></tr>
+        <tr><td>Duplicate approved proposal</td><td>Dubbel side effect</td><td><code>crm3_actor_boundary.rs</code></td><td>Zelfde idempotency key levert één commit.</td></tr>
+        <tr><td>Read-only package mount</td><td>Container mutation</td><td><code>scripts/docker-smoke.sh</code></td><td>Packagebytes blijven gelijk; artifact landt in <code>/work</code>.</td></tr>
+        <tr><td>Mock gateway unavailable</td><td>Kubernetes/network failure</td><td><code>scripts/kind-smoke.sh</code></td><td>Job eindigt gecontroleerd met retry-exhausted diagnostic en geen hang.</td></tr>
+        <tr><td>Cross-surface parity</td><td>Agent/human API drift</td><td><code>crm3.rs</code> plus deployment scripts</td><td>Rust, CLI, MCP, Docker en Kubernetes semantisch identieke envelopes/receipts.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="vercel-learnings">
+    <h2>Wat we leren van Vercels chatbot tests</h2>
+    <p>Onderzocht tegen commit <code>c2f8235e1f3ea903ad8b7f61447c4f74164b5c58</code>. De referentie is waardevol als test-ergonomie, niet als contractniveau voor juridische software.</p>
+    <table>
+      <thead><tr><th>Vercel pattern</th><th>Templiqx toepassing</th><th>Besluit</th></tr></thead>
+      <tbody>
+        <tr><td>Test-environment routeert naar een mock provider</td><td>Expliciete composition root kiest scripted adapter; production mode kan niet per ongeluk via prompt/env naar mock vallen.</td><td>Adopteren, strenger configureren.</td></tr>
+        <tr><td><code>MockLanguageModelV3</code> met generate en stream chunks</td><td>Typed <code>MockStep</code>/<code>MockEvent</code> met start, delta, end, finish, usage en reasoning lifecycle.</td><td>Adopteren als scenario-idee.</td></tr>
+        <tr><td>Initial delay en chunk delay</td><td>Injected clock en virtual timing; geen wall-clock sleeps in core tests.</td><td>Aanpassen voor determinisme.</td></tr>
+        <tr><td>Playwright fixture en ChatPage helper</td><td>Gedeelde <code>ConformanceHarness</code> voor Rust/CLI/MCP/container calls en actor contexts.</td><td>Adopteren als test-API pattern.</td></tr>
+        <tr><td>Route intercept voor HTTP 500</td><td>Scripted provider failure plus mock-gateway network failure; assert exact diagnostic.</td><td>Adopteren.</td></tr>
+        <tr><td><code>/ping</code> readiness en retained failure traces</td><td><code>/health/live</code>/<code>/health/ready</code> op mock gateway; receipts/logs als CI artifacts zonder payload.</td><td>Adopteren.</td></tr>
+        <tr><td>Prompt-substring response selection</td><td>Scenario-id en manifestselectie; promptinhoud bepaalt nooit testgedrag.</td><td>Niet overnemen.</td></tr>
+        <tr><td>Conditionele assertion wanneer suggestions bestaan</td><td>Fixture precondition moet hard falen als verwacht element/scenario ontbreekt.</td><td>Niet overnemen.</td></tr>
+        <tr><td>Stop-button timeout wordt opgevangen</td><td>Geen swallowed failures; elke expected timeout is typed en asserted.</td><td>Niet overnemen.</td></tr>
+        <tr><td>“response has some text”</td><td>Schema, evidence offsets, hashes, finish reason, usage en receipt fingerprint controleren.</td><td>Vervangen door semantische proof.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="risks">
+    <h2>Risico's en aannames</h2>
+    <details open><summary>De scripted mock kan een echte provider te netjes voorstellen</summary><p>Maak failure sequences expliciet en voeg later contracttests toe tegen de echte CRM3 ModelGateway. Synthetische conformance is een readiness gate, geen productievalidatie.</p></details>
+    <details><summary>Een sync <code>RuntimeAdapter</code> begrenst echte streaming</summary><p>Modelleer nu typed events in de mock en aggregeer ze. Bevries geen production streaming port voordat een echte hostadapter en backpressurebehoefte zijn onderzocht.</p></details>
+    <details><summary>Read-only package/workspace split raakt backward compatibility</summary><p>Behoud de bestaande local composition defaults en voeg de workspace als optionele configuratie toe. Voeg CLI snapshottests toe voor oude invocations.</p></details>
+    <details><summary>Mock HTTP gateway kan als productieadapter worden misbruikt</summary><p>Naam, crate feature, image label en docs markeren hem als conformance-only. Geen credentials, provider endpoints of algemene passthrough ondersteunen.</p></details>
+    <details><summary>Helm voor een library kan onnodige productvorm suggereren</summary><p>De chart is een runner/mock proof, niet “Templiqx server”. Productiehosts kunnen de Rust library of CLI sidecar gebruiken zonder chart.</p></details>
+    <details><summary>CRM3 ADRs en Linear-status kunnen veranderen</summary><p>Deze planversie is gegrond op de lokale ADRs van 11 juli 2026. Refresh BLI-5, BLI-59, BLI-60, BLI-61 en BLI-62 vóór de echte hostadapter wordt gebouwd.</p></details>
+    <details><summary>Image reproducibility kan botsen met native DOCX dependencies</summary><p>De huidige Rust adapter is pure librarycode; pin alle base images en controleer een fresh-cache build op amd64 en arm64 voordat multi-arch publicatie wordt geclaimd.</p></details>
+  </section>
+
+  <section id="notes">
+    <h2>Ownership matrix en handoff</h2>
+    <table>
+      <thead><tr><th>Capability</th><th>Templiqx</th><th>Mock/conformance</th><th>CRM3/opco host</th></tr></thead>
+      <tbody>
+        <tr><td>Contract parse/validate/compile</td><td>Owner</td><td>Fixtures</td><td>Consumer</td></tr>
+        <tr><td>Model execution</td><td><code>RuntimeAdapter</code> port</td><td>Scripted + HTTP mock</td><td>ModelGateway adapter + anonymizer</td></tr>
+        <tr><td>Grounded evidence schema</td><td>Validatie</td><td>Golden offsets/hashes</td><td>Retrieval en source authorization</td></tr>
+        <tr><td>Proposal/approval/audit</td><td>Geen ownership</td><td>Consumer-contract harness</td><td>Owner volgens ADR-0016</td></tr>
+        <tr><td>Retry/workflow</td><td>Typed failures</td><td>Scripted attempts</td><td>ModelGateway/BullMQ volgens ADR-0006</td></tr>
+        <tr><td>Document rendering</td><td>Port + V5 adapter</td><td>DOCX baseline</td><td>Storage, permissions en lifecycle</td></tr>
+        <tr><td>Kubernetes runtime</td><td>OCI runner artifacts</td><td>Chart/Job/mock gateway</td><td>Host chart or sidecar integration</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><strong>Eerstvolgende buildactie:</strong> voer Fase 1 uit en land het scenarioformat plus de scripted in-process adapter. Dat is de dependency voor corpus, actor tests, Docker en Kubernetes.</div>
+    <p><strong>Plan gereed voor:</strong> Build Plan. Na Fase 6 is de juiste vervolgstap een echte CRM3 ModelGateway consumer-contract adapter, gevolgd door validatie met een kleine gesaniteerde fixturecorpus en daarna een tweede Blinqx-opco.</p>
+  </section>
+
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <p>Nog geen amendments. Wijzigingen na de eerste Build Plan-run worden hier append-only vastgelegd.</p>
+  </section>
+</main>
+</body>
+</html>

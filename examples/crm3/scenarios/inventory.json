@@ -1,0 +1,38 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "package": "crm3",
+  "scenarios": [
+    {
+      "id": "ambiguous-date",
+      "manifest": "crm3/scenarios/ambiguous-date/manifest.json"
+    },
+    {
+      "id": "contradictory-evidence",
+      "manifest": "crm3/scenarios/contradictory-evidence/manifest.json"
+    },
+    {
+      "id": "docx-unresolved-reference",
+      "manifest": "crm3/scenarios/docx-unresolved-reference/manifest.json"
+    },
+    {
+      "id": "draft-with-citations",
+      "manifest": "crm3/scenarios/draft-with-citations/manifest.json"
+    },
+    {
+      "id": "intake-document-01",
+      "manifest": "crm3/scenarios/intake-document-01/manifest.json"
+    },
+    {
+      "id": "invalid-output-schema",
+      "manifest": "crm3/scenarios/invalid-output-schema/manifest.json"
+    },
+    {
+      "id": "missing-notice-date",
+      "manifest": "crm3/scenarios/missing-notice-date/manifest.json"
+    },
+    {
+      "id": "missing-required-field",
+      "manifest": "crm3/scenarios/missing-required-field/manifest.json"
+    }
+  ]
+}

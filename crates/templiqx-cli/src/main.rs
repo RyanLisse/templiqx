@@ -1,10 +1,14 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
-use serde_json::Value;
-use std::{fs, path::PathBuf, process::ExitCode};
+use serde_json::{Value, json};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::ExitCode,
+};
 use templiqx_application::{MigrateLegacyRequest, RenderDocumentRequest};
-use templiqx_contracts::{OperationEnvelope, RenderRequest};
+use templiqx_contracts::{OperationEnvelope, RenderRequest, fingerprint, fingerprint_bytes};
 
 #[derive(Parser)]
 #[command(
@@ -96,8 +100,19 @@ enum Command {
         /// Portable template path relative to the package root.
         template: String,
         data: PathBuf,
-        /// Portable artifact path relative to the package root.
+        /// Portable artifact path relative to the workspace root.
         output: String,
+        #[arg(long)]
+        workspace: Option<PathBuf>,
+    },
+    /// Run the synthetic CRM3 conformance workload used by Docker and kind smoke.
+    Crm3Conformance {
+        #[arg(long, default_value = "crm3")]
+        package: String,
+        #[arg(long)]
+        workspace: PathBuf,
+        #[arg(long)]
+        receipt: Option<PathBuf>,
     },
 }
 
@@ -119,10 +134,11 @@ fn main() -> ExitCode {
 
 fn run() -> Result<bool> {
     let cli = Cli::parse();
-    if matches!(cli.command, Command::Catalog) {
+    if let Command::Catalog = &cli.command {
         let envelope = templiqx_application::catalog();
         return print(&envelope, cli.json);
     }
+
     let service = templiqx_local::compose(&cli.root).context("compose local Templiqx service")?;
     macro_rules! output {
         ($value:expr) => {{
@@ -235,13 +251,117 @@ fn run() -> Result<bool> {
             template,
             data,
             output: artifact,
+            workspace,
         } => output!(service.render_document(&RenderDocumentRequest {
             package,
             template,
             data: read_json(&data)?,
-            output: artifact
+            output: artifact,
+            workspace: workspace_string(workspace)?,
         })),
+        Command::Crm3Conformance {
+            package,
+            workspace,
+            receipt,
+        } => {
+            let report = crm3_conformance(&service, &cli.root, &package, workspace)?;
+            if let Some(path) = receipt {
+                if let Some(parent) = path.parent() {
+                    fs::create_dir_all(parent)
+                        .with_context(|| format!("create {}", parent.display()))?;
+                }
+                fs::write(&path, serde_json::to_vec_pretty(&report)?)
+                    .with_context(|| format!("write {}", path.display()))?;
+            }
+            println!(
+                "{}",
+                if cli.json {
+                    serde_json::to_string(&report)?
+                } else {
+                    serde_json::to_string_pretty(&report)?
+                }
+            );
+            Ok(true)
+        }
     }
+}
+
+fn crm3_conformance(
+    service: &templiqx_local::LocalService,
+    root: &Path,
+    package: &str,
+    workspace: PathBuf,
+) -> Result<Value> {
+    let package_root = root.join(package);
+    let capabilities = vec!["structured_output".to_owned()];
+    let extraction_request = read_request(Some(package_root.join("evals/bli-61-request.json")))?;
+    let extraction_output = read_json(&package_root.join("evals/bli-61-output.json"))?;
+    let extraction = service.execute_contract(
+        package,
+        "bli-61-date-term-extraction",
+        &extraction_request,
+        &capabilities,
+        Some(extraction_output.clone()),
+    );
+    ensure!(
+        extraction.ok,
+        "extraction failed: {:?}",
+        extraction.diagnostics
+    );
+    let extraction_receipt = extraction.result.context("extraction receipt")?;
+
+    let mut drafting_request = read_request(Some(package_root.join("evals/bli-62-request.json")))?;
+    drafting_request
+        .inputs
+        .insert("extracted_facts".into(), extraction_output);
+    let drafting_output = read_json(&package_root.join("evals/bli-62-output.json"))?;
+    let drafting = service.execute_contract(
+        package,
+        "bli-62-document-drafting",
+        &drafting_request,
+        &capabilities,
+        Some(drafting_output.clone()),
+    );
+    ensure!(drafting.ok, "drafting failed: {:?}", drafting.diagnostics);
+    let drafting_receipt = drafting.result.context("drafting receipt")?;
+
+    let rendered = service.render_document(&RenderDocumentRequest {
+        package: package.into(),
+        template: "templates/v5-contract-template.docx".into(),
+        data: drafting_output["merge_data"].clone(),
+        output: "crm3-conformance/rendered.docx".into(),
+        workspace: Some(workspace.to_string_lossy().into_owned()),
+    });
+    ensure!(
+        rendered.ok,
+        "document render failed: {:?}",
+        rendered.diagnostics
+    );
+    let rendered = rendered.result.context("rendered document")?;
+    let artifact = workspace.join(package).join(&rendered.artifact);
+    let artifact_bytes =
+        fs::read(&artifact).with_context(|| format!("read {}", artifact.display()))?;
+    let artifact_fingerprint = fingerprint_bytes(&artifact_bytes);
+    let report = json!({
+        "api_version": "templiqx/conformance/v1",
+        "package": package,
+        "workspace_artifact": rendered.artifact,
+        "extraction": {
+            "request_fingerprint": extraction_receipt.request_fingerprint,
+            "output_fingerprint": extraction_receipt.output_fingerprint,
+            "schema_valid": extraction_receipt.output_schema_valid
+        },
+        "drafting": {
+            "request_fingerprint": drafting_receipt.request_fingerprint,
+            "output_fingerprint": drafting_receipt.output_fingerprint,
+            "schema_valid": drafting_receipt.output_schema_valid
+        },
+        "document": {
+            "artifact_fingerprint": artifact_fingerprint,
+            "report_fingerprint": fingerprint(&rendered.report)?
+        }
+    });
+    Ok(report)
 }
 
 fn read_request(path: Option<PathBuf>) -> Result<RenderRequest> {
@@ -258,9 +378,20 @@ fn read_request(path: Option<PathBuf>) -> Result<RenderRequest> {
         },
     )
 }
-fn read_json(path: &PathBuf) -> Result<Value> {
+fn read_json(path: &Path) -> Result<Value> {
     serde_json::from_slice(&fs::read(path).with_context(|| format!("read {}", path.display()))?)
         .with_context(|| format!("decode JSON from {}", path.display()))
+}
+fn workspace_string(path: Option<PathBuf>) -> Result<Option<String>> {
+    path.map(|path| {
+        let absolute = if path.is_absolute() {
+            path
+        } else {
+            std::env::current_dir()?.join(path)
+        };
+        Ok(absolute.to_string_lossy().into_owned())
+    })
+    .transpose()
 }
 fn print<T: Serialize>(envelope: &OperationEnvelope<T>, compact: bool) -> Result<bool> {
     if compact {

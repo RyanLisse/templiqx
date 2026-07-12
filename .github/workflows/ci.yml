@@ -1,0 +1,99 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  boundaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate script syntax
+        run: bash -n scripts/check-boundaries.sh scripts/docker-smoke.sh scripts/kind-smoke.sh scripts/supply-chain-smoke.sh
+      - name: Enforce architecture and deployment boundaries
+        run: ./scripts/check-boundaries.sh
+
+  rust:
+    runs-on: ubuntu-latest
+    needs: boundaries
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features
+      - name: Assert exact retry-exhaustion failure semantics
+        run: cargo test -p templiqx-conformance --test crm3_failures host_retry_exhaustion_uses_exact_terminal_code_and_no_payload
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: boundaries
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/docker-smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-smoke-receipts
+          path: artifacts/docker-smoke/
+          if-no-files-found: ignore
+
+  helm-kind:
+    runs-on: ubuntu-latest
+    needs: boundaries
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: templiqx-smoke
+      - run: helm lint charts/templiqx -f charts/templiqx/values-mock.yaml
+      - run: mkdir -p artifacts/helm-render
+      - run: helm template templiqx charts/templiqx -f charts/templiqx/values-mock.yaml | tee artifacts/helm-render/templiqx.yaml
+      - run: ./scripts/kind-smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: helm-kind-receipts-render-logs
+          path: |
+            artifacts/helm-render/
+            artifacts/kind-smoke/
+          if-no-files-found: ignore
+
+  supply-chain:
+    runs-on: ubuntu-latest
+    needs: boundaries
+    env:
+      IMAGE: templiqx:pre-crm3
+      EXPECTED_PLATFORM: linux/amd64
+      SYFT_VERSION: v1.20.0
+      GRYPE_VERSION: v0.86.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Syft
+        run: |
+          set -euo pipefail
+          version="${SYFT_VERSION#v}"
+          curl -sSfL "https://github.com/anchore/syft/releases/download/${SYFT_VERSION}/syft_${version}_linux_amd64.tar.gz" -o /tmp/syft.tar.gz
+          sudo tar -C /usr/local/bin -xzf /tmp/syft.tar.gz syft
+          syft version
+      - name: Install pinned Grype
+        run: |
+          set -euo pipefail
+          version="${GRYPE_VERSION#v}"
+          curl -sSfL "https://github.com/anchore/grype/releases/download/${GRYPE_VERSION}/grype_${version}_linux_amd64.tar.gz" -o /tmp/grype.tar.gz
+          sudo tar -C /usr/local/bin -xzf /tmp/grype.tar.gz grype
+          grype version
+      - name: Fresh no-cache linux/amd64 image build
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/supply-chain
+          docker build --pull --no-cache --platform linux/amd64 --progress=plain --target templiqx-cli -t "$IMAGE" . 2>&1 | tee artifacts/supply-chain/no-cache-linux-amd64-build.log
+      - run: ./scripts/supply-chain-smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: supply-chain-sbom-digest-logs
+          path: artifacts/supply-chain/
+          if-no-files-found: ignore

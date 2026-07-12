@@ -1,0 +1,32 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "id": "invalid-output-schema",
+  "contract": "bli-61-date-term-extraction",
+  "kind": "invalid",
+  "input": "../../evals/bli-61-request.json",
+  "expected_diagnostics": [
+    "TQX_OUTPUT_SCHEMA"
+  ],
+  "receipt_payload_policy": "fingerprints_only",
+  "steps": [
+    {
+      "id": "request-received",
+      "kind": "request_received"
+    },
+    {
+      "id": "runtime-invalid-output",
+      "kind": "runtime_success",
+      "output": {
+        "effective_date": "not-a-date"
+      },
+      "output_schema_valid": false
+    }
+  ],
+  "expected_status": "failure",
+  "expected_failure": "TQX_OUTPUT_SCHEMA",
+  "evidence": [],
+  "document_expectation": {
+    "status": "not_applicable",
+    "unresolved_references": 0
+  },
+  "golden_receipt_fingerprint": "a8ba323c1536f8f8b69e8e5529a62fe180a0344f7e4e715fb3f3b41cba4d4e89"}

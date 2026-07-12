@@ -113,7 +113,8 @@ fn composes_grounded_interactions_and_explicit_v5_document_conformance() -> Resu
     let root = repo_root();
     let examples = root.join("examples");
     let package = examples.join(PACKAGE);
-    let service = templiqx_local::compose(&examples)?;
+    let workspace = tempfile::tempdir()?;
+    let service = templiqx_local::compose_with_workspace(&examples, workspace.path())?;
     let capabilities = CAPABILITIES
         .iter()
         .map(ToString::to_string)
@@ -243,13 +244,14 @@ fn composes_grounded_interactions_and_explicit_v5_document_conformance() -> Resu
         },
     )?;
     let migrated = canonical_template.context("V5 migration must produce a template")?;
-    let artifact = temp.path().join("rendered.docx");
+    let artifact = temp.path().join(PACKAGE).join("rendered.docx");
     let merge_data = drafting_receipt.output["merge_data"].clone();
     let rendered = result(service.render_document(&RenderDocumentRequest {
         package: PACKAGE.into(),
         template: package_relative(&package, &migrated)?,
         data: merge_data.clone(),
-        output: package_relative(&package, &artifact)?,
+        output: "rendered.docx".into(),
+        workspace: Some(temp.path().to_string_lossy().into_owned()),
     }))?;
     let render_report = rendered.report;
     ensure!(render_report["replacements"] == 7);
@@ -610,13 +612,15 @@ async fn rust_cli_and_in_memory_mcp_have_crm3_capability_parity() -> Result<()> 
     let merge_data = read_json(package.join("evals/bli-62-output.json"))?["merge_data"].clone();
     let data_path = temp.path().join("merge-data.json");
     fs::write(&data_path, serde_json::to_vec_pretty(&merge_data)?)?;
-    let shared_artifact = temp.path().join("shared-rendered.docx");
-    let shared_artifact_relative = package_relative(&package, &shared_artifact)?;
+    let shared_workspace = temp.path().join("workspace");
+    let shared_artifact = shared_workspace.join(PACKAGE).join("shared-rendered.docx");
+    let shared_artifact_relative = "shared-rendered.docx";
     let rust_render = rust_service.render_document(&RenderDocumentRequest {
         package: PACKAGE.into(),
         template: rust_template_relative.clone(),
         data: merge_data.clone(),
-        output: shared_artifact_relative.clone(),
+        output: shared_artifact_relative.into(),
+        workspace: Some(shared_workspace.to_string_lossy().into_owned()),
     });
     let rust_artifact_fingerprint = file_fingerprint(&shared_artifact)?;
     let cli_render = cli_envelope(
@@ -626,14 +630,16 @@ async fn rust_cli_and_in_memory_mcp_have_crm3_capability_parity() -> Result<()> 
             PACKAGE,
             &rust_template_relative,
             data_path.to_str().context("merge data")?,
-            &shared_artifact_relative,
+            shared_artifact_relative,
+            "--workspace",
+            shared_workspace.to_str().context("workspace")?,
         ],
     )?;
     let cli_artifact_fingerprint = file_fingerprint(&shared_artifact)?;
     let mcp_render = mcp_call(
         &client,
         "render_document",
-        json!({"package": PACKAGE, "template": rust_template_relative, "data": merge_data, "output": shared_artifact_relative}),
+        json!({"package": PACKAGE, "template": rust_template_relative, "data": merge_data, "output": shared_artifact_relative, "workspace": shared_workspace}),
     )
     .await?;
     let mcp_artifact_fingerprint = file_fingerprint(&shared_artifact)?;
@@ -664,7 +670,8 @@ fn application_document_boundary_rejects_unconfined_paths_before_adapter_use() -
     let root = repo_root();
     let examples = root.join("examples");
     let package = examples.join(PACKAGE);
-    let service = templiqx_local::compose(&examples)?;
+    let workspace = tempfile::tempdir()?;
+    let service = templiqx_local::compose_with_workspace(&examples, workspace.path())?;
     let temp = tempfile::Builder::new()
         .prefix(".templiqx-security-")
         .tempdir_in(&package)?;
@@ -703,36 +710,42 @@ fn application_document_boundary_rejects_unconfined_paths_before_adapter_use() -
             template: fixture.to_string_lossy().into_owned(),
             data: data.clone(),
             output: package_relative(&package, &temp.path().join("absolute-input.docx"))?,
+            workspace: None,
         },
         RenderDocumentRequest {
             package: PACKAGE.into(),
             template: "../crm3/templates/v5-contract-template.docx".into(),
             data: data.clone(),
             output: package_relative(&package, &temp.path().join("traversal-input.docx"))?,
+            workspace: None,
         },
         RenderDocumentRequest {
             package: PACKAGE.into(),
             template: r"templates\v5-contract-template.docx".into(),
             data: data.clone(),
             output: package_relative(&package, &temp.path().join("backslash-input.docx"))?,
+            workspace: None,
         },
         RenderDocumentRequest {
             package: PACKAGE.into(),
             template: safe_template.into(),
             data: data.clone(),
             output: outside_output.to_string_lossy().into_owned(),
+            workspace: None,
         },
         RenderDocumentRequest {
             package: PACKAGE.into(),
             template: safe_template.into(),
             data: data.clone(),
             output: "../outside.docx".into(),
+            workspace: None,
         },
         RenderDocumentRequest {
             package: PACKAGE.into(),
             template: safe_template.into(),
             data: data.clone(),
             output: r"artifacts\outside.docx".into(),
+            workspace: None,
         },
     ];
     for request in unsafe_renders {
@@ -758,29 +771,34 @@ fn application_document_boundary_rejects_unconfined_paths_before_adapter_use() -
             package: PACKAGE.into(),
             template: package_relative(&package, &input_link)?,
             data: data.clone(),
-            output: package_relative(&package, &temp.path().join("symlink-input.docx"))?,
+            output: "symlink-input.docx".into(),
+            workspace: None,
         }))?;
 
         let outside = tempfile::tempdir()?;
         let outside_file = outside.path().join("outside.docx");
         fs::write(&outside_file, b"unchanged")?;
-        let output_link = temp.path().join("output-link.docx");
+        let workspace_package = workspace.path().join(PACKAGE);
+        fs::create_dir_all(&workspace_package)?;
+        let output_link = workspace_package.join("output-link.docx");
         symlink(&outside_file, &output_link)?;
         assert_path_rejected(&service.render_document(&RenderDocumentRequest {
             package: PACKAGE.into(),
             template: safe_template.into(),
             data: data.clone(),
-            output: package_relative(&package, &output_link)?,
+            output: "output-link.docx".into(),
+            workspace: None,
         }))?;
         ensure!(fs::read(&outside_file)? == b"unchanged");
 
-        let parent_link = temp.path().join("parent-link");
+        let parent_link = workspace_package.join("parent-link");
         symlink(outside.path(), &parent_link)?;
         assert_path_rejected(&service.render_document(&RenderDocumentRequest {
             package: PACKAGE.into(),
             template: safe_template.into(),
             data,
-            output: format!("{}/escaped.docx", package_relative(&package, &parent_link)?),
+            output: "parent-link/escaped.docx".into(),
+            workspace: None,
         }))?;
         ensure!(!outside.path().join("escaped.docx").exists());
     }

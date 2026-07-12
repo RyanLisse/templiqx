@@ -11,12 +11,18 @@ use templiqx_contracts::{
     AdapterDescriptor, Contract, ExecutionReceipt, ExecutionRequest, PackageManifest, fingerprint,
 };
 use templiqx_ports::{
-    DocumentRenderRequest, DocumentRenderResult, DocumentRenderer, LegacyImportAdapter,
-    LegacyImportRequest, LegacyImportResult, PackageStore, PortError, RuntimeAdapter,
+    ArtifactWorkspace, DocumentRenderRequest, DocumentRenderResult, DocumentRenderer,
+    LegacyImportAdapter, LegacyImportRequest, LegacyImportResult, PackageStore, PortError,
+    RuntimeAdapter,
 };
 
 #[derive(Debug, Clone)]
 pub struct FilesystemPackageStore {
+    root: PathBuf,
+}
+
+#[derive(Debug, Clone)]
+pub struct FilesystemArtifactWorkspace {
     root: PathBuf,
 }
 
@@ -128,9 +134,93 @@ impl FilesystemPackageStore {
         }
         Ok(canonical)
     }
-    fn output_path(&self, package: &str, relative: &str) -> Result<PathBuf, PortError> {
+    fn relative_existing_path(&self, package: &str, path: &Path) -> Result<String, PortError> {
         let package_root = self.existing_package(package)?;
-        let relative_path = Self::relative_path(relative)?;
+        let canonical = path.canonicalize().map_err(io_error)?;
+        if !canonical.starts_with(&package_root) || !canonical.is_file() {
+            return Err(PortError::InvalidPath(path.display().to_string()));
+        }
+        let relative = canonical
+            .strip_prefix(&package_root)
+            .map_err(|_| PortError::InvalidPath(path.display().to_string()))?;
+        let portable = portable_path(relative, path)?;
+        // Re-run component-by-component symlink checks on the portable path.
+        self.artifact_path(package, &portable)?;
+        Ok(portable)
+    }
+    fn read_yaml<T: serde::de::DeserializeOwned>(&self, path: &Path) -> Result<T, PortError> {
+        let source = fs::read_to_string(path).map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                PortError::NotFound(path.display().to_string())
+            } else {
+                io_error(e)
+            }
+        })?;
+        serde_yaml_ng::from_str(&source)
+            .map_err(|e| PortError::InvalidData(format!("{}: {e}", path.display())))
+    }
+}
+
+impl FilesystemArtifactWorkspace {
+    pub fn new(root: impl AsRef<Path>) -> Result<Self, PortError> {
+        let root = root.as_ref();
+        fs::create_dir_all(root).map_err(io_error)?;
+        Ok(Self {
+            root: root.canonicalize().map_err(io_error)?,
+        })
+    }
+
+    fn selected_root(&self, workspace: Option<&str>) -> Result<PathBuf, PortError> {
+        let Some(workspace) = workspace else {
+            return Ok(self.root.clone());
+        };
+        let path = Path::new(workspace);
+        if workspace.is_empty()
+            || !path.is_absolute()
+            || path.components().any(|component| {
+                !matches!(
+                    component,
+                    std::path::Component::RootDir | std::path::Component::Normal(_)
+                )
+            })
+        {
+            return Err(PortError::InvalidPath(workspace.into()));
+        }
+        fs::create_dir_all(path).map_err(io_error)?;
+        let canonical = path.canonicalize().map_err(io_error)?;
+        if fs::symlink_metadata(&canonical)
+            .map_err(io_error)?
+            .file_type()
+            .is_symlink()
+        {
+            return Err(PortError::InvalidPath(workspace.into()));
+        }
+        Ok(canonical)
+    }
+
+    fn package_root(&self, package: &str, workspace: Option<&str>) -> Result<PathBuf, PortError> {
+        let root = self.selected_root(workspace)?;
+        let package_root = root.join(FilesystemPackageStore::segment(package)?);
+        fs::create_dir_all(&package_root).map_err(io_error)?;
+        let metadata = fs::symlink_metadata(&package_root).map_err(io_error)?;
+        if metadata.file_type().is_symlink() || !metadata.is_dir() {
+            return Err(PortError::InvalidPath(package.into()));
+        }
+        let canonical = package_root.canonicalize().map_err(io_error)?;
+        if !canonical.starts_with(root) {
+            return Err(PortError::InvalidPath(package.into()));
+        }
+        Ok(canonical)
+    }
+
+    fn output_path(
+        &self,
+        package: &str,
+        relative: &str,
+        workspace: Option<&str>,
+    ) -> Result<PathBuf, PortError> {
+        let package_root = self.package_root(package, workspace)?;
+        let relative_path = FilesystemPackageStore::relative_path(relative)?;
         let file_name = relative_path
             .file_name()
             .ok_or_else(|| PortError::InvalidPath(relative.into()))?;
@@ -141,19 +231,14 @@ impl FilesystemPackageStore {
                 return Err(PortError::InvalidPath(relative.into()));
             };
             parent.push(segment);
-            let metadata = fs::symlink_metadata(&parent).map_err(|error| {
-                if error.kind() == std::io::ErrorKind::NotFound {
-                    PortError::NotFound(relative.into())
-                } else {
-                    io_error(error)
-                }
-            })?;
+            fs::create_dir_all(&parent).map_err(io_error)?;
+            let metadata = fs::symlink_metadata(&parent).map_err(io_error)?;
             if metadata.file_type().is_symlink() || !metadata.is_dir() {
                 return Err(PortError::InvalidPath(relative.into()));
             }
         }
         let canonical_parent = parent.canonicalize().map_err(io_error)?;
-        if !canonical_parent.starts_with(&package_root) || !canonical_parent.is_dir() {
+        if !canonical_parent.starts_with(&package_root) {
             return Err(PortError::InvalidPath(relative.into()));
         }
         let candidate = canonical_parent.join(file_name);
@@ -172,8 +257,14 @@ impl FilesystemPackageStore {
             Err(error) => Err(io_error(error)),
         }
     }
-    fn relative_existing_path(&self, package: &str, path: &Path) -> Result<String, PortError> {
-        let package_root = self.existing_package(package)?;
+
+    fn relative_existing_path(
+        &self,
+        package: &str,
+        path: &Path,
+        workspace: Option<&str>,
+    ) -> Result<String, PortError> {
+        let package_root = self.package_root(package, workspace)?;
         let canonical = path.canonicalize().map_err(io_error)?;
         if !canonical.starts_with(&package_root) || !canonical.is_file() {
             return Err(PortError::InvalidPath(path.display().to_string()));
@@ -181,31 +272,29 @@ impl FilesystemPackageStore {
         let relative = canonical
             .strip_prefix(&package_root)
             .map_err(|_| PortError::InvalidPath(path.display().to_string()))?;
-        let portable = relative
-            .components()
-            .map(|component| match component {
-                std::path::Component::Normal(segment) => segment
-                    .to_str()
-                    .map(ToOwned::to_owned)
-                    .ok_or_else(|| PortError::InvalidPath(path.display().to_string())),
-                _ => Err(PortError::InvalidPath(path.display().to_string())),
-            })
-            .collect::<Result<Vec<_>, _>>()?
-            .join("/");
-        // Re-run component-by-component symlink checks on the portable path.
-        self.artifact_path(package, &portable)?;
+        let portable = portable_path(relative, path)?;
+        self.output_path(package, &portable, workspace)?;
         Ok(portable)
     }
-    fn read_yaml<T: serde::de::DeserializeOwned>(&self, path: &Path) -> Result<T, PortError> {
-        let source = fs::read_to_string(path).map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                PortError::NotFound(path.display().to_string())
-            } else {
-                io_error(e)
-            }
-        })?;
-        serde_yaml_ng::from_str(&source)
-            .map_err(|e| PortError::InvalidData(format!("{}: {e}", path.display())))
+}
+
+impl ArtifactWorkspace for FilesystemArtifactWorkspace {
+    fn resolve_output_path(
+        &self,
+        package: &str,
+        relative_path: &str,
+        workspace: Option<&str>,
+    ) -> Result<PathBuf, PortError> {
+        self.output_path(package, relative_path, workspace)
+    }
+
+    fn relative_artifact_path(
+        &self,
+        package: &str,
+        path: &Path,
+        workspace: Option<&str>,
+    ) -> Result<String, PortError> {
+        self.relative_existing_path(package, path, workspace)
     }
 }
 
@@ -270,13 +359,6 @@ impl PackageStore for FilesystemPackageStore {
         relative_path: &str,
     ) -> Result<PathBuf, PortError> {
         self.artifact_path(package, relative_path)
-    }
-    fn resolve_output_path(
-        &self,
-        package: &str,
-        relative_path: &str,
-    ) -> Result<PathBuf, PortError> {
-        self.output_path(package, relative_path)
     }
     fn relative_artifact_path(&self, package: &str, path: &Path) -> Result<String, PortError> {
         self.relative_existing_path(package, path)
@@ -408,6 +490,20 @@ fn io_error(e: std::io::Error) -> PortError {
     PortError::Io(e.to_string())
 }
 
+fn portable_path(relative: &Path, original: &Path) -> Result<String, PortError> {
+    relative
+        .components()
+        .map(|component| match component {
+            std::path::Component::Normal(segment) => segment
+                .to_str()
+                .map(ToOwned::to_owned)
+                .ok_or_else(|| PortError::InvalidPath(original.display().to_string())),
+            _ => Err(PortError::InvalidPath(original.display().to_string())),
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(|segments| segments.join("/"))
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct DeterministicFakeRuntime;
 impl RuntimeAdapter for DeterministicFakeRuntime {
@@ -462,20 +558,24 @@ impl DocumentRenderer for UnsupportedDocumentRenderer {
 
 pub type CoreOnlyService = templiqx_application::TempliqxService<
     FilesystemPackageStore,
+    FilesystemArtifactWorkspace,
     DeterministicFakeRuntime,
     UnsupportedLegacyAdapter,
     UnsupportedDocumentRenderer,
 >;
 pub type LocalService = templiqx_application::TempliqxService<
     FilesystemPackageStore,
+    FilesystemArtifactWorkspace,
     DeterministicFakeRuntime,
     templiqx_docx_v5::DocxV5Adapter,
     templiqx_docx_v5::DocxV5Adapter,
 >;
 
 pub fn compose_core(root: impl AsRef<Path>) -> Result<CoreOnlyService, PortError> {
+    let root = root.as_ref();
     Ok(templiqx_application::TempliqxService::new(
         FilesystemPackageStore::new(root)?,
+        FilesystemArtifactWorkspace::new(root.join(".templiqx-workspace"))?,
         DeterministicFakeRuntime,
         UnsupportedLegacyAdapter,
         UnsupportedDocumentRenderer,
@@ -483,8 +583,17 @@ pub fn compose_core(root: impl AsRef<Path>) -> Result<CoreOnlyService, PortError
 }
 
 pub fn compose(root: impl AsRef<Path>) -> Result<LocalService, PortError> {
+    let root = root.as_ref();
+    compose_with_workspace(root, root.join(".templiqx-workspace"))
+}
+
+pub fn compose_with_workspace(
+    root: impl AsRef<Path>,
+    workspace: impl AsRef<Path>,
+) -> Result<LocalService, PortError> {
     Ok(templiqx_application::TempliqxService::new(
         FilesystemPackageStore::new(root)?,
+        FilesystemArtifactWorkspace::new(workspace)?,
         DeterministicFakeRuntime,
         templiqx_docx_v5::DocxV5Adapter::default(),
         templiqx_docx_v5::DocxV5Adapter::default(),

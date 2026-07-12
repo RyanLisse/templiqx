@@ -1,0 +1,50 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "id": "draft-with-citations",
+  "contract": "bli-62-document-drafting",
+  "kind": "drafting",
+  "input": "../../evals/bli-62-request.json",
+  "expected_output": "../../evals/bli-62-output.json",
+  "expected_output_fingerprint": "54eae956be0ca2f14a0afc83294c656ebe7c1ee6358387094262faa4d46c8084",
+  "expected_diagnostics": [],
+  "receipt_payload_policy": "fingerprints_only",
+  "steps": [
+    {
+      "id": "request-received",
+      "kind": "request_received"
+    },
+    {
+      "id": "runtime-drafting-success",
+      "kind": "runtime_success",
+      "output_schema_valid": true
+    }
+  ],
+  "expected_status": "success",
+  "expected_failure": null,
+  "evidence": [
+    {
+      "document_id": "SYN-DOC-0001",
+      "fragment_id": "clause-2",
+      "quote_sha256": "f36295a8293cb1e891373f4e64f211deaff2ac9e15211fda895608eddc4cdcca"
+    },
+    {
+      "document_id": "SYN-DOC-0001",
+      "fragment_id": "clause-2",
+      "quote_sha256": "af7819cb59d72c4865699b1784c643d07c94251cda8e91b26ddc8e1f3743f5c8"
+    },
+    {
+      "document_id": "SYN-DOC-0001",
+      "fragment_id": "clause-2",
+      "quote_sha256": "b75db1c6de0d19bab191e38f0fb7f28c5a01612ac7eacb628f7dd98aac52bdc5"
+    },
+    {
+      "document_id": "SYN-DOC-0001",
+      "fragment_id": "clause-2",
+      "quote_sha256": "4520d61c576b45c2fdaf7351002217dcee1f93eefa11615451c008750c5e842f"
+    }
+  ],
+  "document_expectation": {
+    "status": "not_applicable",
+    "unresolved_references": 0
+  },
+  "golden_receipt_fingerprint": "4cc929043a66ddd6428a7da7680c35a09bb60aa08489b049cce8757091ede4ea"}

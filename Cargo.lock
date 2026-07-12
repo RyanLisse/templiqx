@@ -1384,6 +1384,7 @@ dependencies = [
  "clap",
  "serde",
  "serde_json",
+ "tempfile",
  "templiqx-application",
  "templiqx-contracts",
  "templiqx-local",
@@ -1406,7 +1407,9 @@ dependencies = [
  "templiqx-docx-v5",
  "templiqx-local",
  "templiqx-mcp",
+ "templiqx-mock",
  "templiqx-ports",
+ "templiqx-runtime-http-mock",
  "tokio",
 ]
 
@@ -1447,6 +1450,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "templiqx-http-conformance"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "templiqx-contracts",
+ "templiqx-ports",
+ "templiqx-runtime-http-mock",
+]
+
+[[package]]
 name = "templiqx-local"
 version = "0.1.0"
 dependencies = [
@@ -1479,12 +1492,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "templiqx-mock"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+ "templiqx-contracts",
+ "templiqx-ports",
+ "thiserror",
+]
+
+[[package]]
+name = "templiqx-mock-gateway"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "serde",
+ "serde_json",
+ "templiqx-contracts",
+ "templiqx-mock",
+ "templiqx-ports",
+]
+
+[[package]]
 name = "templiqx-ports"
 version = "0.1.0"
 dependencies = [
  "serde_json",
  "templiqx-contracts",
  "thiserror",
+]
+
+[[package]]
+name = "templiqx-runtime-http-mock"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "templiqx-contracts",
+ "templiqx-ports",
 ]
 
 [[package]]

@@ -1,0 +1,32 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "id": "ambiguous-date",
+  "contract": "bli-61-date-term-extraction",
+  "kind": "ambiguous",
+  "input": "../../evals/bli-61-request.json",
+  "expected_diagnostics": [
+    "TQX_RUNTIME_INVALID_RESPONSE"
+  ],
+  "receipt_payload_policy": "no_successful_receipt",
+  "steps": [
+    {
+      "id": "request-received",
+      "kind": "request_received"
+    },
+    {
+      "id": "runtime-rejects-ambiguous-date",
+      "kind": "runtime_failure",
+      "failure": {
+        "code": "TQX_RUNTIME_INVALID_RESPONSE",
+        "detail": "ambiguous date evidence cannot produce a schema-safe extraction"
+      }
+    }
+  ],
+  "expected_status": "failure",
+  "expected_failure": "TQX_RUNTIME_INVALID_RESPONSE",
+  "evidence": [],
+  "document_expectation": {
+    "status": "not_applicable",
+    "unresolved_references": 0
+  },
+  "golden_receipt_fingerprint": "d207c182699547da43c4ae763afa3766207cf0a2ef96c17f24ff393dcef1c86b"}

@@ -1,0 +1,22 @@
+[package]
+name = "templiqx-mock-gateway"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "templiqx-mock-gateway"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+templiqx-contracts = { path = "../../crates/templiqx-contracts" }
+templiqx-mock = { path = "../../crates/templiqx-mock" }
+templiqx-ports = { path = "../../crates/templiqx-ports" }
+
+[lints]
+workspace = true

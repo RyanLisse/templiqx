@@ -8,8 +8,9 @@ use templiqx_contracts::{
     fingerprint, fingerprint_bytes,
 };
 use templiqx_ports::{
-    DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer, LegacyImportAdapter,
-    LegacyImportRequest as AdapterLegacyImportRequest, PackageStore, PortError, RuntimeAdapter,
+    ArtifactWorkspace, DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer,
+    LegacyImportAdapter, LegacyImportRequest as AdapterLegacyImportRequest, PackageStore,
+    PortError, RuntimeAdapter,
 };
 
 /// Actor-neutral request for migrating one package-confined legacy artifact.
@@ -39,8 +40,10 @@ pub struct RenderDocumentRequest {
     /// Portable input path relative to the selected package root.
     pub template: String,
     pub data: Value,
-    /// Portable output path relative to the selected package root.
+    /// Portable output path relative to the selected workspace root.
     pub output: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace: Option<String>,
 }
 
 /// Portable document-render result returned identically on every surface.
@@ -67,23 +70,26 @@ pub const CAPABILITY_CATALOG: &[&str] = &[
     "explain_contract",
 ];
 
-pub struct TempliqxService<S, R, L, D> {
+pub struct TempliqxService<S, W, R, L, D> {
     store: S,
+    workspace: W,
     runtime: R,
     legacy: L,
     documents: D,
 }
 
-impl<S, R, L, D> TempliqxService<S, R, L, D>
+impl<S, W, R, L, D> TempliqxService<S, W, R, L, D>
 where
     S: PackageStore,
+    W: ArtifactWorkspace,
     R: RuntimeAdapter,
     L: LegacyImportAdapter,
     D: DocumentRenderer,
 {
-    pub fn new(store: S, runtime: R, legacy: L, documents: D) -> Self {
+    pub fn new(store: S, workspace: W, runtime: R, legacy: L, documents: D) -> Self {
         Self {
             store,
+            workspace,
             runtime,
             legacy,
             documents,
@@ -584,10 +590,11 @@ where
             Ok(path) => path,
             Err(error) => return port_failure("render_document", error),
         };
-        let output = match self
-            .store
-            .resolve_output_path(&request.package, &request.output)
-        {
+        let output = match self.workspace.resolve_output_path(
+            &request.package,
+            &request.output,
+            request.workspace.as_deref(),
+        ) {
             Ok(path) => path,
             Err(error) => return port_failure("render_document", error),
         };
@@ -601,10 +608,11 @@ where
             Ok(result) => result,
             Err(error) => return port_failure("render_document", error),
         };
-        let artifact = match self
-            .store
-            .relative_artifact_path(&request.package, &rendered.artifact)
-        {
+        let artifact = match self.workspace.relative_artifact_path(
+            &request.package,
+            &rendered.artifact,
+            request.workspace.as_deref(),
+        ) {
             Ok(path) => path,
             Err(error) => return port_failure("render_document", error),
         };
@@ -639,15 +647,29 @@ fn port_failure<T>(operation: &str, error: PortError) -> OperationEnvelope<T> {
     OperationEnvelope::new(operation, None, vec![port_diagnostic(error)])
 }
 fn port_diagnostic(error: PortError) -> Diagnostic {
-    let code = match error {
+    let code = match &error {
         PortError::NotFound(_) => "TQX_NOT_FOUND",
         PortError::Conflict(_) => "TQX_CAS_CONFLICT",
         PortError::InvalidPath(_) => "TQX_PATH_INVALID",
         PortError::Unsupported(_) => "TQX_UNSUPPORTED",
         PortError::Io(_) => "TQX_IO",
         PortError::InvalidData(_) => "TQX_DATA_INVALID",
+        PortError::RuntimeFailure { code, .. } => *code,
     };
-    Diagnostic::error(code, error.to_string(), "")
+    let mut diagnostic = Diagnostic::error(code, error.to_string(), "");
+    if let PortError::RuntimeFailure { failure, .. } = &error {
+        diagnostic.help = Some(format!(
+            "adapter={} version={} scenario={} retry_after_ms={} fingerprint={}",
+            failure.adapter_id,
+            failure.adapter_version,
+            failure.scenario_id.as_deref().unwrap_or("none"),
+            failure
+                .retry_after_ms
+                .map_or_else(|| "none".into(), |value| value.to_string()),
+            failure.fingerprint
+        ));
+    }
+    diagnostic
 }
 fn serialization_failure<T>(operation: &str, error: serde_json::Error) -> OperationEnvelope<T> {
     OperationEnvelope::new(

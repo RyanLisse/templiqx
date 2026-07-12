@@ -1,0 +1,10 @@
+mock:
+  enabled: true
+  gateway:
+    enabled: true
+    port: 8080
+
+image:
+  repository: templiqx
+  tag: pre-crm3
+  pullPolicy: IfNotPresent

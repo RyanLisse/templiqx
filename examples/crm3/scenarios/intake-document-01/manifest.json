@@ -1,0 +1,40 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "id": "intake-document-01",
+  "contract": "bli-61-date-term-extraction",
+  "kind": "happy_path",
+  "input": "../../evals/bli-61-request.json",
+  "expected_output": "../../evals/bli-61-output.json",
+  "expected_output_fingerprint": "66d6c3fbb03611b4b22deabbe9ef669e5ad69f59c1e90be4dee92d9c3a5188de",
+  "expected_diagnostics": [],
+  "receipt_payload_policy": "fingerprints_only",
+  "steps": [
+    {
+      "id": "request-received",
+      "kind": "request_received"
+    },
+    {
+      "id": "runtime-latency",
+      "kind": "delay",
+      "delay_ms": 25
+    },
+    {
+      "id": "runtime-success",
+      "kind": "runtime_success",
+      "output_schema_valid": true
+    }
+  ],
+  "expected_status": "success",
+  "expected_failure": null,
+  "evidence": [
+    {
+      "document_id": "SYN-DOC-0001",
+      "fragment_id": "clause-2",
+      "quote_sha256": "4520d61c576b45c2fdaf7351002217dcee1f93eefa11615451c008750c5e842f"
+    }
+  ],
+  "document_expectation": {
+    "status": "not_applicable",
+    "unresolved_references": 0
+  },
+  "golden_receipt_fingerprint": "59e95c4055a1910eef5eddd0145e0fb068e2a95ab1fd115a417ba294a23cd449"}

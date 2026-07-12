@@ -1,0 +1,19 @@
+[package]
+name = "templiqx-runtime-http-mock"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+rust-version = "1.88"
+description = "Conformance-only HTTP RuntimeAdapter for the Templiqx mock gateway"
+
+[dependencies]
+serde.workspace = true
+serde_json = "1.0.149"
+templiqx-contracts = { path = "../../crates/templiqx-contracts" }
+templiqx-ports = { path = "../../crates/templiqx-ports" }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"

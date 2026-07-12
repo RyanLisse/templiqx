@@ -1,0 +1,29 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "id": "docx-unresolved-reference",
+  "contract": "bli-62-document-drafting",
+  "kind": "drafting",
+  "input": "../../evals/bli-62-request.json",
+  "expected_output": "../../evals/bli-62-output.json",
+  "expected_output_fingerprint": "54eae956be0ca2f14a0afc83294c656ebe7c1ee6358387094262faa4d46c8084",
+  "expected_diagnostics": [],
+  "receipt_payload_policy": "fingerprints_only",
+  "steps": [
+    {
+      "id": "request-received",
+      "kind": "request_received"
+    },
+    {
+      "id": "runtime-drafting-success",
+      "kind": "runtime_success",
+      "output_schema_valid": true
+    }
+  ],
+  "expected_status": "success",
+  "expected_failure": null,
+  "evidence": [],
+  "document_expectation": {
+    "status": "rendered",
+    "unresolved_references": 1
+  },
+  "golden_receipt_fingerprint": "4cc929043a66ddd6428a7da7680c35a09bb60aa08489b049cce8757091ede4ea"}

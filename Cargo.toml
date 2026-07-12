@@ -5,10 +5,14 @@ members = [
   "crates/templiqx-core",
   "crates/templiqx-application",
   "crates/templiqx-local",
+  "crates/templiqx-mock",
   "crates/templiqx-cli",
   "crates/templiqx-mcp",
   "crates/templiqx-conformance",
   "adapters/templiqx-docx-v5",
+  "adapters/templiqx-runtime-http-mock",
+  "tools/templiqx-mock-gateway",
+  "tools/templiqx-http-conformance",
 ]
 resolver = "2"
 

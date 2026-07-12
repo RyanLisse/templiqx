@@ -1,0 +1,32 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "id": "contradictory-evidence",
+  "contract": "bli-61-date-term-extraction",
+  "kind": "missing",
+  "input": "../../evals/bli-61-request.json",
+  "expected_diagnostics": [
+    "TQX_RUNTIME_PERMANENT"
+  ],
+  "receipt_payload_policy": "no_successful_receipt",
+  "steps": [
+    {
+      "id": "request-received",
+      "kind": "request_received"
+    },
+    {
+      "id": "runtime-missing-grounding",
+      "kind": "runtime_failure",
+      "failure": {
+        "code": "TQX_RUNTIME_PERMANENT",
+        "detail": "required grounded evidence is missing or contradictory"
+      }
+    }
+  ],
+  "expected_status": "failure",
+  "expected_failure": "TQX_RUNTIME_PERMANENT",
+  "evidence": [],
+  "document_expectation": {
+    "status": "not_applicable",
+    "unresolved_references": 0
+  },
+  "golden_receipt_fingerprint": "1216607480226c91c78d4d87a84ad7cd0b3676d86aaf33abb2c30559e110ac90"}

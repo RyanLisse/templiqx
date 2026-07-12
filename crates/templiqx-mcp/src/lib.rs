@@ -21,7 +21,9 @@ use templiqx_contracts::{
     CompiledInteraction, CompiledMessage, Contract, ContractDiff, ContractSummary,
     ExecutionReceipt, Explanation, OperationEnvelope, PackageManifest, RenderRequest, TestReport,
 };
-use templiqx_ports::{DocumentRenderer, LegacyImportAdapter, PackageStore, RuntimeAdapter};
+use templiqx_ports::{
+    ArtifactWorkspace, DocumentRenderer, LegacyImportAdapter, PackageStore, RuntimeAdapter,
+};
 
 /// Stable MCP tool names, exactly matching the application catalog.
 pub const TOOL_CATALOG: &[&str] = templiqx_application::CAPABILITY_CATALOG;
@@ -60,9 +62,10 @@ pub trait Operations: Send + Sync + 'static {
     fn explain_contract(&self, package: &str, contract: &str) -> OperationEnvelope<Explanation>;
 }
 
-impl<S, R, L, D> Operations for TempliqxService<S, R, L, D>
+impl<S, W, R, L, D> Operations for TempliqxService<S, W, R, L, D>
 where
     S: PackageStore + 'static,
+    W: ArtifactWorkspace + 'static,
     R: RuntimeAdapter + 'static,
     L: LegacyImportAdapter + 'static,
     D: DocumentRenderer + 'static,
@@ -126,6 +129,7 @@ where
             template: r.template.clone(),
             data: r.data.clone(),
             output: r.output.clone(),
+            workspace: r.workspace.clone(),
         })
     }
     fn test_package(&self, p: &str, c: &[String]) -> OperationEnvelope<TestReport> {
@@ -210,8 +214,10 @@ pub struct RenderDocumentInput {
     /// Portable input path relative to the package root.
     pub template: String,
     pub data: Value,
-    /// Portable output path relative to the package root.
+    /// Portable output path relative to the workspace root.
     pub output: String,
+    #[serde(default)]
+    pub workspace: Option<String>,
 }
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

@@ -1,3 +1,7 @@
 /target
 *.tmp
+artifacts/
+.codex-fable5/
 
+.env
+sites

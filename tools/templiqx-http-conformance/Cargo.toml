@@ -1,0 +1,19 @@
+[package]
+name = "templiqx-http-conformance"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "templiqx-http-conformance"
+path = "src/main.rs"
+
+[dependencies]
+serde_json.workspace = true
+templiqx-contracts = { path = "../../crates/templiqx-contracts" }
+templiqx-ports = { path = "../../crates/templiqx-ports" }
+templiqx-runtime-http-mock = { path = "../../adapters/templiqx-runtime-http-mock" }
+
+[lints]
+workspace = true

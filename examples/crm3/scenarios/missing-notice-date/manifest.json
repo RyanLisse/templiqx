@@ -1,0 +1,32 @@
+{
+  "api_version": "templiqx.mock/v1alpha1",
+  "id": "missing-notice-date",
+  "contract": "bli-61-date-term-extraction",
+  "kind": "missing",
+  "input": "../../evals/bli-61-request.json",
+  "expected_diagnostics": [
+    "TQX_RUNTIME_INVALID_RESPONSE"
+  ],
+  "receipt_payload_policy": "no_successful_receipt",
+  "steps": [
+    {
+      "id": "request-received",
+      "kind": "request_received"
+    },
+    {
+      "id": "runtime-missing-notice-date",
+      "kind": "runtime_failure",
+      "failure": {
+        "code": "TQX_RUNTIME_INVALID_RESPONSE",
+        "detail": "notice_date is missing from the model response"
+      }
+    }
+  ],
+  "expected_status": "failure",
+  "expected_failure": "TQX_RUNTIME_INVALID_RESPONSE",
+  "evidence": [],
+  "document_expectation": {
+    "status": "not_applicable",
+    "unresolved_references": 0
+  },
+  "golden_receipt_fingerprint": "7a7fcee86b41341e992a54d4465958474b87c0a2b93f962739dea37571a2b2e3"}

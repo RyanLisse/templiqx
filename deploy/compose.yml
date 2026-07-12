@@ -1,0 +1,43 @@
+services:
+  conformance:
+    image: ${IMAGE:-templiqx:pre-crm3}
+    profiles: ["mock"]
+    user: "65532:65532"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - ../examples:/packages:ro
+      - templiqx-workspace:/workspace:rw
+    entrypoint: ["/usr/local/bin/templiqx-http-conformance"]
+    environment:
+      TEMPLIQX_RUNTIME_URL: http://mock-gateway:8080
+      TEMPLIQX_RUNTIME_SCENARIO: intake-document-01
+    depends_on:
+      mock-gateway:
+        condition: service_started
+  mock-gateway:
+    image: ${IMAGE:-templiqx:pre-crm3}
+    entrypoint: ["/usr/local/bin/templiqx-mock-gateway"]
+    profiles: ["mock"]
+    user: "65532:65532"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    command:
+      - /usr/local/bin/templiqx-mock-gateway
+      - --listen
+      - 0.0.0.0:8080
+      - --scenario-root
+      - /packages/crm3/scenarios
+    volumes:
+      - ../examples:/packages:ro
+    ports:
+      - "${TEMPLIQX_MOCK_GATEWAY_PORT:-18080}:8080"
+
+volumes:
+  templiqx-workspace: {}
