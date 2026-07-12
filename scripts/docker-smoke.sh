@@ -12,7 +12,11 @@ HTTP_GOLDEN="$REPO_ROOT/scripts/golden/http-conformance.json"
 HTTP_RECEIPT="$ARTIFACT_DIR/http-receipt.json"
 
 cleanup() {
-  rm -rf "$CONTAINER_WORKSPACE"
+  # The hardened container writes into this bind mount as UID 65532, which has
+  # no host-side entry; files it creates below the top-level workspace dir
+  # aren't necessarily host-writable, so this cleanup is best-effort and must
+  # never fail the run over an orphaned temp directory the runner discards anyway.
+  rm -rf "$CONTAINER_WORKSPACE" 2>/dev/null || true
 }
 trap cleanup EXIT
 

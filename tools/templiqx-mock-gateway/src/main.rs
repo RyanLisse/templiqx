@@ -75,21 +75,28 @@ fn main() -> Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
-                // This is a single-threaded, one-connection-at-a-time server: a
-                // client that connects and never finishes sending a request would
-                // otherwise block `read()` forever, wedging every later
-                // connection (including conformance-job retries) behind it.
-                let deadline = std::time::Duration::from_secs(10);
-                if let Err(error) = stream
-                    .set_read_timeout(Some(deadline))
-                    .and_then(|_| stream.set_write_timeout(Some(deadline)))
-                {
-                    eprintln!("set stream timeout: {error}");
-                    continue;
-                }
-                if let Err(error) = handle(&mut stream, &root) {
-                    let _ = respond(&mut stream, 500, &json!({"error": error.to_string()}));
-                }
+                // Conformance scenarios run as separate Jobs/pods that hit this
+                // gateway concurrently, each retrying independently. A
+                // single-threaded accept loop serializes them behind whichever
+                // connection is currently being handled, so a legitimate
+                // concurrent client can exhaust its retries waiting for its turn
+                // even though the server isn't stuck. Handle each connection on
+                // its own thread; a read/write deadline still bounds any one
+                // connection that stalls.
+                let root = root.clone();
+                std::thread::spawn(move || {
+                    let deadline = std::time::Duration::from_secs(10);
+                    if let Err(error) = stream
+                        .set_read_timeout(Some(deadline))
+                        .and_then(|_| stream.set_write_timeout(Some(deadline)))
+                    {
+                        eprintln!("set stream timeout: {error}");
+                        return;
+                    }
+                    if let Err(error) = handle(&mut stream, &root) {
+                        let _ = respond(&mut stream, 500, &json!({"error": error.to_string()}));
+                    }
+                });
             }
             Err(error) => eprintln!("accept: {error}"),
         }
