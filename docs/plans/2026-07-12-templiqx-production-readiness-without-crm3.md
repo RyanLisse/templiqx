@@ -436,7 +436,7 @@ flowchart TB
 |----------|--------|-------|
 | Cosign keyless vs org key for package signing? | U7 implementation | Templiqx + platform |
 | Which synthetic domain for second opco package (HR, finance, generic)? | U5 content only | Product |
-| Merge `feature/langfuse-runtime-adapter` now or defer to P2? | U9 scope | Templiqx |
+| ~~Merge `feature/langfuse-runtime-adapter` now or defer to P2?~~ | U9 scope | **Resolved 2026-07-12: merged (`6da11b2`) — clean rebase onto post-P1 `main`, boundaries/clippy/build clean** |
 | arm64 supply-chain matrix before or after SLSA? | U2 follow-up | Infra |
 
 ---

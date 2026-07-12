@@ -420,6 +420,14 @@ fn write_package(path: &Path, package: &BTreeMap<String, Vec<u8>>) -> Result<(),
     temporary
         .persist(path)
         .map_err(|error| PortError::Io(error.error.to_string()))?;
+    // `NamedTempFile` creates its backing file at mode 0600 (owner-only) as a
+    // security default; `persist` renames it into place without touching that
+    // mode. Reset it to the same 0644 the zip entries themselves use, so the
+    // output is readable by whoever the destination directory already trusts
+    // (e.g. a different UID reading a container's bind-mounted output).
+    #[cfg(unix)]
+    fs::set_permissions(path, std::os::unix::fs::PermissionsExt::from_mode(0o644))
+        .map_err(|error| PortError::Io(error.to_string()))?;
     Ok(())
 }
 
@@ -1390,6 +1398,33 @@ mod tests {
                 .unwrap();
         }
         assert_eq!(fs::read(one).unwrap(), fs::read(two).unwrap());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn rendered_output_is_world_readable() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = TempDir::new().unwrap();
+        let source = dir.path().join("source.docx");
+        fixture(
+            &source,
+            r#"<w:document xmlns:w="w"><w:body><w:p><w:r><w:t>hi</w:t></w:r></w:p></w:body></w:document>"#,
+            None,
+        );
+        let output = dir.path().join("output.docx");
+        DocxV5Adapter::default()
+            .render_document(&DocumentRenderRequest {
+                template: source,
+                data: json!({}),
+                output: output.clone(),
+            })
+            .unwrap();
+        let mode = fs::metadata(&output).unwrap().permissions().mode() & 0o777;
+        assert_eq!(
+            mode, 0o644,
+            "tempfile::NamedTempFile persists at 0600; write_package must reset it"
+        );
     }
 
     #[test]
