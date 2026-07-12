@@ -6,8 +6,14 @@ fail() {
   exit 1
 }
 
+# The checks below rely on `rg` and silently treat "no match" and "command
+# not found" the same way (both make an `if rg ...; then` block a no-op) —
+# so a missing binary would make every boundary check pass without actually
+# checking anything. Fail closed instead.
+command -v rg >/dev/null 2>&1 || fail "ripgrep (rg) is required to run boundary checks"
+
 require_path() {
-  [[ -e "$1" ]] || fail "missing expected target: $1"
+  [[ -e $1 ]] || fail "missing expected target: $1"
 }
 
 for crate in templiqx-contracts templiqx-ports templiqx-core; do

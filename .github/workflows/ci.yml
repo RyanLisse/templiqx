@@ -11,6 +11,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate script syntax
         run: bash -n scripts/check-boundaries.sh scripts/check-ci-gates.sh scripts/docker-smoke.sh scripts/fresh-clone-verify.sh scripts/kind-smoke.sh scripts/supply-chain-smoke.sh
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Enforce architecture and deployment boundaries
         run: ./scripts/check-boundaries.sh
       - name: Enforce CI policy gates
@@ -50,6 +52,8 @@ jobs:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: extractions/setup-just@v2
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - uses: azure/setup-helm@v4
       - uses: helm/kind-action@v1.12.0
         with:
