@@ -1,0 +1,22 @@
+[package]
+name = "templiqx-runtime-langfuse"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+rust-version = "1.88"
+description = "Host-owned RuntimeAdapter that executes real chat completions and traces them to Langfuse"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+jsonschema.workspace = true
+templiqx-contracts = { path = "../../crates/templiqx-contracts" }
+templiqx-ports = { path = "../../crates/templiqx-ports" }
+ureq = { version = "2.10", features = ["json"] }
+time = { version = "0.3", features = ["formatting"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"

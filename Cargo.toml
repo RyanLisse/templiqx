@@ -11,6 +11,7 @@ members = [
   "crates/templiqx-conformance",
   "adapters/templiqx-docx-v5",
   "adapters/templiqx-runtime-http-mock",
+  "adapters/templiqx-runtime-langfuse",
   "tools/templiqx-mock-gateway",
   "tools/templiqx-http-conformance",
 ]
