@@ -1,37 +1,40 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Operational guide for Claude Code and other AI agents in this repository.
 
 ## What this is
 
-Templiqx is a standalone, provider-neutral AI interaction contract compiler: a portable contract format (`templiqx/v1alpha1`, strict YAML), a canonical application service, local filesystem composition, a CLI, an MCP server, deterministic mock/runtime adapters, and a CRM3 conformance package that ties those pieces together end to end. Rust workspace, edition 2024, `unsafe_code = "forbid"` workspace-wide.
+Templiqx is a standalone, provider-neutral AI interaction contract compiler: portable `templiqx/v1alpha1` contracts (strict YAML), a canonical application service, local filesystem composition, CLI, MCP server, deterministic mock/runtime adapters, and a CRM3 conformance package. Rust workspace, edition 2024, `unsafe_code = "forbid"` workspace-wide. Pre-CRM3 readiness POC for Basenet CRM3 (`BLI-*` Linear issues).
 
-## Commands
+## Quick start
 
 ```bash
-just verify          # fmt --check, clippy -D warnings, workspace tests, boundary checks — run before any PR
-just verify-deploy    # docker/kind/supply-chain smoke tests + boundary checks
+just verify                              # fmt, clippy, tests, boundary checks — run before any PR
+just verify-deploy                       # docker/kind/supply-chain smoke + boundaries
 
-cargo test --workspace --all-features          # full test suite
-cargo test -p templiqx-conformance --test crm3  # one conformance test file
-cargo test -p templiqx-local -- service::       # scoped by module/name within a crate
+qlty fmt                                 # format (CI + pre-commit expectation)
+qlty check --fix --level=low             # lint fixes before commit
 
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-
-./scripts/check-boundaries.sh     # dependency-boundary lints, see below
-./scripts/docker-smoke.sh
-./scripts/kind-smoke.sh
-./scripts/supply-chain-smoke.sh
+cargo test -p templiqx-conformance --test crm3   # CRM3 end-to-end conformance
+./scripts/check-boundaries.sh            # after touching Cargo.toml or adapter wiring
 ```
 
-CLI entrypoint: `cargo run -p templiqx-cli -- <command> --root <package-dir> [--json]`. Commands map 1:1 to `TempliqxService`'s capability catalog (`catalog`, `discover`, `inspect`, `put`, `validate`, `compile`, `render`, `execute`, `test`, `diff`, `explain`, `migrate`, ...) — run `cargo run -p templiqx-cli -- --help` for the full, current list rather than trusting a hardcoded copy here. Exit codes are meaningful: `0` = ok envelope, `2` = diagnostic/product-level failure, `1` = CLI/IO failure before the operation ran.
+Scoped tests: `cargo test -p templiqx-local -- service::`. Full suite: `cargo test --workspace --all-features`.
 
-## Architecture
+CLI: `cargo run -p templiqx-cli -- <command> --root <package-dir> [--json]`. Commands map 1:1 to `TempliqxService` capabilities (`catalog`, `discover`, `inspect`, `put`, `validate`, `compile`, `render`, `execute`, `test`, `diff`, `explain`, `migrate`, …). Run `--help` for the current list. Exit codes: `0` = ok envelope, `2` = product/diagnostic failure, `1` = CLI/IO failure.
 
-Single canonical application service (`TempliqxService`) with thin transport adapters around it — the CLI and the MCP server are not separate implementations, they call the same operations and get the same envelopes/diagnostics/fingerprints. There is deliberately no separate "agent path."
+## Documentation map
 
-Dependency direction:
+| Need | Location |
+|------|----------|
+| Navigation hub | [`docs/README.md`](docs/README.md) |
+| Contract format | [`docs/contracts/v1alpha1.md`](docs/contracts/v1alpha1.md) |
+| Architecture / deployment | [`docs/architecture/`](docs/architecture/) |
+| Pre-CRM3 readiness | [`docs/guides/pre-crm3-readiness.md`](docs/guides/pre-crm3-readiness.md) |
+| CRM3 scenarios | [`examples/crm3/scenarios/`](examples/crm3/scenarios/) |
+| Generated code docs | [`openwiki/quickstart.md`](openwiki/quickstart.md) |
+
+## Crate layout
 
 ```
 contracts <- ports
@@ -46,40 +49,38 @@ contracts <- ports
      CLI / MCP / tools
 ```
 
-- `templiqx-contracts` — serializable DTOs, diagnostics, fingerprints, envelopes. No policy.
-- `templiqx-core` — parsing, validation, rendering, compilation. Deterministic, portable.
-- `templiqx-ports` — host-facing traits (package storage, artifact workspace, runtime execution, legacy import, document rendering) that a host must implement.
-- `templiqx-application` — actor-neutral operations + capability catalog introspection over the ports.
-- `templiqx-local` — the only concrete composition today: filesystem-backed storage/workspace + deterministic fake adapters. Enforces path safety (package roots must be canonical dirs under the workspace root, artifact paths are package-relative only, no absolute paths/traversal/backslashes/symlink escapes) and contract writes via compare-and-swap + locking + atomic rename.
-- `templiqx-cli`, `templiqx-mcp` — transport surfaces over `templiqx-application`. Tool/command names match the catalog exactly, by design, so an operation can be grepped across CLI/MCP/service code without translation.
-- `templiqx-mock`, `adapters/templiqx-runtime-http-mock` — deterministic/conformance-oriented adapters, not production policy engines.
-- `adapters/templiqx-docx-v5` — explicit, narrow DOCX V5 compatibility for the CRM3 fixture (body paragraphs, table cells, header/footer, split-run alias migration, MERGEFIELD, repeated/unresolved references). Not general DOCX support — don't generalize it without new fixtures and tests.
-- `tools/templiqx-mock-gateway`, `tools/templiqx-http-conformance` — operational tooling for readiness/conformance, not part of the core graph.
+| Crate / path | Role |
+|--------------|------|
+| `templiqx-contracts` | DTOs, diagnostics, fingerprints, envelopes — no policy |
+| `templiqx-core` | Parsing, validation, rendering, compilation — deterministic |
+| `templiqx-ports` | Host-facing traits (storage, workspace, runtime, legacy import, document render) |
+| `templiqx-application` | Actor-neutral operations + capability catalog |
+| `templiqx-local` | Filesystem composition; path safety + CAS contract writes |
+| `templiqx-cli`, `templiqx-mcp` | Transport surfaces; tool names match catalog exactly |
+| `templiqx-conformance` | CRM3 and failure-semantics tests |
+| `templiqx-mock`, `adapters/templiqx-runtime-http-mock` | Conformance adapters only |
+| `adapters/templiqx-docx-v5` | Narrow DOCX V5 compat for CRM3 fixture — not general DOCX |
+| `tools/templiqx-mock-gateway`, `tools/templiqx-http-conformance` | Operational readiness tooling |
 
-### The enforced boundary (`scripts/check-boundaries.sh`)
+## Enforced boundaries (`scripts/check-boundaries.sh`)
 
-This is not just convention, it's checked in CI and by `just verify`:
+Checked in CI and by `just verify`. Touching dependencies or adapter wiring — run the script explicitly.
 
-- `templiqx-contracts`, `templiqx-ports`, `templiqx-core` must never depend on a model-provider SDK (openai/anthropic/gemini/bedrock) or on CRM3/rmcp-specific crates. Auth, tenant policy, approval, retries, retrieval, and secrets are host concerns and stay out of the portable core.
-- `templiqx-application`, `templiqx-cli`, `templiqx-mcp` (the default composition) must never depend on `templiqx-mock` / `templiqx-runtime-http-mock` / `templiqx-mock-gateway`. Mocks are conformance-only, not reachable from the default runtime path.
-- HTTP transport mock crates/implementations must stay out of `templiqx-core`, `templiqx-contracts`, `templiqx-ports`, `templiqx-application`, `templiqx-cli`, `templiqx-mcp` — HTTP mocking is an edge concern.
+- **Portable core** (`templiqx-contracts`, `templiqx-ports`, `templiqx-core`): no model-provider SDKs (openai/anthropic/gemini/bedrock) or CRM3/rmcp-specific crates; no host-owned vocabulary (approval, tenant, retrieval, …).
+- **Default composition** (`templiqx-application`, `templiqx-cli`, `templiqx-mcp`): no `templiqx-mock`, `templiqx-runtime-http-mock`, or `templiqx-mock-gateway`.
+- **HTTP mocks** stay out of core/contracts/ports/application/CLI/MCP — edge concern only.
 
-When touching crate dependencies, `Cargo.toml` per-crate manifests, or adapter wiring, run `./scripts/check-boundaries.sh` — a passing build/clippy does not catch a boundary violation.
+## Contract format (summary)
 
-### Contract format
+`templiqx/v1alpha1` is intentionally conservative: unknown fields rejected, one contract = one model interaction, JSON-Schema typed inputs, bounded content nodes (`text`, `interpolate`, `when`, `for_each`, `component`), limited expressions. Compilation requires an explicit capability profile — unsupported capabilities fail rather than silently degrade. See [`docs/contracts/v1alpha1.md`](docs/contracts/v1alpha1.md). Do not relax the parser/validator without new fixtures and tests.
 
-`templiqx/v1alpha1` (see `docs/contracts/v1alpha1.md`) is intentionally conservative: unknown fields/enum values are rejected, one contract = one model interaction, inputs/host context are JSON-Schema typed, structured content is data not executable source, content nodes are bounded (`text`, `interpolate`, `when`, `for_each`, `component`), expressions are limited to references/JSON literals/equality/boolean logic/a small filter set. Compilation requires an explicit target capability profile; a contract needing a capability outside that profile fails to compile rather than silently degrading. This conservatism is what keeps the core compiler deterministic and portable — resist relaxing the parser/validator to let unsupported structures through.
+## CRM3 conformance (`examples/crm3`)
 
-### CRM3 conformance package (`examples/crm3`)
+Synthetic multi-step workflow: discover → validate → BLI-61 extraction → BLI-62 drafting → DOCX V5 migrate → render → trace receipt. Conformance tests assert draft output is grounded in source fragments (no invented facts). Preserve that check when editing fixtures or `examples/crm3/scenarios/**`.
 
-Synthetic fixture proving a realistic multi-step workflow without real customer data: discover package → validate package/contracts → BLI-61 date-term extraction → BLI-62 drafting from schema-valid extraction output → migrate legacy DOCX V5 template → render final document → assemble a trace receipt from fingerprints/evidence. The conformance tests check that draft output is grounded in the source fragment (no invented facts) — preserve that evidence-grounding check when touching CRM3 fixtures or scenarios (`examples/crm3/scenarios/**`).
+## Deployment
 
-## OpenWiki
-
-<!-- OPENWIKI:START -->
-
-This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
-
-The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
-
-<!-- OPENWIKI:END -->
+- **Docker:** `Dockerfile`, `deploy/compose.yml`, `./scripts/docker-smoke.sh`
+- **Kubernetes:** `charts/templiqx/` (lint with `helm lint charts/templiqx -f charts/templiqx/values-mock.yaml`), `./scripts/kind-smoke.sh`
+- **Supply chain:** `./scripts/supply-chain-smoke.sh` (SBOM/digest checks; CI pins Syft/Grype)
+- **CI jobs:** boundaries → qlty + rust + docker + helm-kind + supply-chain (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml))
