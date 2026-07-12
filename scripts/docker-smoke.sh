@@ -52,6 +52,12 @@ printf 'docker smoke: docker_platform=%s\n' "$DOCKER_PLATFORM"
 
 rm -rf "$ARTIFACT_DIR"
 mkdir -p "$LOCAL_WORKSPACE" "$CONTAINER_WORKSPACE"
+# The hardened container run below writes into this bind mount as UID 65532,
+# an account with no host-side entry. Linux enforces host file-mode bits on
+# bind mounts, so without this the mkdir's default mode (owned by the CI
+# runner user) denies that UID write access; macOS Docker Desktop doesn't
+# enforce this the same way, which is why it only surfaces on Linux CI.
+chmod 0777 "$CONTAINER_WORKSPACE"
 
 cargo run -q -p templiqx-cli -- \
   --root "$REPO_ROOT/examples" \
@@ -113,6 +119,18 @@ MCP_RESPONSE="$(printf '%s\n' "$MCP_INITIALIZE" | docker run --rm -i \
 printf '%s\n' "$MCP_RESPONSE" | jq -e '.result.serverInfo.name == "templiqx-mcp"' >/dev/null
 
 printf 'docker smoke: mcp_stdio_initialize=ok\n'
+
+docker buildx build --load --platform "$DOCKER_PLATFORM" --target templiqx-mcp -t "${IMAGE}-mcp" "$REPO_ROOT"
+MCP_SLIM_RESPONSE="$(printf '%s\n' "$MCP_INITIALIZE" | docker run --rm -i \
+  --read-only \
+  --user 65532:65532 \
+  --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --mount "type=bind,src=$REPO_ROOT/examples,dst=/packages,readonly" \
+  "${IMAGE}-mcp" \
+  /packages)"
+printf '%s\n' "$MCP_SLIM_RESPONSE" | jq -e '.result.serverInfo.name == "templiqx-mcp"' >/dev/null
+printf 'docker smoke: mcp_slim_image=ok\n'
 
 run_failure_smoke() {
   local profile="$1"

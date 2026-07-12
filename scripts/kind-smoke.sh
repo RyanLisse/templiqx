@@ -12,7 +12,7 @@ KIND_RECEIPT="$ARTIFACT_DIR/http-receipt.json"
 HTTP_GOLDEN="$REPO_ROOT/scripts/golden/http-conformance.json"
 
 skip_env() {
-  if [[ "${CI:-}" == "true" ]]; then
+  if [[ ${CI:-} == "true" ]]; then
     printf 'FAIL command=./scripts/kind-smoke.sh reason=%s missing=%s\n' "$1" "$2" >&2
     exit 1
   fi
@@ -28,25 +28,25 @@ command -v docker >/dev/null 2>&1 || skip_env "missing Docker CLI" "docker"
 docker info >/dev/null 2>&1 || skip_env "Docker daemon unavailable" "docker-daemon"
 
 resolve_docker_platform() {
-if [[ -n "${TEMPLIQX_DOCKER_PLATFORM:-}" ]]; then
-printf '%s\n' "$TEMPLIQX_DOCKER_PLATFORM"
-return
-fi
+  if [[ -n ${TEMPLIQX_DOCKER_PLATFORM:-} ]]; then
+    printf '%s\n' "$TEMPLIQX_DOCKER_PLATFORM"
+    return
+  fi
 
-local docker_arch
-docker_arch="$(docker info --format '{{.Architecture}}')"
-case "$docker_arch" in
-amd64|x86_64)
-printf 'linux/amd64\n'
-;;
-arm64|aarch64)
-printf 'linux/arm64\n'
-;;
-*)
-printf 'FAIL command=./scripts/kind-smoke.sh reason=unsupported Docker server architecture arch=%s override=TEMPLIQX_DOCKER_PLATFORM\n' "$docker_arch" >&2
-exit 1
-;;
-esac
+  local docker_arch
+  docker_arch="$(docker info --format '{{.Architecture}}')"
+  case "$docker_arch" in
+  amd64 | x86_64)
+    printf 'linux/amd64\n'
+    ;;
+  arm64 | aarch64)
+    printf 'linux/arm64\n'
+    ;;
+  *)
+    printf 'FAIL command=./scripts/kind-smoke.sh reason=unsupported Docker server architecture arch=%s override=TEMPLIQX_DOCKER_PLATFORM\n' "$docker_arch" >&2
+    exit 1
+    ;;
+  esac
 }
 
 DOCKER_PLATFORM="$(resolve_docker_platform)"
@@ -63,15 +63,31 @@ fi
 
 kind load docker-image "$IMAGE" --name "$CLUSTER"
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-kubectl delete job "$RELEASE-templiqx-conformance" -n "$NAMESPACE" --ignore-not-found
+kubectl delete job -l "app.kubernetes.io/name=templiqx,templiqx.conformance/scenario" -n "$NAMESPACE" --ignore-not-found
 helm upgrade --install "$RELEASE" "$REPO_ROOT/charts/templiqx" \
   --namespace "$NAMESPACE" \
   -f "$REPO_ROOT/charts/templiqx/values-mock.yaml" \
   --set image.pullPolicy=Never
 
 kubectl -n "$NAMESPACE" rollout status "deployment/$RELEASE-templiqx-mock-gateway" --timeout=120s
-kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$RELEASE-templiqx-conformance" --timeout=180s
-kubectl -n "$NAMESPACE" logs "job/$RELEASE-templiqx-conformance" | tee "$LOG_FILE"
+
+SCENARIOS=(intake-document-01 draft-with-citations invalid-output-schema)
+for scenario in "${SCENARIOS[@]}"; do
+  job_name="${RELEASE}-templiqx-conformance-${scenario//./-}"
+  set +e
+  kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$job_name" --timeout=180s
+  scenario_wait=$?
+  set -e
+  if ((scenario_wait != 0)); then
+    printf 'FAIL command=./scripts/kind-smoke.sh reason=conformance job did not complete scenario=%s\n' "$scenario" >&2
+    kubectl -n "$NAMESPACE" get "job/$job_name" -o yaml >&2 || true
+    kubectl -n "$NAMESPACE" logs "job/$job_name" --all-containers --tail=200 >&2 || true
+    exit "$scenario_wait"
+  fi
+  printf 'kind smoke: scenario=%s success=true\n' "$scenario"
+done
+
+kubectl -n "$NAMESPACE" logs "job/${RELEASE}-templiqx-conformance-intake-document-01" | tee "$LOG_FILE"
 
 grep '"api_version":"templiqx/http-conformance/v1"' "$LOG_FILE" | tail -n 1 >"$KIND_RECEIPT"
 jq -S . "$KIND_RECEIPT" >/tmp/templiqx-kind-http-receipt.sorted
@@ -126,7 +142,7 @@ set +e
 kubectl -n "$NAMESPACE" wait --for=condition=failed "job/${RELEASE}-conformance-gateway-down" --timeout=180s
 gateway_down_wait=$?
 set -e
-if (( gateway_down_wait == 0 )); then
+if ((gateway_down_wait == 0)); then
   :
 elif ! kubectl -n "$NAMESPACE" get "job/${RELEASE}-conformance-gateway-down" -o jsonpath='{.status.failed}' | grep -q '^[1-9]'; then
   printf 'FAIL command=./scripts/kind-smoke.sh reason=gateway-down job did not fail\n' >&2

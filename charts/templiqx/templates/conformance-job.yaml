@@ -1,15 +1,19 @@
+{{- range .Values.conformance.scenarios }}
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "templiqx.fullname" . }}-conformance
+  name: {{ include "templiqx.fullname" $ }}-conformance-{{ . | replace "." "-" }}
   labels:
-    app.kubernetes.io/name: {{ include "templiqx.name" . }}
+    app.kubernetes.io/name: {{ include "templiqx.name" $ }}
+    templiqx.conformance/scenario: {{ . | quote }}
 spec:
   backoffLimit: 0
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "templiqx.name" . }}
+        app.kubernetes.io/name: {{ include "templiqx.name" $ }}
+        templiqx.conformance/scenario: {{ . | quote }}
     spec:
       restartPolicy: Never
       securityContext:
@@ -18,14 +22,16 @@ spec:
           type: RuntimeDefault
       containers:
         - name: conformance
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
           command: ["/usr/local/bin/templiqx-http-conformance"]
           env:
             - name: TEMPLIQX_RUNTIME_URL
-              value: "http://{{ include "templiqx.fullname" . }}-mock-gateway:{{ .Values.mock.gateway.port }}"
+              value: "http://{{ include "templiqx.fullname" $ }}-mock-gateway:{{ $.Values.mock.gateway.port }}"
             - name: TEMPLIQX_RUNTIME_SCENARIO
-              value: intake-document-01
+              value: {{ . | quote }}
+            - name: TEMPLIQX_HTTP_CONFORMANCE_MAX_ATTEMPTS
+              value: "3"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -34,10 +40,11 @@ spec:
             capabilities:
               drop: ["ALL"]
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml $.Values.resources | nindent 12 }}
           volumeMounts:
             - name: workspace
               mountPath: /workspace
       volumes:
         - name: workspace
           emptyDir: {}
+{{- end }}
