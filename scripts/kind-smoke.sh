@@ -63,6 +63,7 @@ fi
 
 kind load docker-image "$IMAGE" --name "$CLUSTER"
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+kubectl delete job "$RELEASE-templiqx-conformance" -n "$NAMESPACE" --ignore-not-found
 helm upgrade --install "$RELEASE" "$REPO_ROOT/charts/templiqx" \
   --namespace "$NAMESPACE" \
   -f "$REPO_ROOT/charts/templiqx/values-mock.yaml" \
