@@ -14,3 +14,4 @@
 - [Host integration handoff](guides/host-integration.md)
 - [Requirements](brainstorms/2026-07-11-templiqx-ai-native-template-engine-poc-requirements.md)
 - [Implementation plan](plans/2026-07-11-templiqx-poc-implementation-plan.md)
+- [Agent-native architecture audit (2026-07-12)](audits/2026-07-12-agent-native-architecture-review.md)
