@@ -78,3 +78,63 @@ jq -S . "$KIND_RECEIPT" >/tmp/templiqx-kind-http-receipt.sorted
 jq -S . "$HTTP_GOLDEN" >/tmp/templiqx-kind-http-golden.sorted
 cmp /tmp/templiqx-kind-http-receipt.sorted /tmp/templiqx-kind-http-golden.sorted
 printf 'kind smoke: http_conformance=true success=true log=%s\n' "$LOG_FILE"
+
+kubectl -n "$NAMESPACE" scale "deployment/$RELEASE-templiqx-mock-gateway" --replicas=0
+kubectl -n "$NAMESPACE" rollout status "deployment/$RELEASE-templiqx-mock-gateway" --timeout=120s
+kubectl -n "$NAMESPACE" delete job "$RELEASE-templiqx-conformance-gateway-down" --ignore-not-found
+
+GATEWAY_DOWN_LOG="$ARTIFACT_DIR/gateway-down.log"
+cat <<EOF | kubectl apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${RELEASE}-conformance-gateway-down
+  namespace: ${NAMESPACE}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: templiqx
+        app.kubernetes.io/component: conformance-gateway-down
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: conformance
+          image: ${IMAGE}
+          imagePullPolicy: Never
+          command: ["/usr/local/bin/templiqx-http-conformance"]
+          env:
+            - name: TEMPLIQX_RUNTIME_URL
+              value: "http://${RELEASE}-templiqx-mock-gateway:8080"
+            - name: TEMPLIQX_HTTP_CONFORMANCE_MAX_ATTEMPTS
+              value: "3"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            capabilities:
+              drop: ["ALL"]
+EOF
+
+set +e
+kubectl -n "$NAMESPACE" wait --for=condition=failed "job/${RELEASE}-conformance-gateway-down" --timeout=180s
+gateway_down_wait=$?
+set -e
+if (( gateway_down_wait == 0 )); then
+  :
+elif ! kubectl -n "$NAMESPACE" get "job/${RELEASE}-conformance-gateway-down" -o jsonpath='{.status.failed}' | grep -q '^[1-9]'; then
+  printf 'FAIL command=./scripts/kind-smoke.sh reason=gateway-down job did not fail\n' >&2
+  exit 1
+fi
+kubectl -n "$NAMESPACE" logs "job/${RELEASE}-conformance-gateway-down" | tee "$GATEWAY_DOWN_LOG"
+if ! grep -F '"code":"TQX_HOST_RETRY_EXHAUSTED"' "$GATEWAY_DOWN_LOG" >/dev/null; then
+  printf 'FAIL command=./scripts/kind-smoke.sh reason=gateway-down missing retry-exhausted diagnostic\n' >&2
+  exit 1
+fi
+printf 'kind smoke: gateway_down=true code=TQX_HOST_RETRY_EXHAUSTED log=%s\n' "$GATEWAY_DOWN_LOG"

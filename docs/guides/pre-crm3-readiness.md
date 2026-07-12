@@ -39,4 +39,4 @@ Environment-dependent deploy gates:
 just verify-deploy
 ```
 
-Missing Docker daemon, Helm, kubectl, kind, Syft, Grype, or Trivy is reported as `SKIP_ENV` in local runs. In CI, configured deploy lanes should treat missing configured tools as failures.
+Compose failure profiles (`mock-failure-unavailable`, `mock-failure-timeout`) and the kind gateway-down job prove typed transport failures and host retry exhaustion without sleeps in test code. Golden fixture updates require a `GOLDEN_REVIEW:` commit marker or `ALLOW_GOLDEN_UPDATE=1` in CI.

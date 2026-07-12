@@ -30,6 +30,7 @@ enum HostRejection {
     DirectAgentCommitDenied,
     ProposalRejected,
     WrongTenant,
+    SplitAccess,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,10 +64,24 @@ struct HostHarness {
     document_queue: Vec<String>,
     audit_log: Vec<String>,
     retry_elapsed_ms: u64,
+    retrieval_scope: RetrievalScope,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RetrievalScope {
+    Full,
+    SplitAccess,
 }
 
 impl HostHarness {
     fn new(runtime: ScriptedRuntime) -> Result<Self> {
+        Self::with_retrieval_scope(runtime, RetrievalScope::Full)
+    }
+
+    fn with_retrieval_scope(
+        runtime: ScriptedRuntime,
+        retrieval_scope: RetrievalScope,
+    ) -> Result<Self> {
         let workspace = tempfile::tempdir()?.keep();
         Ok(Self {
             service: TempliqxService::new(
@@ -82,6 +97,7 @@ impl HostHarness {
             document_queue: Vec::new(),
             audit_log: Vec::new(),
             retry_elapsed_ms: 0,
+            retrieval_scope,
         })
     }
 
@@ -95,6 +111,9 @@ impl HostHarness {
     ) -> Result<OperationEnvelope<ExecutionReceipt>, HostRejection> {
         if tenant != TENANT {
             return Err(HostRejection::WrongTenant);
+        }
+        if matches!(self.retrieval_scope, RetrievalScope::SplitAccess) {
+            return Err(HostRejection::SplitAccess);
         }
         if actor == Actor::Agent && approval_id.is_none() {
             return Err(HostRejection::DirectAgentCommitDenied);
@@ -450,6 +469,49 @@ fn wrong_tenant_is_rejected_before_runtime() -> Result<()> {
 
     ensure!(rejected == HostRejection::WrongTenant);
     ensure!(host.attempts() == 0, "runtime should not be reached");
+    Ok(())
+}
+
+#[test]
+fn split_access_is_rejected_before_runtime() -> Result<()> {
+    let mut host =
+        HostHarness::with_retrieval_scope(ScriptedRuntime::success(), RetrievalScope::SplitAccess)?;
+    let rejected = host
+        .execute(Actor::Human, TENANT, None, None, 1)
+        .expect_err("split retrieval access should be rejected");
+
+    ensure!(rejected == HostRejection::SplitAccess);
+    ensure!(host.attempts() == 0, "runtime should not be reached");
+    Ok(())
+}
+
+#[test]
+fn rate_limited_twice_then_succeeds_on_third_attempt() -> Result<()> {
+    let runtime = ScriptedRuntime::scripted([
+        ScriptedScenario::Failure {
+            id: "rate-limit-1".into(),
+            code: RuntimeFailureCode::RateLimited,
+            retry_after_ms: Some(10),
+            detail: "rate limited".into(),
+        },
+        ScriptedScenario::Failure {
+            id: "rate-limit-2".into(),
+            code: RuntimeFailureCode::RateLimited,
+            retry_after_ms: Some(20),
+            detail: "still rate limited".into(),
+        },
+        ScriptedScenario::Success,
+    ]);
+    let mut host = HostHarness::new(runtime)?;
+
+    let envelope = ok_receipt(host.execute(Actor::Human, TENANT, None, None, 3).unwrap())?;
+
+    ensure!(envelope.ok);
+    ensure!(host.attempts() == 3, "host should succeed on third attempt");
+    ensure!(
+        host.retry_elapsed_ms == 30,
+        "host should accumulate virtual retry-after delays"
+    );
     Ok(())
 }
 

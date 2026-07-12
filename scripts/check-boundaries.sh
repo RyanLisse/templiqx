@@ -64,6 +64,7 @@ require_path deploy/compose.yml
 require_path charts/templiqx/values-mock.yaml
 require_path scripts/docker-smoke.sh
 require_path scripts/kind-smoke.sh
+require_path scripts/check-ci-gates.sh
 require_path scripts/golden/http-conformance.json
 
 if [[ -f Dockerfile ]] && awk '

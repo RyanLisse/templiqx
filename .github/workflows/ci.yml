@@ -10,9 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate script syntax
-        run: bash -n scripts/check-boundaries.sh scripts/docker-smoke.sh scripts/kind-smoke.sh scripts/supply-chain-smoke.sh
+        run: bash -n scripts/check-boundaries.sh scripts/check-ci-gates.sh scripts/docker-smoke.sh scripts/kind-smoke.sh scripts/supply-chain-smoke.sh
       - name: Enforce architecture and deployment boundaries
         run: ./scripts/check-boundaries.sh
+      - name: Enforce CI policy gates
+        run: ./scripts/check-ci-gates.sh
 
 
   qlty:
@@ -35,6 +37,8 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo test --workspace --all-features
+      - name: Enforce CI policy gates
+        run: ./scripts/check-ci-gates.sh
       - name: Assert exact retry-exhaustion failure semantics
         run: cargo test -p templiqx-conformance --test crm3_failures host_retry_exhaustion_uses_exact_terminal_code_and_no_payload
 

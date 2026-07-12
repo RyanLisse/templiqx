@@ -18,6 +18,32 @@ services:
     depends_on:
       mock-gateway:
         condition: service_started
+  conformance-unavailable:
+    image: ${IMAGE:-templiqx:pre-crm3}
+    profiles: ["mock-failure-unavailable"]
+    user: "65532:65532"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    entrypoint: ["/usr/local/bin/templiqx-http-conformance"]
+    environment:
+      TEMPLIQX_RUNTIME_URL: http://mock-gateway-unreachable:8080
+      TEMPLIQX_RUNTIME_TIMEOUT_MS: 1000
+  conformance-timeout:
+    image: ${IMAGE:-templiqx:pre-crm3}
+    profiles: ["mock-failure-timeout"]
+    user: "65532:65532"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    entrypoint: ["/usr/local/bin/templiqx-http-conformance"]
+    environment:
+      TEMPLIQX_RUNTIME_URL: http://203.0.113.10:8080
+      TEMPLIQX_RUNTIME_TIMEOUT_MS: 250
   mock-gateway:
     image: ${IMAGE:-templiqx:pre-crm3}
     entrypoint: ["/usr/local/bin/templiqx-mock-gateway"]

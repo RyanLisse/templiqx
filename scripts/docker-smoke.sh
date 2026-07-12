@@ -97,4 +97,30 @@ docker run --rm \
 cmp "$LOCAL_RECEIPT" "$CONTAINER_RECEIPT"
 test -s "$CONTAINER_WORKSPACE/crm3/crm3-conformance/rendered.docx"
 test ! -e "$REPO_ROOT/examples/crm3/crm3-conformance/rendered.docx"
+
+run_failure_smoke() {
+  local profile="$1"
+  local service="$2"
+  local expected_code="$3"
+  local log_file="$ARTIFACT_DIR/${profile}.log"
+  set +e
+  docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile "$profile" run --rm --no-deps "$service" | tee "$log_file"
+  local status=${PIPESTATUS[0]}
+  set -e
+  if (( status != 2 )); then
+    printf 'FAIL command=./scripts/docker-smoke.sh reason=%s profile=%s exit=%s\n' \
+      "expected failure exit code 2" "$profile" "$status" >&2
+    exit 1
+  fi
+  if ! grep -F "\"code\":\"${expected_code}\"" "$log_file" >/dev/null; then
+    printf 'FAIL command=./scripts/docker-smoke.sh reason=missing failure code profile=%s expected=%s\n' \
+      "$profile" "$expected_code" >&2
+    exit 1
+  fi
+  printf 'docker smoke: failure_profile=%s code=%s\n' "$profile" "$expected_code"
+}
+
+run_failure_smoke mock-failure-unavailable conformance-unavailable TQX_RUNTIME_UNAVAILABLE
+run_failure_smoke mock-failure-timeout conformance-timeout TQX_RUNTIME_TIMEOUT
+
 printf 'docker smoke: receipt_match=true artifact=%s\n' "$CONTAINER_WORKSPACE/crm3/crm3-conformance/rendered.docx"
