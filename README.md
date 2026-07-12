@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="specs/pre-crm3-readiness-docker-kubernetes/hero.png" alt="Templiqx: verified, deterministic, deployed" width="720">
+  <img src="docs/specs/pre-crm3-readiness-docker-kubernetes/hero.png" alt="Templiqx: verified, deterministic, deployed" width="720">
 </p>
 
 <h1 align="center">Templiqx</h1>

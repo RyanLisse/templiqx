@@ -2,7 +2,7 @@
 date: 2026-07-12
 status: draft
 type: feat
-origin: specs/pre-crm3-readiness-docker-kubernetes.html
+origin: docs/specs/pre-crm3-readiness-docker-kubernetes.html
 requirements:
   - docs/brainstorms/2026-07-11-templiqx-ai-native-template-engine-poc-requirements.md
   - docs/guides/pre-crm3-readiness.md
@@ -12,7 +12,7 @@ requirements:
 
 ## Summary
 
-**NL:** Pre-CRM3 readiness staat op ~95% (76× gereed, 2× wip, 2× open in `specs/pre-crm3-readiness-docker-kubernetes.html`). Dit plan sluit de resterende **standalone** productiegaten: supply-chain attestatie, fresh-clone reproduceerbaarheid, CI/`just`-pariteit, host-handoffdocumentatie, synthetische portability- en legacy-corpusuitbreiding, en package-trust design — **zonder** te wachten op CRM3 ModelGateway, tenant/auth of echte opco-data.
+**NL:** Pre-CRM3 readiness staat op ~98% (79× gereed, 0× wip, 1× open in `docs/specs/pre-crm3-readiness-docker-kubernetes.html`). Dit plan sluit de resterende **standalone** productiegaten: supply-chain attestatie, fresh-clone reproduceerbaarheid, CI/`just`-pariteit, host-handoffdocumentatie, synthetische portability- en legacy-corpusuitbreiding, en package-trust design — **zonder** te wachten op CRM3 ModelGateway, tenant/auth of echte opco-data.
 
 **EN:** Pre-CRM3 readiness is ~95% complete. This plan closes remaining **standalone** production gaps: supply-chain attestation, fresh-clone reproducibility, CI/`just` parity, host handoff docs, synthetic portability and legacy corpus expansion, and package-trust design — **without** waiting for CRM3 ModelGateway, tenant/auth, or real opco data.
 
@@ -59,7 +59,7 @@ CRM3 host integration (ModelGateway adapter, sanitized production fixtures, tena
 | **R14** | CRM3 ModelGateway adapter executes same scenario suite with request fingerprint parity | — | **Yes** (host repo) |
 | **R15** | Human-review extraction outcome as schema-valid “review required” (not only `runtime_failure`) | P2 | **Yes** (needs host consumer + `bli-61` schema agreement) |
 
-Traceability: R1–R4 close `specs/pre-crm3-readiness-docker-kubernetes.html` phase 6 wip/open items. R5–R9 advance brainstorm post-POC hypotheses (R17–R18, second opco) synthetically. R10–R12 are product-direction items explicitly deferred in the brainstorm scope boundaries.
+Traceability: R1–R4 close `docs/specs/pre-crm3-readiness-docker-kubernetes.html` phase 6 wip/open items. R5–R9 advance brainstorm post-POC hypotheses (R17–R18, second opco) synthetically. R10–R12 are product-direction items explicitly deferred in the brainstorm scope boundaries.
 
 ---
 
@@ -216,7 +216,7 @@ flowchart TB
 - `.github/workflows/ci.yml`
 - `scripts/supply-chain-smoke.sh`
 - `docs/architecture/deployment.md`
-- `specs/pre-crm3-readiness-docker-kubernetes.html` (status update)
+- `docs/specs/pre-crm3-readiness-docker-kubernetes.html` (status update)
 
 **Approach:** Enable BuildKit provenance in CI docker build; sign with cosign (keyless OIDC in GitHub Actions); extend `supply-chain-smoke.sh` to assert attestation/SBOM digest linkage. Document verification steps for consumers.
 
@@ -445,7 +445,7 @@ flowchart TB
 
 | Source | Use |
 |--------|-----|
-| `specs/pre-crm3-readiness-docker-kubernetes.html` | ~95% status; deferred items L405, L465, L471, L558, L564 |
+| `docs/specs/pre-crm3-readiness-docker-kubernetes.html` | ~98% status; deferred item: tweede opco-package (L465) |
 | `docs/brainstorms/2026-07-11-templiqx-ai-native-template-engine-poc-requirements.md` | R17–R18, post-POC hypotheses, scope boundaries |
 | `docs/guides/pre-crm3-readiness.md` | Workspace contract, failure semantics, verify commands |
 | `docs/architecture/deployment.md` | Core boundary, host ownership |

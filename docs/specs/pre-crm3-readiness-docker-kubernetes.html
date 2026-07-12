@@ -402,7 +402,7 @@ stateDiagram-v2
         <li><code class="status">[x]</code> Bouw binaries in een pinned Rust builder stage en kopieer alleen CLI, MCP en conformance/mock-gateway naar runtime stages. <em>Dockerfile bouwde <code>templiqx-mcp</code> nog niet en kopieerde het binary niet; gecorrigeerd 2026-07-12.</em></li>
         <li><code class="status">[x]</code> Gebruik numeric non-root UID/GID, geen shell in de minimale runtime indien debugbaarheid niet vereist is, en een read-only root filesystem.</li>
         <li><code class="status">[x]</code> Mount <code>/packages:ro</code> en <code>/work:rw</code>; wijzig document-output routing backward-compatible.</li>
-        <li><code class="status">[wip]</code> Voeg OCI labels, pinned base-image digest en build provenance toe. <em>Labels en digest zijn aanwezig; SLSA/build-provenance-attestatie blijft deferred.</em></li>
+        <li><code class="status">[x]</code> Voeg OCI labels, pinned base-image digest en build provenance toe. <em>BuildKit provenance in CI, SBOM/digest checks in <code>scripts/supply-chain-smoke.sh</code> (2026-07-12).</em></li>
       </ul>
       <h4>4.2 Compose mock profile</h4>
       <ul class="checklist">
@@ -448,7 +448,7 @@ stateDiagram-v2
     </div>
 
     <div class="phase">
-      <h3><code class="status">[wip]</code> Fase 6: CI, supply chain en handoff</h3>
+      <h3><code class="status">[x]</code> Fase 6: CI, supply chain en handoff</h3>
       <p>Maak de readiness proof verplicht en overdraagbaar aan CRM3 en andere opco's.</p>
       <h4>6.1 CI gates</h4>
       <ul class="checklist">
@@ -468,7 +468,7 @@ stateDiagram-v2
       <ul class="checklist">
         <li><code class="status">[x]</code> <code>just verify</code> — volledige lokale workspace.</li>
         <li><code class="status">[x]</code> <code>just verify-deploy</code> — image, Compose, Helm en kind.</li>
-        <li><code class="status">[]</code> Fresh-clone run met lege Cargo/Docker cache — reproduceerbaarheid en ontbrekende lokale dependencies. <em>Deferred; CI fresh no-cache build dekt image-repro gedeeltelijk.</em></li>
+        <li><code class="status">[x]</code> Fresh-clone run met lege Cargo/Docker cache — reproduceerbaarheid en ontbrekende lokale dependencies. <em><code>scripts/fresh-clone-verify.sh</code> + CI job <code>fresh-clone</code> (2026-07-12).</em></li>
       </ul>
       <div class="loop">🔁 Het plan is pas gebouwd wanneer een clean clone alle gates zonder lokale state doorloopt.</div>
     </div>
@@ -555,13 +555,13 @@ stateDiagram-v2
         <tr><td>Kubernetes runtime</td><td>OCI runner artifacts</td><td>Chart/Job/mock gateway</td><td>Host chart or sidecar integration</td></tr>
       </tbody>
     </table>
-    <div class="callout"><strong>Status (2026-07-12):</strong> Fasen 1–5 zijn gebouwd en groen via <code>just verify</code> en CI. Resterende gaps: build-provenance-attestatie, fresh-clone gate, tweede opco-package (post-CRM3), optionele aparte MCP-image stage, en echte CRM3 ModelGateway-adapter (host repo). Eerstvolgende actie: host-side ModelGateway consumer-contract tegen dezelfde scenario-suite.</div>
+    <div class="callout"><strong>Status (2026-07-12):</strong> Fasen 1–6 zijn gebouwd en groen via <code>just verify</code>, <code>just fresh-clone</code> en CI supply-chain/fresh-clone jobs. Resterende gaps: tweede opco-package (post-CRM3), optionele aparte MCP-image stage, en echte CRM3 ModelGateway-adapter (host repo). Eerstvolgende actie: host-side ModelGateway consumer-contract tegen dezelfde scenario-suite.</div>
     <p><strong>Plan gereed voor:</strong> CRM3 host-adapter handoff. Na hostintegratie vervang synthetische fixtures door gesaniteerde CRM3-data en voeg daarna een tweede Blinqx-opco toe als portability gate.</p>
   </section>
 
   <section id="amendments">
     <h2>Amendments</h2>
-    <p><strong>2026-07-12 — Pre-CRM3 readiness closeout (~95%).</strong> Alle zes fasen zijn geïmplementeerd of expliciet deferred. Checkliststatus in dit document: <strong>76× [x]</strong>, <strong>2× [wip]</strong> (build provenance, Fase 6 tot fresh-clone/post-CRM3 items klaar zijn), <strong>2× []</strong> (tweede opco-package, fresh-clone gate). Nieuwe gaps gesloten in deze ronde: Compose failure profiles (<code>mock-failure-unavailable</code>, <code>mock-failure-timeout</code>), kind gateway-down retry-exhausted job, split-access host-boundary test, CI gates voor <code>#[ignore]</code> en golden review (<code>scripts/check-ci-gates.sh</code>). Deferred zonder regressie: SLSA/build-provenance, aparte MCP-image stage (optioneel), tweede opco-package, fresh-clone zonder cache, echte ModelGateway-adapter in Basenet host.</p>
+    <p><strong>2026-07-12 — Pre-CRM3 readiness closeout (~98%).</strong> Alle zes fasen zijn geïmplementeerd; één portability-item blijft expliciet post-CRM3. Checkliststatus in dit document: <strong>79× [x]</strong>, <strong>0× [wip]</strong>, <strong>1× []</strong> (tweede opco-package). Nieuwe gaps gesloten in deze ronde: fresh-clone gate (<code>scripts/fresh-clone-verify.sh</code>), SLSA/build-provenance in CI (<code>scripts/supply-chain-smoke.sh</code>), Compose failure profiles, kind gateway-down retry-exhausted job, split-access host-boundary test, CI gates voor <code>#[ignore]</code> en golden review. Deferred zonder regressie: aparte MCP-image stage (optioneel), tweede opco-package, echte ModelGateway-adapter in Basenet host.</p>
     <p><strong>2026-07-12 — Volledigheidsaudit tegen deze specificatie.</strong> Geverifieerd tegen de daadwerkelijke code, niet alleen de checklist-status: Fase 1, 3 en 5 hadden geen gaps; <code>examples/crm3/scenarios/*</code> gebruikt exact de namen die 2.1 voorschrijft (geen naming-mismatch); de <code>ambiguous-date</code>/<code>missing-*</code> scenario's implementeren "human-review expectation" via een harde, typed <code>runtime_failure</code> in plaats van een schema-valide candidate/confidence-uitkomst — bewust niet herontworpen, want dat vereist een niet-gespecificeerde uitbreiding van het gesloten <code>bli-61</code> output-schema en risico op het schenden van de no-invented-facts grounding-eis zonder een host-consumer die de nieuwe velden gebruikt; Fase 6.2's ownership-matrix/host-testgids/fixture-vervanglijst bestaan al binnen dit document (Ownership matrix + status-callout), niet als losse <code>docs/</code>-bestanden. Eén echte discrepantie gevonden en gefixt: <code>Dockerfile</code> bouwde en kopieerde <code>templiqx-mcp</code> niet, ondanks de <code>[x]</code>-claim in 4.1 (zie boven) — nu gecorrigeerd, plus een <code>docker run</code> MCP-stdio-initialize smoke check in <code>scripts/docker-smoke.sh</code>. Kleine parity-fix: <code>helm lint</code> ontbrak in <code>just verify-deploy</code> terwijl CI het wel los draait — toegevoegd. Geverifieerd: image build met <code>templiqx-mcp</code>, directe MCP-stdio-handshake in de hardened container (non-root, read-only rootfs, cap-drop ALL), <code>helm lint</code>, en volledige <code>just verify</code> (fmt, clippy, alle workspace-tests, boundaries) — allemaal groen.</p>
   </section>
 </main>
