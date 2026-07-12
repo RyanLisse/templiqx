@@ -33,8 +33,12 @@ spec:
               value: "http://{{ include "templiqx.fullname" $ }}-mock-gateway:{{ $.Values.mock.gateway.port }}"
             - name: TEMPLIQX_RUNTIME_SCENARIO
               value: {{ . | quote }}
+            # Post-install/post-upgrade hook Jobs can start before the
+            # mock-gateway Deployment's readiness probe passes. Each retry
+            # backs off ~1s, so this budget gives the gateway a real window
+            # to come up instead of exhausting on instant connection refusals.
             - name: TEMPLIQX_HTTP_CONFORMANCE_MAX_ATTEMPTS
-              value: "3"
+              value: "20"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

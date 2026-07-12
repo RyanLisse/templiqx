@@ -1,11 +1,14 @@
 //! Actor-neutral atomic Templiqx capabilities used by Rust, CLI and MCP.
 
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::path::Path;
 use templiqx_contracts::{
-    Contract, ContractDiff, ContractSummary, Diagnostic, ExecutionRequest, Explanation,
-    OperationEnvelope, PackageManifest, PackageSignature, RenderRequest, Severity, TestCaseResult,
-    TestReport, fingerprint, fingerprint_bytes,
+    ArtifactContent, ContentEncoding, Contract, ContractDiff, ContractSummary, Diagnostic,
+    ExecutionRequest, Explanation, OperationEnvelope, PackageManifest, PackageSignature,
+    RenderRequest, Severity, TestCaseResult, TestReport, WorkspaceArtifact, fingerprint,
+    fingerprint_bytes,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer,
@@ -54,10 +57,59 @@ pub struct RenderDocumentResult {
     pub report: Value,
 }
 
+/// Actor-neutral request to bootstrap an empty portable package.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct CreatePackageRequest {
+    pub name: String,
+    pub version: String,
+}
+
+/// Actor-neutral request to delete one contract with CAS safety.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct DeleteContractRequest {
+    pub package: String,
+    pub contract: String,
+    pub expected_fingerprint: String,
+}
+
+/// Actor-neutral request to list files under one package's workspace.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct ListWorkspaceArtifactsRequest {
+    pub package: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prefix: Option<String>,
+}
+
+/// Actor-neutral request to read one workspace artifact's bytes.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct ReadArtifactRequest {
+    pub package: String,
+    pub path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace: Option<String>,
+}
+
+/// One addressable `(contract, fixture)` pair, as enumerated by `list_evals`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct EvalCase {
+    pub contract_id: String,
+    pub fixture_id: String,
+}
+
 pub const CAPABILITY_CATALOG: &[&str] = &[
+    "catalog",
     "discover_packages",
+    "create_package",
     "inspect_contract",
     "put_contract",
+    "delete_contract",
     "validate_contract",
     "validate_package",
     "compile_contract",
@@ -65,7 +117,11 @@ pub const CAPABILITY_CATALOG: &[&str] = &[
     "execute_contract",
     "migrate_legacy",
     "render_document",
+    "list_workspace_artifacts",
+    "read_artifact",
     "test_package",
+    "list_evals",
+    "run_eval",
     "diff_contract",
     "explain_contract",
 ];
@@ -101,14 +157,74 @@ where
             .store
             .contract_source(package, contract)
             .map_err(|error| vec![port_diagnostic(error)])?;
-        templiqx_core::parse_contract(
+        let mut parsed = templiqx_core::parse_contract(
             &source,
             Some(&format!("{package}/contracts/{contract}.yaml")),
-        )
+        )?;
+        // U2 (plan 001): inline any tool-contract references before the caller
+        // validates or compiles, so downstream sees fully-resolved bounded schemas.
+        if let Ok(manifest) = self.store.manifest(package)
+            && !manifest.tool_contracts.is_empty()
+        {
+            let diagnostics =
+                templiqx_core::resolve_tool_contract_refs(&mut parsed, &manifest.tool_contracts);
+            if diagnostics.iter().any(|d| d.severity == Severity::Error) {
+                return Err(diagnostics);
+            }
+        }
+        Ok(parsed)
+    }
+
+    pub fn catalog(&self) -> OperationEnvelope<Vec<String>> {
+        catalog()
     }
 
     pub fn discover_packages(&self) -> OperationEnvelope<Vec<PackageManifest>> {
         port_result("discover_packages", self.store.discover())
+    }
+
+    pub fn create_package(
+        &self,
+        request: &CreatePackageRequest,
+    ) -> OperationEnvelope<PackageManifest> {
+        match self.store.create_package(&request.name, &request.version) {
+            Ok(manifest) => with_hash(
+                OperationEnvelope::new("create_package", Some(manifest.clone()), vec![]),
+                "package",
+                &manifest,
+            ),
+            Err(e) => port_failure("create_package", e),
+        }
+    }
+
+    pub fn delete_contract(
+        &self,
+        request: &DeleteContractRequest,
+    ) -> OperationEnvelope<ContractSummary> {
+        let parsed = match self.load_contract(&request.package, &request.contract) {
+            Ok(v) => v,
+            Err(diagnostics) => {
+                return OperationEnvelope::new("delete_contract", None, diagnostics);
+            }
+        };
+        match self.store.delete_contract(
+            &request.package,
+            &request.contract,
+            &request.expected_fingerprint,
+        ) {
+            Ok(hash) => OperationEnvelope::new(
+                "delete_contract",
+                Some(ContractSummary {
+                    package: request.package.clone(),
+                    id: parsed.id,
+                    version: parsed.version,
+                    fingerprint: hash.clone(),
+                }),
+                vec![],
+            )
+            .fingerprint("contract", hash),
+            Err(e) => port_failure("delete_contract", e),
+        }
     }
 
     pub fn inspect_contract(&self, package: &str, contract: &str) -> OperationEnvelope<Contract> {
@@ -288,6 +404,69 @@ where
                 Err(found) => diagnostics.extend(found),
             }
         }
+        // U3 (plan 001): dependency declarations verified against templiqx.lock.
+        // Content-addressed, no registry, no network fetch.
+        let lock: Option<templiqx_contracts::PackageLock> =
+            match self.store.artifact_bytes(package, "templiqx.lock") {
+                Ok(bytes) => match serde_yaml_ng::from_slice(&bytes) {
+                    Ok(parsed) => Some(parsed),
+                    Err(error) => {
+                        diagnostics.push(Diagnostic::error(
+                            "TQX_LOCK_INVALID",
+                            format!("templiqx.lock is not valid: {error}"),
+                            "/templiqx.lock",
+                        ));
+                        None
+                    }
+                },
+                Err(_) => None,
+            };
+        if !manifest.dependencies.is_empty() {
+            match &lock {
+                None => diagnostics.push(Diagnostic::error(
+                    "TQX_LOCK_MISSING",
+                    "package declares dependencies but has no templiqx.lock",
+                    "/dependencies",
+                )),
+                Some(lock) => {
+                    for (name, expected_fingerprint) in &manifest.dependencies {
+                        match lock.dependencies.get(name) {
+                            Some(locked) if &locked.fingerprint == expected_fingerprint => {
+                                if self.store.manifest(name).is_err() {
+                                    diagnostics.push(Diagnostic::error(
+                                        "TQX_DEPENDENCY_ROOT_MISSING",
+                                        format!("dependency '{name}' root not found in workspace"),
+                                        format!("/dependencies/{name}"),
+                                    ));
+                                }
+                            }
+                            Some(_) => diagnostics.push(Diagnostic::error(
+                                "TQX_LOCK_DRIFT",
+                                format!("lock fingerprint for '{name}' differs from manifest"),
+                                format!("/dependencies/{name}"),
+                            )),
+                            None => diagnostics.push(Diagnostic::error(
+                                "TQX_LOCK_DRIFT",
+                                format!("dependency '{name}' is not pinned in templiqx.lock"),
+                                format!("/dependencies/{name}"),
+                            )),
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(lock) = &lock {
+            for name in lock.dependencies.keys() {
+                if !manifest.dependencies.contains_key(name) {
+                    diagnostics.push(Diagnostic::error(
+                        "TQX_LOCK_DRIFT",
+                        format!("templiqx.lock pins '{name}' which the manifest does not declare"),
+                        "/templiqx.lock",
+                    ));
+                }
+            }
+        }
+
         let signatures = manifest.signatures.clone();
         let mut normalized_manifest = manifest;
         normalized_manifest.signatures.clear();
@@ -367,6 +546,7 @@ where
         request: &RenderRequest,
         capabilities: &[String],
         fixture_output: Option<Value>,
+        stream: bool,
     ) -> OperationEnvelope<templiqx_contracts::ExecutionReceipt> {
         let compiled = self.compile_contract(package, contract, request, capabilities);
         if !compiled.ok {
@@ -387,10 +567,20 @@ where
                 );
             }
         }
-        match self.runtime.execute(&ExecutionRequest {
+        let execution_request = ExecutionRequest {
             interaction,
             fixture_output,
-        }) {
+        };
+        let mut stream_events = Vec::new();
+        let executed = if stream {
+            self.runtime
+                .execute_streaming(&execution_request, &mut |event| {
+                    stream_events.push(event);
+                })
+        } else {
+            self.runtime.execute(&execution_request)
+        };
+        match executed {
             Ok(receipt) => {
                 let mut diagnostics = vec![];
                 if !receipt.output_schema_valid {
@@ -400,9 +590,14 @@ where
                         "/output",
                     ));
                 }
-                OperationEnvelope::new("execute_contract", Some(receipt.clone()), diagnostics)
-                    .fingerprint("request", receipt.request_fingerprint.clone())
-                    .fingerprint("output", receipt.output_fingerprint.clone())
+                let mut envelope =
+                    OperationEnvelope::new("execute_contract", Some(receipt.clone()), diagnostics)
+                        .fingerprint("request", receipt.request_fingerprint.clone())
+                        .fingerprint("output", receipt.output_fingerprint.clone());
+                if stream {
+                    envelope = envelope.stream_events(stream_events);
+                }
+                envelope
             }
             Err(e) => port_failure("execute_contract", e),
         }
@@ -442,6 +637,7 @@ where
                     },
                     capabilities,
                     Some(fixture.fake_output.clone()),
+                    false,
                 );
                 cases.push(TestCaseResult {
                     contract_id: contract_id.clone(),
@@ -473,6 +669,77 @@ where
             }),
             diagnostics,
         )
+    }
+
+    pub fn list_evals(&self, package: &str) -> OperationEnvelope<Vec<EvalCase>> {
+        let manifest = match self.store.manifest(package) {
+            Ok(v) => v,
+            Err(e) => return port_failure("list_evals", e),
+        };
+        let mut cases = Vec::new();
+        let mut diagnostics = Vec::new();
+        for contract_id in &manifest.contracts {
+            match self.load_contract(package, contract_id) {
+                Ok(contract) => cases.extend(contract.evals.iter().map(|fixture| EvalCase {
+                    contract_id: contract_id.clone(),
+                    fixture_id: fixture.id.clone(),
+                })),
+                Err(found) => diagnostics.extend(found),
+            }
+        }
+        OperationEnvelope::new("list_evals", Some(cases), diagnostics)
+    }
+
+    pub fn run_eval(
+        &self,
+        package: &str,
+        contract: &str,
+        fixture_id: &str,
+        capabilities: &[String],
+    ) -> OperationEnvelope<TestCaseResult> {
+        let parsed = match self.load_contract(package, contract) {
+            Ok(v) => v,
+            Err(diagnostics) => return OperationEnvelope::new("run_eval", None, diagnostics),
+        };
+        let Some(fixture) = parsed.evals.iter().find(|f| f.id == fixture_id) else {
+            return OperationEnvelope::new(
+                "run_eval",
+                None,
+                vec![Diagnostic::error(
+                    "TQX_NOT_FOUND",
+                    format!("eval fixture '{fixture_id}' not found for contract '{contract}'"),
+                    "/evals",
+                )],
+            );
+        };
+        let envelope = self.execute_contract(
+            package,
+            contract,
+            &RenderRequest {
+                inputs: fixture.inputs.clone(),
+                context: fixture.context.clone(),
+            },
+            capabilities,
+            Some(fixture.fake_output.clone()),
+            false,
+        );
+        let case = TestCaseResult {
+            contract_id: contract.into(),
+            fixture_id: fixture_id.into(),
+            passed: envelope.ok,
+            diagnostics: envelope.diagnostics,
+            artifact_fingerprint: envelope.fingerprints.get("output").cloned(),
+        };
+        let diagnostics = if case.passed {
+            vec![]
+        } else {
+            vec![Diagnostic::error(
+                "TQX_TEST_FAILED",
+                format!("fixture '{fixture_id}' failed"),
+                "/case",
+            )]
+        };
+        OperationEnvelope::new("run_eval", Some(case), diagnostics)
     }
 
     pub fn diff_contract(
@@ -537,6 +804,31 @@ where
                 return OperationEnvelope::new("explain_contract", None, diagnostics);
             }
         };
+        let defined: std::collections::BTreeSet<String> = c.components.keys().cloned().collect();
+        let mut referenced = std::collections::BTreeSet::new();
+        for message in &c.messages {
+            collect_component_refs(&message.content, &mut referenced);
+        }
+        for definition in c.components.values() {
+            let body = match definition {
+                templiqx_contracts::ComponentDefinition::Typed(t) => &t.content,
+                templiqx_contracts::ComponentDefinition::Legacy(nodes) => nodes,
+            };
+            collect_component_refs(body, &mut referenced);
+        }
+        let unresolved_references: Vec<String> = referenced.difference(&defined).cloned().collect();
+
+        let mut fix_hints = Vec::new();
+        for name in &unresolved_references {
+            fix_hints.push(format!(
+                "define component '{name}' under `components:` or remove its reference (TQX_COMPONENT_UNDEFINED)"
+            ));
+        }
+        if c.messages.is_empty() {
+            fix_hints
+                .push("add at least one message under `messages:` (TQX_MESSAGES_EMPTY)".to_owned());
+        }
+
         OperationEnvelope::new(
             "explain_contract",
             Some(Explanation {
@@ -546,6 +838,9 @@ where
                 context: c.context.keys().cloned().collect(),
                 capabilities: c.capabilities,
                 component_count: c.components.len(),
+                components: defined.into_iter().collect(),
+                unresolved_references,
+                fix_hints,
             }),
             vec![],
         )
@@ -629,6 +924,61 @@ where
             Some(RenderDocumentResult {
                 artifact,
                 report: rendered.report,
+            }),
+            vec![],
+        )
+    }
+
+    pub fn list_workspace_artifacts(
+        &self,
+        request: &ListWorkspaceArtifactsRequest,
+    ) -> OperationEnvelope<Vec<WorkspaceArtifact>> {
+        let entries = match self.workspace.list_artifacts(
+            &request.package,
+            request.workspace.as_deref(),
+            request.prefix.as_deref(),
+        ) {
+            Ok(entries) => entries,
+            Err(error) => return port_failure("list_workspace_artifacts", error),
+        };
+        let mut artifacts = Vec::with_capacity(entries.len());
+        for (path, size) in entries {
+            match self.workspace.relative_artifact_path(
+                &request.package,
+                &path,
+                request.workspace.as_deref(),
+            ) {
+                Ok(portable) => artifacts.push(WorkspaceArtifact {
+                    path: portable,
+                    size,
+                }),
+                Err(error) => return port_failure("list_workspace_artifacts", error),
+            }
+        }
+        artifacts.sort_by(|a, b| a.path.cmp(&b.path));
+        OperationEnvelope::new("list_workspace_artifacts", Some(artifacts), vec![])
+    }
+
+    pub fn read_artifact(
+        &self,
+        request: &ReadArtifactRequest,
+    ) -> OperationEnvelope<ArtifactContent> {
+        let bytes = match self.workspace.read_artifact(
+            &request.package,
+            &request.path,
+            request.workspace.as_deref(),
+        ) {
+            Ok(bytes) => bytes,
+            Err(error) => return port_failure("read_artifact", error),
+        };
+        let (content_encoding, content) = encode_artifact_content(&request.path, &bytes);
+        OperationEnvelope::new(
+            "read_artifact",
+            Some(ArtifactContent {
+                path: request.path.clone(),
+                content_type: content_type_for(&request.path),
+                content_encoding,
+                content,
             }),
             vec![],
         )
@@ -719,6 +1069,31 @@ pub fn verify_package_signatures(
     ));
 }
 
+/// U6: walk contract content, recording every component name referenced by a
+/// `component` node (recursing through `when`/`for_each` bodies and nested
+/// component invocations). Used by `explain_contract` to surface unresolved refs.
+fn collect_component_refs(
+    nodes: &[templiqx_contracts::Node],
+    out: &mut std::collections::BTreeSet<String>,
+) {
+    use templiqx_contracts::Node;
+    for node in nodes {
+        match node {
+            Node::Component { name, .. } => {
+                out.insert(name.clone());
+            }
+            Node::When {
+                then, otherwise, ..
+            } => {
+                collect_component_refs(then, out);
+                collect_component_refs(otherwise, out);
+            }
+            Node::ForEach { body, .. } => collect_component_refs(body, out),
+            Node::Text { .. } | Node::Interpolate { .. } => {}
+        }
+    }
+}
+
 fn with_hash<T: Serialize>(
     envelope: OperationEnvelope<T>,
     name: &str,
@@ -778,6 +1153,36 @@ fn address(diagnostics: &mut [Diagnostic], package: &str, contract: &str) {
             diagnostic.file = Some(file.clone());
         }
     }
+}
+
+fn content_type_for(path: &str) -> String {
+    let extension = Path::new(path)
+        .extension()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    match extension.as_str() {
+        "json" => "application/json",
+        "txt" => "text/plain",
+        "yaml" | "yml" => "application/yaml",
+        "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        _ => "application/octet-stream",
+    }
+    .to_owned()
+}
+
+fn encode_artifact_content(path: &str, bytes: &[u8]) -> (ContentEncoding, String) {
+    let extension = Path::new(path)
+        .extension()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if matches!(extension.as_str(), "json" | "txt" | "yaml" | "yml")
+        && let Ok(text) = std::str::from_utf8(bytes)
+    {
+        return (ContentEncoding::Utf8, text.to_owned());
+    }
+    (ContentEncoding::Base64, BASE64.encode(bytes))
 }
 
 pub fn catalog() -> OperationEnvelope<Vec<String>> {

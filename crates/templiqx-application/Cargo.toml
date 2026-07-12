@@ -11,9 +11,11 @@ templiqx-core = { path = "../templiqx-core" }
 templiqx-ports = { path = "../templiqx-ports" }
 serde.workspace = true
 serde_json.workspace = true
+serde_yaml_ng.workspace = true
 semver.workspace = true
 sha2.workspace = true
 hex.workspace = true
+base64 = { workspace = true }
 
 [dev-dependencies]
 templiqx-local = { path = "../templiqx-local" }

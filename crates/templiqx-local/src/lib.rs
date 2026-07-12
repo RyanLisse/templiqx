@@ -276,6 +276,89 @@ impl FilesystemArtifactWorkspace {
         self.output_path(package, &portable, workspace)?;
         Ok(portable)
     }
+
+    fn validated_prefix(prefix: Option<&str>) -> Result<Option<String>, PortError> {
+        let Some(prefix) = prefix else {
+            return Ok(None);
+        };
+        let trimmed = prefix.strip_suffix('/').unwrap_or(prefix);
+        if trimmed.is_empty() {
+            return Ok(None);
+        }
+        FilesystemPackageStore::relative_path(trimmed)?;
+        Ok(Some(trimmed.to_owned()))
+    }
+
+    fn existing_artifact_path(
+        &self,
+        package: &str,
+        relative: &str,
+        workspace: Option<&str>,
+    ) -> Result<PathBuf, PortError> {
+        let package_root = self.package_root(package, workspace)?;
+        let relative_path = FilesystemPackageStore::relative_path(relative)?;
+        let mut candidate = package_root.clone();
+        for component in relative_path.components() {
+            let std::path::Component::Normal(segment) = component else {
+                return Err(PortError::InvalidPath(relative.into()));
+            };
+            candidate.push(segment);
+            let metadata = fs::symlink_metadata(&candidate).map_err(|error| {
+                if error.kind() == std::io::ErrorKind::NotFound {
+                    PortError::NotFound(relative.into())
+                } else {
+                    io_error(error)
+                }
+            })?;
+            if metadata.file_type().is_symlink() {
+                return Err(PortError::InvalidPath(relative.into()));
+            }
+        }
+        let canonical = candidate.canonicalize().map_err(io_error)?;
+        if !canonical.starts_with(&package_root) || !canonical.is_file() {
+            return Err(PortError::InvalidPath(relative.into()));
+        }
+        Ok(canonical)
+    }
+
+    fn collect_artifacts(
+        dir: &Path,
+        package_root: &Path,
+        prefix: Option<&str>,
+        out: &mut Vec<(PathBuf, u64)>,
+    ) -> Result<(), PortError> {
+        let mut entries = fs::read_dir(dir)
+            .map_err(io_error)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(io_error)?;
+        entries.sort_by_key(std::fs::DirEntry::file_name);
+        for entry in entries {
+            let path = entry.path();
+            let metadata = fs::symlink_metadata(&path).map_err(io_error)?;
+            if metadata.file_type().is_symlink() {
+                continue;
+            }
+            if metadata.is_dir() {
+                Self::collect_artifacts(&path, package_root, prefix, out)?;
+                continue;
+            }
+            if !metadata.is_file() {
+                continue;
+            }
+            let relative = path
+                .strip_prefix(package_root)
+                .map_err(|_| PortError::InvalidPath(path.display().to_string()))?;
+            let portable = portable_path(relative, &path)?;
+            let included = match prefix {
+                None => true,
+                Some(prefix) => portable == prefix || portable.starts_with(&format!("{prefix}/")),
+            };
+            if included {
+                out.push((path, metadata.len()));
+            }
+        }
+        Ok(())
+    }
 }
 
 impl ArtifactWorkspace for FilesystemArtifactWorkspace {
@@ -296,9 +379,123 @@ impl ArtifactWorkspace for FilesystemArtifactWorkspace {
     ) -> Result<String, PortError> {
         self.relative_existing_path(package, path, workspace)
     }
+
+    fn list_artifacts(
+        &self,
+        package: &str,
+        workspace: Option<&str>,
+        prefix: Option<&str>,
+    ) -> Result<Vec<(PathBuf, u64)>, PortError> {
+        let prefix = Self::validated_prefix(prefix)?;
+        let package_root = self.package_root(package, workspace)?;
+        if !package_root.exists() {
+            return Ok(Vec::new());
+        }
+        let mut out = Vec::new();
+        Self::collect_artifacts(&package_root, &package_root, prefix.as_deref(), &mut out)?;
+        out.sort_by(|a, b| a.0.cmp(&b.0));
+        Ok(out)
+    }
+
+    fn read_artifact(
+        &self,
+        package: &str,
+        relative_path: &str,
+        workspace: Option<&str>,
+    ) -> Result<Vec<u8>, PortError> {
+        let path = self.existing_artifact_path(package, relative_path, workspace)?;
+        fs::read(path).map_err(io_error)
+    }
 }
 
 impl PackageStore for FilesystemPackageStore {
+    fn create_package(&self, name: &str, version: &str) -> Result<PackageManifest, PortError> {
+        match self.existing_package(name) {
+            Ok(_) => {
+                return Err(PortError::Conflict(format!(
+                    "package '{name}' already exists"
+                )));
+            }
+            Err(PortError::NotFound(_)) => {}
+            Err(error) => return Err(error),
+        }
+        create_package(&self.root, name, version)?;
+        self.manifest(name)
+    }
+
+    fn delete_contract(
+        &self,
+        package: &str,
+        contract: &str,
+        expected_fingerprint: &str,
+    ) -> Result<String, PortError> {
+        let target = self.contract_path(package, contract)?;
+        let package_root = self.existing_package(package)?;
+        let lock_path = package_root.join(".templiqx.lock");
+        let lock = OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(lock_path)
+            .map_err(io_error)?;
+        lock.lock_exclusive().map_err(io_error)?;
+
+        let parsed = self.contract(package, contract)?;
+        let actual = fingerprint(&parsed).map_err(|e| PortError::InvalidData(e.to_string()))?;
+        if expected_fingerprint != actual {
+            FileExt::unlock(&lock).map_err(io_error)?;
+            return Err(PortError::Conflict(format!(
+                "expected {expected_fingerprint}, found {actual}"
+            )));
+        }
+
+        let mut manifest = self.manifest(package)?;
+        let had_entry = manifest.contracts.iter().any(|id| id == contract);
+        manifest.contracts.retain(|id| id != contract);
+
+        let manifest_target = package_root.join("templiqx.yaml");
+        let manifest_tmp = package_root.join(format!("templiqx.yaml.tmp.{}", std::process::id()));
+        if had_entry {
+            let manifest_source = serde_yaml_ng::to_string(&manifest)
+                .map_err(|e| PortError::InvalidData(e.to_string()))?;
+            let mut manifest_file = OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(&manifest_tmp)
+                .map_err(io_error)?;
+            if let Err(error) = manifest_file
+                .write_all(manifest_source.as_bytes())
+                .and_then(|()| manifest_file.sync_all())
+            {
+                let _ = fs::remove_file(&manifest_tmp);
+                FileExt::unlock(&lock).map_err(io_error)?;
+                return Err(io_error(error));
+            }
+        }
+
+        if let Err(error) = fs::remove_file(&target) {
+            if had_entry {
+                let _ = fs::remove_file(&manifest_tmp);
+            }
+            FileExt::unlock(&lock).map_err(io_error)?;
+            return Err(if error.kind() == std::io::ErrorKind::NotFound {
+                PortError::NotFound(target.display().to_string())
+            } else {
+                io_error(error)
+            });
+        }
+
+        if had_entry && let Err(error) = fs::rename(&manifest_tmp, manifest_target) {
+            let _ = fs::remove_file(&manifest_tmp);
+            FileExt::unlock(&lock).map_err(io_error)?;
+            return Err(io_error(error));
+        }
+
+        FileExt::unlock(&lock).map_err(io_error)?;
+        Ok(actual)
+    }
+
     fn discover(&self) -> Result<Vec<PackageManifest>, PortError> {
         let mut manifests: Vec<PackageManifest> = Vec::new();
         for entry in fs::read_dir(&self.root).map_err(io_error)? {
@@ -628,6 +825,8 @@ pub fn create_package(
         templates: vec![],
         provenance: Default::default(),
         signatures: vec![],
+        dependencies: Default::default(),
+        tool_contracts: Default::default(),
     };
     let yaml =
         serde_yaml_ng::to_string(&manifest).map_err(|e| PortError::InvalidData(e.to_string()))?;

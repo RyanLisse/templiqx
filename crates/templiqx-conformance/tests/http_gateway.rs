@@ -42,19 +42,22 @@ impl Drop for Gateway {
 
 fn mock_gateway_binary() -> Result<PathBuf> {
     static BUILT: OnceLock<PathBuf> = OnceLock::new();
-    if BUILT.get().is_none() {
-        let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../..")
-            .canonicalize()?;
+    if let Some(path) = BUILT.get() {
+        return Ok(path.clone());
+    }
+    let repo = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()?;
+    let binary = repo.join("target/debug/templiqx-mock-gateway");
+    if !binary.is_file() {
         let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
         let status = Command::new(&cargo)
             .current_dir(&repo)
             .args(["build", "--quiet", "-p", "templiqx-mock-gateway"])
             .status()?;
         ensure!(status.success(), "failed to build templiqx-mock-gateway");
-        let _ = BUILT.set(repo.join("target/debug/templiqx-mock-gateway"));
     }
-    Ok(BUILT.get().expect("mock gateway binary").clone())
+    Ok(BUILT.get_or_init(|| binary).clone())
 }
 
 fn gateway() -> Result<(Gateway, String)> {

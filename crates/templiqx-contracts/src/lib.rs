@@ -67,6 +67,9 @@ pub struct OperationEnvelope<T> {
     pub diagnostics: Vec<Diagnostic>,
     #[serde(default)]
     pub fingerprints: BTreeMap<String, String>,
+    /// Streaming transport events collected when `execute_contract(stream: true)`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stream_events: Vec<StreamEvent>,
 }
 
 impl<T> OperationEnvelope<T> {
@@ -80,11 +83,17 @@ impl<T> OperationEnvelope<T> {
             result,
             diagnostics,
             fingerprints: BTreeMap::new(),
+            stream_events: Vec::new(),
         }
     }
     #[must_use]
     pub fn fingerprint(mut self, name: &str, value: impl Into<String>) -> Self {
         self.fingerprints.insert(name.into(), value.into());
+        self
+    }
+    #[must_use]
+    pub fn stream_events(mut self, events: Vec<StreamEvent>) -> Self {
+        self.stream_events = events;
         self
     }
 }
@@ -119,6 +128,45 @@ pub struct PackageManifest {
     pub provenance: BTreeMap<String, String>,
     #[serde(default)]
     pub signatures: Vec<PackageSignature>,
+    /// Declared dependent packages: dependency name → expected package fingerprint.
+    /// Empty is omitted from serialization so packages without dependencies keep
+    /// their existing package fingerprint (no conformance golden churn).
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub dependencies: BTreeMap<String, String>,
+    /// Shared, immutable tool-contract definitions referenced by contract
+    /// extensions via `{ "$ref": "tool_contract:<name>", "fingerprint": ... }`.
+    /// Empty is omitted to preserve existing package fingerprints.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub tool_contracts: BTreeMap<String, ToolContractRef>,
+}
+
+/// An immutable, content-addressed tool/function schema shared across contracts.
+/// Identity is the `fingerprint`; editing the schema yields a new fingerprint so
+/// pinned references never resolve to silently changed definitions.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct ToolContractRef {
+    pub fingerprint: String,
+    pub schema: Value,
+}
+
+/// A resolved dependency entry in a package's `templiqx.lock`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct LockedDependency {
+    /// Path to the dependency package root, relative to the packages workspace.
+    pub path: String,
+    /// Package fingerprint the lock pins for this dependency.
+    pub fingerprint: String,
+}
+
+/// Optional `templiqx.lock` pinning each declared dependency to a resolved
+/// path and fingerprint. Content-addressed, no registry, no network fetch.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(deny_unknown_fields)]
+pub struct PackageLock {
+    #[serde(default)]
+    pub dependencies: BTreeMap<String, LockedDependency>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -270,6 +318,11 @@ pub enum Filter {
     Lower,
     Upper,
     Json,
+    /// Reformat an ISO `YYYY-MM-DD` date string for the render `context.locale`.
+    /// Bounded and deterministic — no arbitrary code, no external date library.
+    FormatDate,
+    /// Group a numeric value for the render `context.locale`.
+    FormatNumber,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -338,6 +391,31 @@ pub struct ExecutionReceipt {
     pub output_schema_valid: bool,
 }
 
+/// Runtime streaming event emitted by `RuntimeAdapter::execute_streaming`.
+///
+/// Streaming is a transport/observability concern layered over the same
+/// deterministic result contract: the terminal `Complete` event always carries
+/// the exact `ExecutionReceipt` a non-streaming `execute` call would produce, so
+/// fingerprints, `output`, and `output_schema_valid` never depend on whether the
+/// caller streamed. This is distinct from the mock scenario-fixture stream DTO
+/// (`templiqx_mock::ScenarioStreamEvent`), which describes fixture lifecycles.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields, tag = "kind")]
+pub enum StreamEvent {
+    Delta {
+        text: String,
+    },
+    ToolCallDelta {
+        name: String,
+        arguments_fragment: String,
+    },
+    Complete(ExecutionReceipt),
+    Failed {
+        code: String,
+        message: String,
+    },
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ContractSummary {
@@ -356,6 +434,33 @@ pub struct ContractDiff {
     pub changes: Vec<String>,
 }
 
+/// Portable listing entry for a file confined to a package's workspace root.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct WorkspaceArtifact {
+    /// Path relative to the package's workspace root, forward-slash separated.
+    pub path: String,
+    pub size: u64,
+}
+
+/// How `ArtifactContent::content` is encoded.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ContentEncoding {
+    Utf8,
+    Base64,
+}
+
+/// Portable workspace artifact bytes returned identically on every surface.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct ArtifactContent {
+    pub path: String,
+    pub content_type: String,
+    pub content_encoding: ContentEncoding,
+    pub content: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Explanation {
@@ -365,6 +470,17 @@ pub struct Explanation {
     pub context: Vec<String>,
     pub capabilities: Vec<String>,
     pub component_count: usize,
+    /// U6 (plans 001/002): agent- and IDE-oriented diagnostic graph.
+    /// Names of components defined by the contract.
+    #[serde(default)]
+    pub components: Vec<String>,
+    /// Component names referenced in content but not defined — the primary
+    /// authoring failure this graph surfaces.
+    #[serde(default)]
+    pub unresolved_references: Vec<String>,
+    /// Actionable, stable fix hints mirroring diagnostic codes.
+    #[serde(default)]
+    pub fix_hints: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

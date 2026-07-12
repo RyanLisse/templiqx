@@ -80,6 +80,7 @@ fn synthetic_opco_validate_compile_execute_are_deterministic() -> Result<()> {
             "employee_id": "E-1042",
             "department": "Platform Engineering"
         })),
+        false,
     ))?;
     let repeat = result(service.execute_contract(
         PACKAGE,
@@ -90,6 +91,7 @@ fn synthetic_opco_validate_compile_execute_are_deterministic() -> Result<()> {
             "employee_id": "E-1042",
             "department": "Platform Engineering"
         })),
+        false,
     ))?;
     ensure!(
         extraction_receipt.request_fingerprint == repeat.request_fingerprint
@@ -120,6 +122,7 @@ fn synthetic_opco_validate_compile_execute_are_deterministic() -> Result<()> {
             "valid": true,
             "reason": "department matches expected onboarding target"
         })),
+        false,
     ))?;
     ensure!(
         validation_receipt.output_schema_valid,

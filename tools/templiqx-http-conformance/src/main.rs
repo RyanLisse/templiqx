@@ -10,6 +10,8 @@ fn main() {
     }
 }
 
+const RETRY_BACKOFF: Duration = Duration::from_millis(1_000);
+
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let url =
         env::var("TEMPLIQX_RUNTIME_URL").unwrap_or_else(|_| "http://mock-gateway:8080".into());
@@ -69,6 +71,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let code = failure.code;
                 last_failure = Some((code, failure.fingerprint.clone()));
                 if is_retryable(code) && attempts < max_attempts {
+                    // Connection failures (e.g. a not-yet-ready gateway) fail
+                    // instantly, so without a delay the whole attempt budget
+                    // burns through in milliseconds and never gives the host
+                    // a real window to become reachable.
+                    std::thread::sleep(RETRY_BACKOFF);
                     continue;
                 }
                 let terminal = if is_retryable(code) && attempts >= max_attempts && max_attempts > 1

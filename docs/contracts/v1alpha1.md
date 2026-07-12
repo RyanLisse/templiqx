@@ -16,7 +16,7 @@ A contract defines exactly one model interaction:
 Content is data, not executable source. Supported nodes are:
 
 - `text`: literal text;
-- `interpolate`: a typed expression with fixed `trim`, `lower`, `upper`, or `json` filters;
+- `interpolate`: a typed expression with fixed `trim`, `lower`, `upper`, `json`, `format_date`, or `format_number` filters;
 - `when`: deterministic conditional content;
 - `for_each`: deterministic iteration over an array;
 - `component`: a local component invocation with explicit values.
@@ -25,7 +25,7 @@ Expressions are limited to references, JSON literals, equality, boolean negation
 
 References begin with `inputs.`, `context.`, an iteration item, or an explicit component argument. Every path segment is checked against the declared nested object/array schema, including paths below a `for_each` item. Missing, unknown, or structurally impossible paths are diagnostics, never empty-string fallbacks.
 
-Boolean operators and `when` require booleans; `for_each` requires an array. Interpolation accepts schema-known scalar values directly. Arrays, objects, and null require the `json` filter, while `trim`, `lower`, and `upper` require strings. Input, context, component-parameter, extension, and output schemas use the deliberately bounded POC JSON Schema subset. Unsupported keywords and impossible bounds fail validation. The `date` and `date-time` formats are enforced when values and runtime outputs are validated.
+Boolean operators and `when` require booleans; `for_each` requires an array. Interpolation accepts schema-known scalar values directly. Arrays, objects, and null require the `json` filter, while `trim`, `lower`, and `upper` require strings. The `format_date` filter reformats an ISO `YYYY-MM-DD` string and `format_number` groups a numeric value, both driven by `context.locale` (`nl*`, `de*`, `en-US*`, else ISO/plain); they read locale data only and execute no code. Non-conforming input fails validation. Input, context, component-parameter, extension, and output schemas use the deliberately bounded POC JSON Schema subset. Unsupported keywords and impossible bounds fail validation. The `date` and `date-time` formats are enforced when values and runtime outputs are validated.
 
 ## Typed components
 
@@ -66,6 +66,29 @@ extensions:
 ```
 
 The extension schema must be in the bounded subset and its `value` must validate against it. Its declared capability must be present in the target profile or compilation fails with `TQX_EXTENSION_UNSUPPORTED`; it is also propagated into the compiled interaction's required capabilities so a runtime adapter cannot bypass the gate. The validated value is preserved in the compiled interaction and is never silently interpreted by the portable core.
+
+### Tool-contract references
+
+A package manifest may declare a `tool_contracts` table of shared, immutable, content-addressed schemas. An extension references one instead of inlining the schema by setting its `schema` to a `$ref` with a pinned fingerprint:
+
+```yaml
+# templiqx.yaml
+tool_contracts:
+  search_customers:
+    fingerprint: sha256:abc...
+    schema: { type: object, properties: { query: { type: string } }, required: [query] }
+```
+
+```yaml
+# a contract's extension
+extensions:
+  vendor.search:
+    capability: tools
+    schema: { $ref: tool_contract:search_customers, fingerprint: sha256:abc... }
+    value: { query: "acme" }
+```
+
+Resolution happens before validation: the reference is replaced with the referenced schema when the pinned fingerprint matches, so downstream validation and compilation see a fully-inlined bounded schema. An unknown name, a mismatched fingerprint, or a missing pin fails closed with `TQX_TOOL_CONTRACT_REF_UNRESOLVED`. Editing a shared schema yields a new fingerprint, so pinned references never resolve to a silently changed definition. The `tool_contracts` field is additive; manifests without it parse and fingerprint exactly as before.
 
 ## Stable diagnostics
 

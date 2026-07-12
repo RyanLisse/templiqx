@@ -80,6 +80,15 @@ event fields are rejected. The synchronous adapter concatenates deltas and
 reasoning in event order and sums usage deterministically; an explicit finish
 output takes precedence when supplied.
 
+These fixture events are the scenario DTO `ScenarioStreamEvent` (Rust name;
+JSON tags unchanged) and describe a model's aggregate stream lifecycle. They
+are distinct from the runtime `templiqx_contracts::StreamEvent` emitted by
+`RuntimeAdapter::execute_streaming` (`Delta`, `ToolCallDelta`, `Complete`,
+`Failed`). When executed with streaming, `ScriptedRuntime` replays each fixture
+`delta` as a `StreamEvent::Delta`, then emits a terminal `Complete` carrying the
+exact receipt `execute` produces (fingerprint parity) — or a `Failed` event with
+a stable `TQX_*` code before the error returns.
+
 Delays advance an injected virtual clock only. The mock runtime never sleeps.
 
 ## Fingerprint Policy

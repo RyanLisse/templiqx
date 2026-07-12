@@ -150,6 +150,7 @@ fn composes_grounded_interactions_and_explicit_v5_document_conformance() -> Resu
         &extraction_request,
         &capabilities,
         Some(read_json(package.join("evals/bli-61-output.json"))?),
+        false,
     ))?;
     ensure!(extraction_receipt.output_schema_valid);
     assert_grounded_evidence(&extraction_request, &extraction_receipt.output)?;
@@ -179,6 +180,7 @@ fn composes_grounded_interactions_and_explicit_v5_document_conformance() -> Resu
         &drafting_request,
         &capabilities,
         Some(read_json(package.join("evals/bli-62-output.json"))?),
+        false,
     ))?;
     ensure!(drafting_receipt.output_schema_valid);
 
@@ -423,6 +425,11 @@ async fn rust_cli_and_in_memory_mcp_have_crm3_capability_parity() -> Result<()> 
     });
     let client = ().serve(client_transport).await?;
 
+    let rust_catalog = rust_service.catalog();
+    let cli_catalog = cli_envelope(&examples, &["catalog"])?;
+    let mcp_catalog = mcp_call(&client, "catalog", json!({})).await?;
+    assert_equal_envelopes(&rust_catalog, &cli_catalog, &mcp_catalog)?;
+
     let rust_validate_package = rust_service.validate_package(PACKAGE);
     let cli_validate_package = cli_envelope(&examples, &["validate", PACKAGE])?;
     let mcp_validate_package =
@@ -507,6 +514,7 @@ async fn rust_cli_and_in_memory_mcp_have_crm3_capability_parity() -> Result<()> 
             &typed_request,
             &capabilities,
             Some(fixture.clone()),
+            false,
         );
         let cli_execute = cli_envelope(
             &examples,

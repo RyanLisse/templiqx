@@ -2,9 +2,13 @@
 
 ## Status
 
-Accepted (2026-07-12) — design only; trait implementation deferred until a
-host-owned streaming adapter is needed. Live streaming proof still needs a
-host (R12 status: "Partially — live streaming proof needs host").
+Implemented (2026-07-12) — the `execute_streaming` port method, the
+`StreamEvent` contracts type, deterministic mock replay, the
+`execute_contract(stream)` application flag, and the CLI `--stream` / MCP
+`stream` surfaces have all landed, covered by
+`crates/templiqx-conformance/tests/streaming.rs`. Superseded the prior
+"design only" status. A live streaming proof against a real host adapter is
+still outstanding (R12: "Partially — live streaming proof needs host").
 
 ## Context
 
@@ -82,12 +86,17 @@ into the same port without breaking `execute` or the deterministic mock.
    event, exactly as `templiqx-runtime-langfuse::execute` already blocks on
    its HTTP call.
 
-4. **Mock event aggregation preserved.** `templiqx-mock`'s deterministic
-   fixture-replay behavior does not implement `execute_streaming` — it
-   inherits the default (call `execute`, emit one `Complete` event). CRM3
-   conformance fixtures and golden receipts stay untouched; nothing in the
-   conformance suite observes streaming events, so this extension is
-   invisible to existing tests.
+4. **Mock replays fixture deltas deterministically (implemented deviation).**
+   The design originally left `templiqx-mock` on the default method. As built,
+   `ScriptedRuntime` *does* override `execute_streaming`: for a scenario with an
+   `events` fixture it emits each fixture `delta` as a contracts
+   `StreamEvent::Delta`, then calls `execute` and emits the terminal event —
+   `Complete(receipt)` on success or `Failed { code, message }` on error. The
+   terminal `Complete` still carries the exact receipt `execute` produces, so
+   fingerprint parity holds and CRM3 golden receipts stay untouched. The mock's
+   own fixture-lifecycle enum was renamed `StreamEvent` → `ScenarioStreamEvent`
+   to free the canonical name for the contracts type; scenario JSON tags are
+   unchanged.
 
 ## Consequences
 
@@ -115,8 +124,16 @@ into the same port without breaking `execute` or the deterministic mock.
   "same outcome for humans and agents, same artifact" invariant (R11,
   human-agent outcome parity).
 
+## Resolved questions
+
+- **`StreamEvent::Failed` vs `PortError`:** a mid-stream failure does both — it
+  emits one `StreamEvent::Failed { code, message }` (a stable `TQX_*` code, so
+  streaming observers see a typed terminal event) *and* returns the underlying
+  `PortError` from `execute_streaming`. The `Result` remains the authoritative
+  outcome; the `Failed` event is the streaming projection of it.
+
 ## Open questions
 
-- Whether `StreamEvent::Failed` should be distinct from `PortError` returned
-  by `execute_streaming`, or whether mid-stream failures always terminate via
-  the `Result` — deferred to implementation time, no POC adapter needs it yet.
+- A live streaming proof against a real host adapter (e.g. token-by-token
+  Langfuse) is still outstanding — the mock replays fixture deltas, but no
+  production adapter overrides `execute_streaming` yet (R12).

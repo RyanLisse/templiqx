@@ -143,6 +143,7 @@ impl HostHarness {
             &request,
             &capabilities,
             Some(output.clone()),
+            false,
         );
 
         for _ in 1..max_attempts {
@@ -156,6 +157,7 @@ impl HostHarness {
                 &request,
                 &capabilities,
                 Some(output.clone()),
+                false,
             );
         }
 

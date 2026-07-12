@@ -12,14 +12,16 @@ use rmcp::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use templiqx_application::{
-    MigrateLegacyRequest, MigrationResult, RenderDocumentRequest, RenderDocumentResult,
-    TempliqxService,
+    CreatePackageRequest, DeleteContractRequest, ListWorkspaceArtifactsRequest,
+    MigrateLegacyRequest, MigrationResult, ReadArtifactRequest, RenderDocumentRequest,
+    RenderDocumentResult, TempliqxService,
 };
 use templiqx_contracts::{
-    CompiledInteraction, CompiledMessage, Contract, ContractDiff, ContractSummary,
-    ExecutionReceipt, Explanation, OperationEnvelope, PackageManifest, RenderRequest, TestReport,
+    ArtifactContent, CompiledInteraction, CompiledMessage, Contract, ContractDiff, ContractSummary,
+    ExecutionReceipt, Explanation, OperationEnvelope, PackageManifest, RenderRequest, StreamEvent,
+    TestCaseResult, TestReport, WorkspaceArtifact,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentRenderer, LegacyImportAdapter, PackageStore, RuntimeAdapter,
@@ -30,9 +32,12 @@ pub const TOOL_CATALOG: &[&str] = templiqx_application::CAPABILITY_CATALOG;
 
 /// Object-safe routing view of the canonical application service.
 pub trait Operations: Send + Sync + 'static {
+    fn catalog(&self) -> OperationEnvelope<Vec<String>>;
     fn discover_packages(&self) -> OperationEnvelope<Vec<PackageManifest>>;
+    fn create_package(&self, request: &CreatePackageInput) -> OperationEnvelope<PackageManifest>;
     fn inspect_contract(&self, package: &str, contract: &str) -> OperationEnvelope<Contract>;
     fn put_contract(&self, request: &PutContractInput) -> OperationEnvelope<ContractSummary>;
+    fn delete_contract(&self, request: &DeleteContractInput) -> OperationEnvelope<ContractSummary>;
     fn validate_contract(
         &self,
         package: &str,
@@ -56,8 +61,15 @@ pub trait Operations: Send + Sync + 'static {
         &self,
         request: &RenderDocumentInput,
     ) -> OperationEnvelope<RenderDocumentResult>;
+    fn list_workspace_artifacts(
+        &self,
+        request: &ListWorkspaceArtifactsInput,
+    ) -> OperationEnvelope<Vec<WorkspaceArtifact>>;
+    fn read_artifact(&self, request: &ReadArtifactInput) -> OperationEnvelope<ArtifactContent>;
     fn test_package(&self, package: &str, capabilities: &[String])
     -> OperationEnvelope<TestReport>;
+    fn list_evals(&self, package: &str) -> OperationEnvelope<Vec<templiqx_application::EvalCase>>;
+    fn run_eval(&self, request: &RunEvalInput) -> OperationEnvelope<TestCaseResult>;
     fn diff_contract(&self, request: &DiffContractInput) -> OperationEnvelope<ContractDiff>;
     fn explain_contract(&self, package: &str, contract: &str) -> OperationEnvelope<Explanation>;
 }
@@ -70,8 +82,17 @@ where
     L: LegacyImportAdapter + 'static,
     D: DocumentRenderer + 'static,
 {
+    fn catalog(&self) -> OperationEnvelope<Vec<String>> {
+        templiqx_application::catalog()
+    }
     fn discover_packages(&self) -> OperationEnvelope<Vec<PackageManifest>> {
         self.discover_packages()
+    }
+    fn create_package(&self, r: &CreatePackageInput) -> OperationEnvelope<PackageManifest> {
+        self.create_package(&CreatePackageRequest {
+            name: r.name.clone(),
+            version: r.version.clone(),
+        })
     }
     fn inspect_contract(&self, p: &str, c: &str) -> OperationEnvelope<Contract> {
         self.inspect_contract(p, c)
@@ -83,6 +104,13 @@ where
             &r.source,
             r.expected_fingerprint.as_deref(),
         )
+    }
+    fn delete_contract(&self, r: &DeleteContractInput) -> OperationEnvelope<ContractSummary> {
+        self.delete_contract(&DeleteContractRequest {
+            package: r.package.clone(),
+            contract: r.contract.clone(),
+            expected_fingerprint: r.expected_fingerprint.clone(),
+        })
     }
     fn validate_contract(&self, p: &str, c: &str) -> OperationEnvelope<ContractSummary> {
         self.validate_contract(p, c)
@@ -113,6 +141,7 @@ where
             &r.interaction.render_request(),
             &r.interaction.capabilities,
             r.fixture_output.clone(),
+            r.stream,
         )
     }
     fn migrate_legacy(&self, r: &MigrateLegacyInput) -> OperationEnvelope<MigrationResult> {
@@ -132,8 +161,31 @@ where
             workspace: r.workspace.clone(),
         })
     }
+    fn list_workspace_artifacts(
+        &self,
+        r: &ListWorkspaceArtifactsInput,
+    ) -> OperationEnvelope<Vec<WorkspaceArtifact>> {
+        self.list_workspace_artifacts(&ListWorkspaceArtifactsRequest {
+            package: r.package.clone(),
+            workspace: r.workspace.clone(),
+            prefix: r.prefix.clone(),
+        })
+    }
+    fn read_artifact(&self, r: &ReadArtifactInput) -> OperationEnvelope<ArtifactContent> {
+        self.read_artifact(&ReadArtifactRequest {
+            package: r.package.clone(),
+            path: r.path.clone(),
+            workspace: r.workspace.clone(),
+        })
+    }
     fn test_package(&self, p: &str, c: &[String]) -> OperationEnvelope<TestReport> {
         self.test_package(p, c)
+    }
+    fn list_evals(&self, p: &str) -> OperationEnvelope<Vec<templiqx_application::EvalCase>> {
+        self.list_evals(p)
+    }
+    fn run_eval(&self, r: &RunEvalInput) -> OperationEnvelope<TestCaseResult> {
+        self.run_eval(&r.package, &r.contract, &r.fixture_id, &r.capabilities)
     }
     fn diff_contract(&self, r: &DiffContractInput) -> OperationEnvelope<ContractDiff> {
         self.diff_contract(
@@ -158,6 +210,19 @@ pub struct ContractRefInput {
 #[serde(deny_unknown_fields)]
 pub struct PackageInput {
     pub package: String,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct CreatePackageInput {
+    pub name: String,
+    pub version: String,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DeleteContractInput {
+    pub package: String,
+    pub contract: String,
+    pub expected_fingerprint: String,
 }
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -196,6 +261,10 @@ pub struct ExecuteContractInput {
     pub interaction: InteractionInput,
     /// Output supplied to the deterministic fake runtime.
     pub fixture_output: Option<Value>,
+    /// Drive the streaming runtime path. The receipt is identical to a
+    /// non-streaming execution; only the transport differs.
+    #[serde(default)]
+    pub stream: bool,
 }
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -221,6 +290,23 @@ pub struct RenderDocumentInput {
 }
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct ListWorkspaceArtifactsInput {
+    pub package: String,
+    #[serde(default)]
+    pub workspace: Option<String>,
+    #[serde(default)]
+    pub prefix: Option<String>,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ReadArtifactInput {
+    pub package: String,
+    pub path: String,
+    #[serde(default)]
+    pub workspace: Option<String>,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct TestPackageInput {
     pub package: String,
     #[serde(default)]
@@ -234,6 +320,15 @@ pub struct DiffContractInput {
     pub right_package: String,
     pub right_contract: String,
 }
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RunEvalInput {
+    pub package: String,
+    pub contract: String,
+    pub fixture_id: String,
+    #[serde(default)]
+    pub capabilities: Vec<String>,
+}
 
 /// Typed structured-content envelope. Application result DTOs are retained as JSON.
 #[derive(Debug, Clone, Serialize, JsonSchema)]
@@ -244,6 +339,9 @@ pub struct StructuredEnvelope {
     pub result: Option<Value>,
     pub diagnostics: Vec<StructuredDiagnostic>,
     pub fingerprints: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[schemars(skip)]
+    pub stream_events: Vec<StreamEvent>,
 }
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct StructuredDiagnostic {
@@ -294,6 +392,7 @@ impl StructuredEnvelope {
                 })
                 .collect(),
             fingerprints: value.fingerprints,
+            stream_events: value.stream_events,
         }
     }
 }
@@ -301,6 +400,7 @@ impl StructuredEnvelope {
 #[derive(Clone)]
 pub struct TempliqxMcp {
     operations: Arc<dyn Operations>,
+    packages_root: Option<PathBuf>,
     #[allow(dead_code)] // rmcp's generated handler accesses the router through generated code.
     tool_router: ToolRouter<Self>,
 }
@@ -310,20 +410,72 @@ impl TempliqxMcp {
         Self::from_arc(Arc::new(operations))
     }
     #[must_use]
+    pub fn with_packages_root(mut self, root: PathBuf) -> Self {
+        self.packages_root = Some(root);
+        self
+    }
+    #[must_use]
     pub fn from_arc(operations: Arc<dyn Operations>) -> Self {
         Self {
             operations,
+            packages_root: None,
             tool_router: Self::tool_router(),
         }
+    }
+
+    fn agent_instructions(&self) -> String {
+        let mut lines = vec![
+            "Templiqx actor-neutral AI contract compiler (MCP).".into(),
+            "Suggested flow: discover_packages → validate_package → compile_contract → execute_contract.".into(),
+            "After render_document, call list_workspace_artifacts then read_artifact to inspect outputs.".into(),
+            "Use create_package to bootstrap an empty package when none exist.".into(),
+            "Expected validation failures are structured operation diagnostics.".into(),
+        ];
+        if let Some(root) = &self.packages_root {
+            lines.push(format!("Packages root: {}", root.display()));
+            if let Ok(store) = templiqx_local::FilesystemPackageStore::new(root) {
+                match store.discover() {
+                    Ok(manifests) if manifests.is_empty() => {
+                        lines.push(
+                            "No packages discovered yet — call create_package to bootstrap one."
+                                .into(),
+                        );
+                    }
+                    Ok(manifests) => {
+                        let names: Vec<_> = manifests.iter().map(|m| m.package.as_str()).collect();
+                        lines.push(format!("Discovered packages: {}", names.join(", ")));
+                    }
+                    Err(_) => lines.push(
+                        "Package discovery failed at initialize — call discover_packages.".into(),
+                    ),
+                }
+            }
+        }
+        lines.join("\n")
     }
 }
 
 #[tool_router]
 impl TempliqxMcp {
-    #[tool(description = "Discover portable Templiqx packages")]
+    #[tool(description = "List canonical Templiqx capabilities and introspect the catalog")]
+    fn catalog(&self) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.catalog(),
+        ))
+    }
+    #[tool(description = "Discover portable Templiqx packages under the configured root")]
     fn discover_packages(&self) -> Json<StructuredEnvelope> {
         Json(StructuredEnvelope::from_operation(
             self.operations.discover_packages(),
+        ))
+    }
+    #[tool(description = "Bootstrap an empty portable package with templiqx.yaml and contracts/")]
+    fn create_package(
+        &self,
+        Parameters(i): Parameters<CreatePackageInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.create_package(&i),
         ))
     }
     #[tool(description = "Inspect one canonical contract")]
@@ -342,6 +494,15 @@ impl TempliqxMcp {
     ) -> Json<StructuredEnvelope> {
         Json(StructuredEnvelope::from_operation(
             self.operations.put_contract(&i),
+        ))
+    }
+    #[tool(description = "Delete one contract with compare-and-swap fingerprint safety")]
+    fn delete_contract(
+        &self,
+        Parameters(i): Parameters<DeleteContractInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.delete_contract(&i),
         ))
     }
     #[tool(description = "Validate one canonical contract")]
@@ -380,7 +541,9 @@ impl TempliqxMcp {
             self.operations.render_contract(&i),
         ))
     }
-    #[tool(description = "Execute one contract with the deterministic fake runtime")]
+    #[tool(
+        description = "Execute one contract; set stream=true to collect stream_events in the envelope"
+    )]
     fn execute_contract(
         &self,
         Parameters(i): Parameters<ExecuteContractInput>,
@@ -407,6 +570,26 @@ impl TempliqxMcp {
             self.operations.render_document(&i),
         ))
     }
+    #[tool(
+        description = "List workspace artifact paths after render_document or execution outputs"
+    )]
+    fn list_workspace_artifacts(
+        &self,
+        Parameters(i): Parameters<ListWorkspaceArtifactsInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.list_workspace_artifacts(&i),
+        ))
+    }
+    #[tool(description = "Read one workspace artifact (UTF-8 text or base64 for binary)")]
+    fn read_artifact(
+        &self,
+        Parameters(i): Parameters<ReadArtifactInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.read_artifact(&i),
+        ))
+    }
     #[tool(description = "Run all deterministic package eval fixtures")]
     fn test_package(
         &self,
@@ -414,6 +597,18 @@ impl TempliqxMcp {
     ) -> Json<StructuredEnvelope> {
         Json(StructuredEnvelope::from_operation(
             self.operations.test_package(&i.package, &i.capabilities),
+        ))
+    }
+    #[tool(description = "List every (contract, fixture) eval pair addressable by run_eval")]
+    fn list_evals(&self, Parameters(i): Parameters<PackageInput>) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.list_evals(&i.package),
+        ))
+    }
+    #[tool(description = "Run one eval fixture via the same path as test_package")]
+    fn run_eval(&self, Parameters(i): Parameters<RunEvalInput>) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.run_eval(&i),
         ))
     }
     #[tool(description = "Diff two canonical contracts")]
@@ -440,8 +635,11 @@ impl TempliqxMcp {
 impl ServerHandler for TempliqxMcp {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
-            .with_instructions("Templiqx actor-neutral AI contract capabilities. Expected validation failures are structured operation diagnostics.")
-            .with_server_info(Implementation::new("templiqx-mcp", env!("CARGO_PKG_VERSION")))
+            .with_instructions(self.agent_instructions())
+            .with_server_info(Implementation::new(
+                "templiqx-mcp",
+                env!("CARGO_PKG_VERSION"),
+            ))
     }
 }
 

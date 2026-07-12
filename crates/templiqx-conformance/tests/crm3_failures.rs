@@ -109,7 +109,8 @@ fn assert_failure(code: RuntimeFailureCode) -> Result<()> {
     let service = service(runtime.clone())?;
     let capabilities = ["structured_output".to_string()];
     let request = read_request(&repo_root().join("examples/crm3/evals/bli-61-request.json"))?;
-    let envelope = service.execute_contract(PACKAGE, CONTRACT, &request, &capabilities, None);
+    let envelope =
+        service.execute_contract(PACKAGE, CONTRACT, &request, &capabilities, None, false);
 
     ensure!(!envelope.ok, "failure envelope unexpectedly ok");
     ensure!(envelope.result.is_none(), "failure fabricated receipt");
@@ -215,6 +216,7 @@ fn checked_in_crm3_scenarios_execute_without_sleeping() -> Result<()> {
             &read_request(&request_path)?,
             &capabilities,
             expected_output,
+            false,
         );
 
         ensure!(manifest.expected_status == if envelope.ok { "success" } else { "failure" });
@@ -291,7 +293,8 @@ fn host_retry_exhaustion_uses_exact_terminal_code_and_no_payload() -> Result<()>
     let harness = service(runtime.clone())?;
     let capabilities = ["structured_output".to_string()];
     let request = read_request(&repo_root().join("examples/crm3/evals/bli-61-request.json"))?;
-    let envelope = harness.execute_contract(PACKAGE, CONTRACT, &request, &capabilities, None);
+    let envelope =
+        harness.execute_contract(PACKAGE, CONTRACT, &request, &capabilities, None, false);
 
     ensure!(!envelope.ok, "retry exhaustion envelope unexpectedly ok");
     ensure!(
@@ -318,7 +321,7 @@ fn host_retry_exhaustion_uses_exact_terminal_code_and_no_payload() -> Result<()>
     let runtime_repeat = ScriptedRuntime::failure("host-retry-exhausted", code);
     let service_repeat = service(runtime_repeat)?;
     let envelope_repeat =
-        service_repeat.execute_contract(PACKAGE, CONTRACT, &request, &capabilities, None);
+        service_repeat.execute_contract(PACKAGE, CONTRACT, &request, &capabilities, None, false);
     ensure!(
         envelope_repeat.diagnostics == envelope.diagnostics,
         "retry exhaustion diagnostics must be deterministic"

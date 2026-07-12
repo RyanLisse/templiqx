@@ -37,6 +37,59 @@ pub fn parse_contract(source: &str, file: Option<&str>) -> Result<Contract, Vec<
     })
 }
 
+/// U2 (plan 001): resolve `tool_contract:<name>` references in contract
+/// extensions against a package's shared tool-contract table. Each reference
+/// must name a known tool contract and pin its exact fingerprint; on success the
+/// extension's `schema` is replaced with the resolved schema so downstream
+/// validation and compilation see a fully-inlined, bounded schema. Fails closed
+/// with `TQX_TOOL_CONTRACT_REF_UNRESOLVED` — the same posture as package signing.
+#[must_use]
+pub fn resolve_tool_contract_refs(
+    contract: &mut Contract,
+    tool_contracts: &std::collections::BTreeMap<String, templiqx_contracts::ToolContractRef>,
+) -> Vec<Diagnostic> {
+    let mut diagnostics = Vec::new();
+    for (key, extension) in contract.extensions.iter_mut() {
+        let Some(object) = extension.schema.as_object() else {
+            continue;
+        };
+        let Some(reference) = object.get("$ref").and_then(Value::as_str) else {
+            continue;
+        };
+        let Some(name) = reference.strip_prefix("tool_contract:") else {
+            continue;
+        };
+        let pointer = format!("/extensions/{key}/schema");
+        let pinned = object.get("fingerprint").and_then(Value::as_str);
+        match tool_contracts.get(name) {
+            None => diagnostics.push(Diagnostic::error(
+                "TQX_TOOL_CONTRACT_REF_UNRESOLVED",
+                format!("extension '{key}' references unknown tool_contract '{name}'"),
+                pointer,
+            )),
+            Some(resolved) => match pinned {
+                Some(fingerprint) if fingerprint == resolved.fingerprint => {
+                    extension.schema = resolved.schema.clone();
+                }
+                Some(fingerprint) => diagnostics.push(Diagnostic::error(
+                    "TQX_TOOL_CONTRACT_REF_UNRESOLVED",
+                    format!(
+                        "extension '{key}' pins fingerprint '{fingerprint}' but tool_contract '{name}' has '{}'",
+                        resolved.fingerprint
+                    ),
+                    pointer,
+                )),
+                None => diagnostics.push(Diagnostic::error(
+                    "TQX_TOOL_CONTRACT_REF_UNRESOLVED",
+                    format!("extension '{key}' references tool_contract '{name}' without a fingerprint pin"),
+                    pointer,
+                )),
+            },
+        }
+    }
+    diagnostics
+}
+
 pub fn validate_contract(contract: &Contract) -> Vec<Diagnostic> {
     let mut out = Vec::new();
     if contract.api_version != templiqx_contracts::API_VERSION {
@@ -1187,8 +1240,13 @@ fn render_nodes(
                 filters,
             } => {
                 let mut value = eval(expression, root, locals)?;
+                let locale = root
+                    .get("context")
+                    .and_then(|c| c.get("locale"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
                 for f in filters {
-                    value = apply_filter(value, f);
+                    value = apply_filter(value, f, locale)?;
                 }
                 out.push_str(&display_value(&value));
             }
@@ -1313,13 +1371,90 @@ fn boolean_value(value: Value) -> Result<bool, Vec<Diagnostic>> {
         )]
     })
 }
-fn apply_filter(v: Value, f: &Filter) -> Value {
-    match f {
+fn apply_filter(v: Value, f: &Filter, locale: &str) -> Result<Value, Vec<Diagnostic>> {
+    Ok(match f {
         Filter::Trim => Value::String(display_value(&v).trim().to_owned()),
         Filter::Lower => Value::String(display_value(&v).to_lowercase()),
         Filter::Upper => Value::String(display_value(&v).to_uppercase()),
         Filter::Json => Value::String(serde_json::to_string(&v).unwrap_or_default()),
+        Filter::FormatDate => Value::String(format_date(&v, locale)?),
+        Filter::FormatNumber => Value::String(format_number(&v, locale)?),
+    })
+}
+
+/// Locale families sharing a grouping/date convention. Kept intentionally small
+/// and explicit — unknown locales fall back to ISO/plain so rendering never fails
+/// on locale alone.
+fn locale_family(locale: &str) -> &'static str {
+    let lower = locale.to_ascii_lowercase();
+    if lower.starts_with("nl") {
+        "nl"
+    } else if lower.starts_with("de") {
+        "de"
+    } else if lower.starts_with("en-us") || lower.starts_with("en_us") {
+        "en-us"
+    } else {
+        "iso"
     }
+}
+
+fn format_date(v: &Value, locale: &str) -> Result<String, Vec<Diagnostic>> {
+    let Value::String(raw) = v else {
+        return Err(vec![Diagnostic::error(
+            "TQX_FILTER_INPUT",
+            "format_date expects an ISO 'YYYY-MM-DD' string",
+            "",
+        )]);
+    };
+    let parts: Vec<&str> = raw.split('-').collect();
+    let valid = parts.len() == 3
+        && parts[0].len() == 4
+        && parts[1].len() == 2
+        && parts[2].len() == 2
+        && parts.iter().all(|p| p.bytes().all(|b| b.is_ascii_digit()));
+    if !valid {
+        return Err(vec![Diagnostic::error(
+            "TQX_FILTER_INPUT",
+            format!("format_date could not parse '{raw}' as 'YYYY-MM-DD'"),
+            "",
+        )]);
+    }
+    let (y, m, d) = (parts[0], parts[1], parts[2]);
+    Ok(match locale_family(locale) {
+        "nl" => format!("{d}-{m}-{y}"),
+        "de" => format!("{d}.{m}.{y}"),
+        "en-us" => format!("{m}/{d}/{y}"),
+        _ => format!("{y}-{m}-{d}"),
+    })
+}
+
+fn format_number(v: &Value, locale: &str) -> Result<String, Vec<Diagnostic>> {
+    let number = v.as_f64().ok_or_else(|| {
+        vec![Diagnostic::error(
+            "TQX_FILTER_INPUT",
+            "format_number expects a numeric value",
+            "",
+        )]
+    })?;
+    let (group, decimal) = match locale_family(locale) {
+        "nl" | "de" => ('.', ','),
+        _ => (',', '.'),
+    };
+    let negative = number.is_sign_negative() && number != 0.0;
+    let text = format!("{:.2}", number.abs());
+    let (int_part, frac_part) = text.split_once('.').unwrap_or((&text, "00"));
+    let mut grouped = String::new();
+    let bytes = int_part.as_bytes();
+    for (i, byte) in bytes.iter().enumerate() {
+        if i > 0 && (bytes.len() - i) % 3 == 0 {
+            grouped.push(group);
+        }
+        grouped.push(*byte as char);
+    }
+    Ok(format!(
+        "{}{grouped}{decimal}{frac_part}",
+        if negative { "-" } else { "" }
+    ))
 }
 fn display_value(v: &Value) -> String {
     match v {

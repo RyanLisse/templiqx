@@ -3,7 +3,7 @@
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 use templiqx_contracts::{
-    AdapterDescriptor, Contract, ExecutionReceipt, ExecutionRequest, PackageManifest,
+    AdapterDescriptor, Contract, ExecutionReceipt, ExecutionRequest, PackageManifest, StreamEvent,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -102,6 +102,15 @@ pub trait PackageStore: Send + Sync {
         source: &str,
         expected_fingerprint: Option<&str>,
     ) -> Result<String, PortError>;
+
+    fn create_package(&self, name: &str, version: &str) -> Result<PackageManifest, PortError>;
+
+    fn delete_contract(
+        &self,
+        package: &str,
+        contract: &str,
+        expected_fingerprint: &str,
+    ) -> Result<String, PortError>;
 }
 
 pub trait ArtifactWorkspace: Send + Sync {
@@ -122,11 +131,43 @@ pub trait ArtifactWorkspace: Send + Sync {
         path: &Path,
         workspace: Option<&str>,
     ) -> Result<String, PortError>;
+
+    /// List existing files under a package's workspace root, optionally
+    /// filtered to those whose portable relative path starts with `prefix`.
+    fn list_artifacts(
+        &self,
+        package: &str,
+        workspace: Option<&str>,
+        prefix: Option<&str>,
+    ) -> Result<Vec<(PathBuf, u64)>, PortError>;
+
+    /// Read the bytes of an existing workspace artifact using the same
+    /// confinement rules as [`ArtifactWorkspace::resolve_output_path`].
+    fn read_artifact(
+        &self,
+        package: &str,
+        relative_path: &str,
+        workspace: Option<&str>,
+    ) -> Result<Vec<u8>, PortError>;
 }
 
 pub trait RuntimeAdapter: Send + Sync {
     fn descriptor(&self) -> AdapterDescriptor;
     fn execute(&self, request: &ExecutionRequest) -> Result<ExecutionReceipt, PortError>;
+
+    /// Optional streaming path. The default forwards to `execute` and emits the
+    /// whole receipt as a single terminal `Complete` event, so adapters that do
+    /// not stream need no code change. Overriding adapters must still make the
+    /// terminal `Complete` receipt identical to what `execute` would produce.
+    fn execute_streaming(
+        &self,
+        request: &ExecutionRequest,
+        sink: &mut dyn FnMut(StreamEvent),
+    ) -> Result<ExecutionReceipt, PortError> {
+        let receipt = self.execute(request)?;
+        sink(StreamEvent::Complete(receipt.clone()));
+        Ok(receipt)
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -11,7 +11,9 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
-use templiqx_contracts::{AdapterDescriptor, ExecutionReceipt, ExecutionRequest, fingerprint};
+use templiqx_contracts::{
+    AdapterDescriptor, ExecutionReceipt, ExecutionRequest, StreamEvent, fingerprint,
+};
 use templiqx_ports::{PortError, RuntimeAdapter, RuntimeFailure, RuntimeFailureCode};
 
 pub const MOCK_API_VERSION: &str = "templiqx.mock/v1alpha1";
@@ -155,7 +157,7 @@ pub struct ScenarioManifest {
     #[serde(default)]
     pub steps: Vec<ScenarioStep>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub events: Option<Vec<StreamEvent>>,
+    pub events: Option<Vec<ScenarioStreamEvent>>,
     #[serde(default)]
     pub evidence: Vec<EvidenceExpectation>,
     #[serde(default)]
@@ -183,7 +185,7 @@ pub struct EvidenceExpectation {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-pub enum StreamEvent {
+pub enum ScenarioStreamEvent {
     Start {
         id: String,
     },
@@ -212,7 +214,7 @@ pub enum StreamEvent {
     },
 }
 
-impl StreamEvent {
+impl ScenarioStreamEvent {
     fn id(&self) -> &str {
         match self {
             Self::Start { id }
@@ -360,7 +362,7 @@ impl ScenarioManifest {
     }
 }
 
-fn validate_stream_events(events: &[StreamEvent]) -> Result<(), ScenarioError> {
+fn validate_stream_events(events: &[ScenarioStreamEvent]) -> Result<(), ScenarioError> {
     if events.is_empty() {
         return Err(ScenarioError::Invalid {
             message: "stream event sequence cannot be empty".into(),
@@ -382,13 +384,14 @@ fn validate_stream_events(events: &[StreamEvent]) -> Result<(), ScenarioError> {
             });
         }
         match event {
-            StreamEvent::Start { .. } if started || ended => {
+            ScenarioStreamEvent::Start { .. } if started || ended => {
                 return Err(ScenarioError::Invalid {
                     message: "stream start must be first and unique".into(),
                 });
             }
-            StreamEvent::Start { .. } => started = true,
-            StreamEvent::Delta { text, .. } | StreamEvent::Reasoning { text, .. }
+            ScenarioStreamEvent::Start { .. } => started = true,
+            ScenarioStreamEvent::Delta { text, .. }
+            | ScenarioStreamEvent::Reasoning { text, .. }
                 if !started || ended || text.is_empty() =>
             {
                 return Err(ScenarioError::Invalid {
@@ -396,25 +399,25 @@ fn validate_stream_events(events: &[StreamEvent]) -> Result<(), ScenarioError> {
                         .into(),
                 });
             }
-            StreamEvent::Delta { .. } | StreamEvent::Reasoning { .. } => {}
-            StreamEvent::Usage { .. } if !started || ended || finished => {
+            ScenarioStreamEvent::Delta { .. } | ScenarioStreamEvent::Reasoning { .. } => {}
+            ScenarioStreamEvent::Usage { .. } if !started || ended || finished => {
                 return Err(ScenarioError::Invalid {
                     message: "usage requires an active stream".into(),
                 });
             }
-            StreamEvent::Usage { .. } => {}
-            StreamEvent::End { .. } if !started || ended || finished => {
+            ScenarioStreamEvent::Usage { .. } => {}
+            ScenarioStreamEvent::End { .. } if !started || ended || finished => {
                 return Err(ScenarioError::Invalid {
                     message: "end requires an active stream".into(),
                 });
             }
-            StreamEvent::End { .. } => ended = true,
-            StreamEvent::Finish { .. } if !started || !ended || finished => {
+            ScenarioStreamEvent::End { .. } => ended = true,
+            ScenarioStreamEvent::Finish { .. } if !started || !ended || finished => {
                 return Err(ScenarioError::Invalid {
                     message: "finish requires start followed by end".into(),
                 });
             }
-            StreamEvent::Finish { .. } => finished = true,
+            ScenarioStreamEvent::Finish { .. } => finished = true,
         }
     }
     if !(started && ended && finished) {
@@ -563,7 +566,7 @@ struct RuntimeState {
     clock: VirtualClock,
     scenarios: VecDeque<ScriptedScenario>,
     manifest_steps: Option<Vec<ScenarioStep>>,
-    manifest_events: Option<Vec<StreamEvent>>,
+    manifest_events: Option<Vec<ScenarioStreamEvent>>,
 }
 
 impl ScriptedRuntime {
@@ -660,7 +663,7 @@ impl ScriptedRuntime {
     fn execute_manifest_events(
         &self,
         request: &ExecutionRequest,
-        events: &[StreamEvent],
+        events: &[ScenarioStreamEvent],
     ) -> Result<ExecutionReceipt, PortError> {
         let mut text = String::new();
         let mut reasoning = String::new();
@@ -669,9 +672,9 @@ impl ScriptedRuntime {
         let mut finish = None;
         for event in events {
             match event {
-                StreamEvent::Delta { text: value, .. } => text.push_str(value),
-                StreamEvent::Reasoning { text: value, .. } => reasoning.push_str(value),
-                StreamEvent::Usage {
+                ScenarioStreamEvent::Delta { text: value, .. } => text.push_str(value),
+                ScenarioStreamEvent::Reasoning { text: value, .. } => reasoning.push_str(value),
+                ScenarioStreamEvent::Usage {
                     input_tokens: input,
                     output_tokens: output,
                     ..
@@ -679,14 +682,14 @@ impl ScriptedRuntime {
                     input_tokens += input;
                     output_tokens += output;
                 }
-                StreamEvent::Finish {
+                ScenarioStreamEvent::Finish {
                     output,
                     output_schema_valid,
                     ..
                 } => {
                     finish = Some((output.clone(), *output_schema_valid));
                 }
-                StreamEvent::Start { .. } | StreamEvent::End { .. } => {}
+                ScenarioStreamEvent::Start { .. } | ScenarioStreamEvent::End { .. } => {}
             }
         }
         let (output, output_schema_valid) = finish.expect("validated stream has finish");
@@ -782,6 +785,57 @@ impl RuntimeAdapter for ScriptedRuntime {
             .unwrap_or(ScriptedScenario::Success);
         self.execute_script(request, scenario)
     }
+
+    /// Deterministic streaming replay (KTD6): emit each scenario-fixture `Delta`
+    /// as a contracts `StreamEvent::Delta`, then the terminal event. The terminal
+    /// `Complete` carries the exact receipt `execute` produces (fingerprint
+    /// parity), and mid-stream failures surface a `Failed` event with a stable
+    /// diagnostic code before the `Err` returns.
+    fn execute_streaming(
+        &self,
+        request: &ExecutionRequest,
+        sink: &mut dyn FnMut(StreamEvent),
+    ) -> Result<ExecutionReceipt, PortError> {
+        let replay = {
+            let state = self.state.lock().expect("runtime state lock");
+            state.manifest_events.clone()
+        };
+        if let Some(events) = replay {
+            for event in &events {
+                if let ScenarioStreamEvent::Delta { text, .. } = event {
+                    sink(StreamEvent::Delta { text: text.clone() });
+                }
+            }
+        }
+        match self.execute(request) {
+            Ok(receipt) => {
+                sink(StreamEvent::Complete(receipt.clone()));
+                Ok(receipt)
+            }
+            Err(error) => {
+                sink(stream_failed_event(&error));
+                Err(error)
+            }
+        }
+    }
+}
+
+/// Map a terminal `PortError` to a stable-coded streaming `Failed` event,
+/// mirroring the diagnostic codes the application surfaces for the same error.
+fn stream_failed_event(error: &PortError) -> StreamEvent {
+    let code = match error {
+        PortError::RuntimeFailure { code, .. } => (*code).to_owned(),
+        PortError::NotFound(_) => "TQX_NOT_FOUND".to_owned(),
+        PortError::Conflict(_) => "TQX_CAS_CONFLICT".to_owned(),
+        PortError::InvalidPath(_) => "TQX_PATH_INVALID".to_owned(),
+        PortError::Unsupported(_) => "TQX_UNSUPPORTED".to_owned(),
+        PortError::Io(_) => "TQX_IO".to_owned(),
+        PortError::InvalidData(_) => "TQX_DATA_INVALID".to_owned(),
+    };
+    StreamEvent::Failed {
+        code,
+        message: error.to_string(),
+    }
 }
 
 fn descriptor() -> AdapterDescriptor {
@@ -869,7 +923,7 @@ pub fn failure_receipt_fingerprint(
 mod tests {
     use super::*;
 
-    fn manifest(events: Vec<StreamEvent>) -> ScenarioManifest {
+    fn manifest(events: Vec<ScenarioStreamEvent>) -> ScenarioManifest {
         ScenarioManifest {
             api_version: MOCK_API_VERSION.into(),
             id: "stream".into(),
@@ -893,22 +947,22 @@ mod tests {
     #[test]
     fn stream_lifecycle_is_strict_and_typed() {
         let valid = manifest(vec![
-            StreamEvent::Start { id: "s".into() },
-            StreamEvent::Reasoning {
+            ScenarioStreamEvent::Start { id: "s".into() },
+            ScenarioStreamEvent::Reasoning {
                 id: "r".into(),
                 text: "plan".into(),
             },
-            StreamEvent::Delta {
+            ScenarioStreamEvent::Delta {
                 id: "d".into(),
                 text: "hello".into(),
             },
-            StreamEvent::Usage {
+            ScenarioStreamEvent::Usage {
                 id: "u".into(),
                 input_tokens: 2,
                 output_tokens: 1,
             },
-            StreamEvent::End { id: "e".into() },
-            StreamEvent::Finish {
+            ScenarioStreamEvent::End { id: "e".into() },
+            ScenarioStreamEvent::Finish {
                 id: "f".into(),
                 output: None,
                 output_schema_valid: true,
@@ -917,18 +971,18 @@ mod tests {
         assert!(valid.validate().is_ok());
         for events in [
             vec![],
-            vec![StreamEvent::Finish {
+            vec![ScenarioStreamEvent::Finish {
                 id: "f".into(),
                 output: None,
                 output_schema_valid: true,
             }],
             vec![
-                StreamEvent::Start { id: "x".into() },
-                StreamEvent::Start { id: "x".into() },
+                ScenarioStreamEvent::Start { id: "x".into() },
+                ScenarioStreamEvent::Start { id: "x".into() },
             ],
             vec![
-                StreamEvent::Start { id: "s".into() },
-                StreamEvent::Finish {
+                ScenarioStreamEvent::Start { id: "s".into() },
+                ScenarioStreamEvent::Finish {
                     id: "f".into(),
                     output: None,
                     output_schema_valid: true,
@@ -940,23 +994,23 @@ mod tests {
 
         for events in [
             vec![
-                StreamEvent::Start { id: "s".into() },
-                StreamEvent::End { id: "e".into() },
-                StreamEvent::Usage {
+                ScenarioStreamEvent::Start { id: "s".into() },
+                ScenarioStreamEvent::End { id: "e".into() },
+                ScenarioStreamEvent::Usage {
                     id: "u".into(),
                     input_tokens: 1,
                     output_tokens: 1,
                 },
-                StreamEvent::Finish {
+                ScenarioStreamEvent::Finish {
                     id: "f".into(),
                     output: None,
                     output_schema_valid: true,
                 },
             ],
             vec![
-                StreamEvent::Start { id: "".into() },
-                StreamEvent::End { id: "e".into() },
-                StreamEvent::Finish {
+                ScenarioStreamEvent::Start { id: "".into() },
+                ScenarioStreamEvent::End { id: "e".into() },
+                ScenarioStreamEvent::Finish {
                     id: "f".into(),
                     output: None,
                     output_schema_valid: true,
@@ -1019,17 +1073,17 @@ mod tests {
     #[test]
     fn stream_events_aggregate_deterministically_through_sync_adapter() {
         let runtime = ScriptedRuntime::from_manifest(manifest(vec![
-            StreamEvent::Start { id: "s".into() },
-            StreamEvent::Delta {
+            ScenarioStreamEvent::Start { id: "s".into() },
+            ScenarioStreamEvent::Delta {
                 id: "d1".into(),
                 text: "a".into(),
             },
-            StreamEvent::Delta {
+            ScenarioStreamEvent::Delta {
                 id: "d2".into(),
                 text: "b".into(),
             },
-            StreamEvent::End { id: "e".into() },
-            StreamEvent::Finish {
+            ScenarioStreamEvent::End { id: "e".into() },
+            ScenarioStreamEvent::Finish {
                 id: "f".into(),
                 output: None,
                 output_schema_valid: true,

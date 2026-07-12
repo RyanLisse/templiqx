@@ -7,7 +7,10 @@ use std::{
     path::{Path, PathBuf},
     process::ExitCode,
 };
-use templiqx_application::{MigrateLegacyRequest, RenderDocumentRequest};
+use templiqx_application::{
+    CreatePackageRequest, DeleteContractRequest, ListWorkspaceArtifactsRequest,
+    MigrateLegacyRequest, ReadArtifactRequest, RenderDocumentRequest,
+};
 use templiqx_contracts::{OperationEnvelope, RenderRequest, fingerprint, fingerprint_bytes};
 
 #[derive(Parser)]
@@ -31,6 +34,11 @@ struct Cli {
 enum Command {
     Catalog,
     Discover,
+    Create {
+        name: String,
+        #[arg(long, default_value = "0.1.0")]
+        version: String,
+    },
     Inspect {
         package: String,
         contract: String,
@@ -41,6 +49,12 @@ enum Command {
         source: PathBuf,
         #[arg(long)]
         expected_fingerprint: Option<String>,
+    },
+    Delete {
+        package: String,
+        contract: String,
+        #[arg(long)]
+        expected_fingerprint: String,
     },
     Validate {
         package: String,
@@ -71,6 +85,10 @@ enum Command {
         fixture_output: PathBuf,
         #[arg(long = "capability")]
         capabilities: Vec<String>,
+        /// Drive the streaming runtime path; the receipt is identical to the
+        /// non-streaming path (fingerprint parity).
+        #[arg(long)]
+        stream: bool,
     },
     Test {
         package: String,
@@ -104,6 +122,29 @@ enum Command {
         output: String,
         #[arg(long)]
         workspace: Option<PathBuf>,
+    },
+    ListWorkspaceArtifacts {
+        package: String,
+        #[arg(long)]
+        workspace: Option<PathBuf>,
+        #[arg(long)]
+        prefix: Option<String>,
+    },
+    ReadArtifact {
+        package: String,
+        path: String,
+        #[arg(long)]
+        workspace: Option<PathBuf>,
+    },
+    ListEvals {
+        package: String,
+    },
+    RunEval {
+        package: String,
+        contract: String,
+        fixture_id: String,
+        #[arg(long = "capability")]
+        capabilities: Vec<String>,
     },
     /// Run the synthetic CRM3 conformance workload used by Docker and kind smoke.
     Crm3Conformance {
@@ -149,6 +190,9 @@ fn run() -> Result<bool> {
     match cli.command {
         Command::Catalog => unreachable!(),
         Command::Discover => output!(service.discover_packages()),
+        Command::Create { name, version } => {
+            output!(service.create_package(&CreatePackageRequest { name, version }))
+        }
         Command::Inspect { package, contract } => {
             output!(service.inspect_contract(&package, &contract))
         }
@@ -167,6 +211,15 @@ fn run() -> Result<bool> {
                 expected_fingerprint.as_deref()
             ));
         }
+        Command::Delete {
+            package,
+            contract,
+            expected_fingerprint,
+        } => output!(service.delete_contract(&DeleteContractRequest {
+            package,
+            contract,
+            expected_fingerprint,
+        })),
         Command::Validate { package, contract } => {
             if let Some(contract) = contract {
                 output!(service.validate_contract(&package, &contract))
@@ -202,12 +255,14 @@ fn run() -> Result<bool> {
             values,
             fixture_output,
             capabilities,
+            stream,
         } => output!(service.execute_contract(
             &package,
             &contract,
             &read_request(values)?,
             &capabilities,
-            Some(read_json(&fixture_output)?)
+            Some(read_json(&fixture_output)?),
+            stream
         )),
         Command::Test {
             package,
@@ -259,6 +314,33 @@ fn run() -> Result<bool> {
             output: artifact,
             workspace: workspace_string(workspace)?,
         })),
+        Command::ListWorkspaceArtifacts {
+            package,
+            workspace,
+            prefix,
+        } => output!(
+            service.list_workspace_artifacts(&ListWorkspaceArtifactsRequest {
+                package,
+                workspace: workspace_string(workspace)?,
+                prefix,
+            })
+        ),
+        Command::ReadArtifact {
+            package,
+            path,
+            workspace,
+        } => output!(service.read_artifact(&ReadArtifactRequest {
+            package,
+            path,
+            workspace: workspace_string(workspace)?,
+        })),
+        Command::ListEvals { package } => output!(service.list_evals(&package)),
+        Command::RunEval {
+            package,
+            contract,
+            fixture_id,
+            capabilities,
+        } => output!(service.run_eval(&package, &contract, &fixture_id, &capabilities)),
         Command::Crm3Conformance {
             package,
             workspace,
@@ -302,6 +384,7 @@ fn crm3_conformance(
         &extraction_request,
         &capabilities,
         Some(extraction_output.clone()),
+        false,
     );
     ensure!(
         extraction.ok,
@@ -321,6 +404,7 @@ fn crm3_conformance(
         &drafting_request,
         &capabilities,
         Some(drafting_output.clone()),
+        false,
     );
     ensure!(drafting.ok, "drafting failed: {:?}", drafting.diagnostics);
     let drafting_receipt = drafting.result.context("drafting receipt")?;

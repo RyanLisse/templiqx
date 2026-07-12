@@ -64,6 +64,13 @@ fi
 kind load docker-image "$IMAGE" --name "$CLUSTER"
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n "$NAMESPACE" scale "deployment/$RELEASE-templiqx-mock-gateway" --replicas=1 2>/dev/null || true
+# A prior run may have scaled mock-gateway to 0 (gateway-down scenario). The
+# scale-up above only requests the change; without waiting for the new pod's
+# readiness probe here, helm's post-upgrade hook Jobs below can start against
+# a pod that isn't serving yet and exhaust their retries in ~20s.
+if kubectl -n "$NAMESPACE" get "deployment/$RELEASE-templiqx-mock-gateway" >/dev/null 2>&1; then
+  kubectl -n "$NAMESPACE" rollout status "deployment/$RELEASE-templiqx-mock-gateway" --timeout=120s
+fi
 kubectl delete job -l "app.kubernetes.io/name=templiqx,templiqx.conformance/scenario" -n "$NAMESPACE" --ignore-not-found
 helm upgrade --install "$RELEASE" "$REPO_ROOT/charts/templiqx" \
   --namespace "$NAMESPACE" \
