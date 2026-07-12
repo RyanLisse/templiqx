@@ -1649,4 +1649,53 @@ mod tests {
                 .is_err()
         );
     }
+
+    #[test]
+    fn legacy_corpus_v1_and_v2_expectations_match_reports() {
+        let corpus =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/legacy-corpus/fixtures");
+        let v1 = corpus.join("v1-beanshell-detected");
+        let v2 = corpus.join("v2-marker-detected");
+        let v1_expected: Value =
+            serde_json::from_slice(&fs::read(v1.join("expected-report.json")).unwrap()).unwrap();
+        let v2_expected: Value =
+            serde_json::from_slice(&fs::read(v2.join("expected-report.json")).unwrap()).unwrap();
+
+        let dir = TempDir::new().unwrap();
+        let v1_source = dir.path().join("v1.docx");
+        fixture(
+            &v1_source,
+            r#"<w:document xmlns:w="w"><w:body><w:p><w:r><w:t>BeanShell bsh.eval</w:t></w:r></w:p></w:body></w:document>"#,
+            None,
+        );
+        let v1_report = DocxV5Adapter::default()
+            .analyze(&v1_source, &json!({}))
+            .unwrap();
+        assert!(
+            v1_expected["categories"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|category| category == "unsafe")
+        );
+        assert!(v1_report.unsafe_constructs >= 1);
+
+        let v2_source = dir.path().join("v2.docx");
+        fixture(
+            &v2_source,
+            r#"<w:document xmlns:w="w"><w:body><w:p><w:r><w:t>${v2:legacy-marker}</w:t></w:r></w:p></w:body></w:document>"#,
+            None,
+        );
+        let v2_report = DocxV5Adapter::default()
+            .analyze(&v2_source, &json!({}))
+            .unwrap();
+        assert!(
+            v2_expected["categories"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|category| category == "unsupported")
+        );
+        assert!(v2_report.unsupported >= 1);
+    }
 }

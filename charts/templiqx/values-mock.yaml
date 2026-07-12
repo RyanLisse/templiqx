@@ -4,6 +4,12 @@ mock:
     enabled: true
     port: 8080
 
+conformance:
+  scenarios:
+    - intake-document-01
+    - draft-with-citations
+    - invalid-output-schema
+
 image:
   repository: templiqx
   tag: pre-crm3

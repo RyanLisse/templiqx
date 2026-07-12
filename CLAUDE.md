@@ -9,8 +9,9 @@ Templiqx is a standalone, provider-neutral AI interaction contract compiler: por
 ## Quick start
 
 ```bash
-just verify                              # fmt, clippy, tests, boundary checks — run before any PR
+just verify                              # fmt, clippy, tests, boundaries, CI gates, qlty
 just verify-deploy                       # docker/kind/supply-chain smoke + boundaries
+just fresh-clone                         # isolated worktree + empty Cargo cache
 
 qlty fmt                                 # format (CI + pre-commit expectation)
 qlty check --fix --level=low             # lint fixes before commit
@@ -31,6 +32,7 @@ CLI: `cargo run -p templiqx-cli -- <command> --root <package-dir> [--json]`. Com
 | Contract format | [`docs/contracts/v1alpha1.md`](docs/contracts/v1alpha1.md) |
 | Architecture / deployment | [`docs/architecture/`](docs/architecture/) |
 | Pre-CRM3 readiness | [`docs/guides/pre-crm3-readiness.md`](docs/guides/pre-crm3-readiness.md) |
+| Host integration | [`docs/guides/host-integration.md`](docs/guides/host-integration.md) |
 | CRM3 scenarios | [`examples/crm3/scenarios/`](examples/crm3/scenarios/) |
 | Generated code docs | [`openwiki/quickstart.md`](openwiki/quickstart.md) |
 

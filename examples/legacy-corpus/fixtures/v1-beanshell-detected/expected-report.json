@@ -1,0 +1,9 @@
+{
+  "categories": ["unsafe"],
+  "findings": [
+    {
+      "category": "unsafe",
+      "detail_contains": "BeanShell"
+    }
+  ]
+}

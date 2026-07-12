@@ -1368,11 +1368,16 @@ dependencies = [
 name = "templiqx-application"
 version = "0.1.0"
 dependencies = [
+ "hex",
  "semver",
  "serde",
  "serde_json",
+ "serde_yaml_ng",
+ "sha2",
+ "tempfile",
  "templiqx-contracts",
  "templiqx-core",
+ "templiqx-local",
  "templiqx-ports",
 ]
 

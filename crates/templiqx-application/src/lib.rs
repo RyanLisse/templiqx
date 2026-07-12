@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use templiqx_contracts::{
     Contract, ContractDiff, ContractSummary, Diagnostic, ExecutionRequest, Explanation,
-    OperationEnvelope, PackageManifest, RenderRequest, Severity, TestCaseResult, TestReport,
-    fingerprint, fingerprint_bytes,
+    OperationEnvelope, PackageManifest, PackageSignature, RenderRequest, Severity, TestCaseResult,
+    TestReport, fingerprint, fingerprint_bytes,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer,
@@ -288,7 +288,9 @@ where
                 Err(found) => diagnostics.extend(found),
             }
         }
+        let signatures = manifest.signatures.clone();
         let mut normalized_manifest = manifest;
+        normalized_manifest.signatures.clear();
         normalized_manifest.contracts.sort();
         normalized_manifest.components.sort();
         normalized_manifest.evals.sort();
@@ -296,6 +298,12 @@ where
         normalized_manifest.templates.sort();
         let package_identity =
             serde_json::json!({"manifest": normalized_manifest, "artifacts": artifact_hashes});
+        verify_package_signatures(
+            &package_identity,
+            &signatures,
+            package_signing_key(),
+            &mut diagnostics,
+        );
         let envelope = OperationEnvelope::new("validate_package", Some(summaries), diagnostics);
         if envelope.ok {
             with_hash(envelope, "package", &package_identity)
@@ -625,6 +633,90 @@ where
             vec![],
         )
     }
+}
+
+pub const PACKAGE_SIGNATURE_ALGORITHM: &str = "sha256-keyed";
+
+pub fn package_identity_bytes(identity: &impl Serialize) -> Result<Vec<u8>, serde_json::Error> {
+    serde_json::to_vec(identity)
+}
+
+pub fn sign_package_identity(
+    identity: &impl Serialize,
+    key: &[u8],
+    key_id: &str,
+) -> Result<PackageSignature, serde_json::Error> {
+    use sha2::{Digest, Sha256};
+    let payload = package_identity_bytes(identity)?;
+    let mut hasher = Sha256::new();
+    hasher.update(b"templiqx-package-signing-v1\0");
+    hasher.update(key);
+    hasher.update(&payload);
+    Ok(PackageSignature {
+        key_id: key_id.into(),
+        algorithm: PACKAGE_SIGNATURE_ALGORITHM.into(),
+        value: hex::encode(hasher.finalize()),
+    })
+}
+
+fn package_signing_key() -> Option<String> {
+    std::env::var("TEMPLIQX_PACKAGE_SIGNING_KEY")
+        .ok()
+        .filter(|value| !value.is_empty())
+}
+
+pub fn verify_package_signatures(
+    identity: &serde_json::Value,
+    signatures: &[PackageSignature],
+    signing_key: Option<String>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    if signatures.is_empty() {
+        if std::env::var("TEMPLIQX_PACKAGE_STRICT").ok().as_deref() == Some("1") {
+            diagnostics.push(Diagnostic {
+                code: "TQX_PACKAGE_UNSIGNED".into(),
+                severity: Severity::Warning,
+                message: "package has no manifest signatures".into(),
+                file: None,
+                json_pointer: Some("/signatures".into()),
+                span: None,
+                help: Some(
+                    "set TEMPLIQX_PACKAGE_SIGNING_KEY and add signatures for strict publication"
+                        .into(),
+                ),
+            });
+        }
+        return;
+    }
+    let Some(key) = signing_key else {
+        diagnostics.push(Diagnostic::error(
+            "TQX_PACKAGE_SIGNATURE_UNVERIFIED",
+            "package signatures present but TEMPLIQX_PACKAGE_SIGNING_KEY is unset",
+            "/signatures",
+        ));
+        return;
+    };
+    let expected = match sign_package_identity(identity, key.as_bytes(), "verify") {
+        Ok(signature) => signature.value,
+        Err(error) => {
+            diagnostics.push(Diagnostic::error(
+                "TQX_PACKAGE_SIGNATURE_INVALID",
+                error.to_string(),
+                "/signatures",
+            ));
+            return;
+        }
+    };
+    if signatures.iter().any(|signature| {
+        signature.algorithm == PACKAGE_SIGNATURE_ALGORITHM && signature.value == expected
+    }) {
+        return;
+    }
+    diagnostics.push(Diagnostic::error(
+        "TQX_PACKAGE_SIGNATURE_INVALID",
+        "manifest signature does not match package identity",
+        "/signatures",
+    ));
 }
 
 fn with_hash<T: Serialize>(

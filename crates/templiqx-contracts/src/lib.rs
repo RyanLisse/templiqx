@@ -91,6 +91,14 @@ impl<T> OperationEnvelope<T> {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
+pub struct PackageSignature {
+    pub key_id: String,
+    pub algorithm: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct PackageManifest {
     pub api_version: String,
     pub package: String,
@@ -109,6 +117,8 @@ pub struct PackageManifest {
     pub templates: Vec<String>,
     #[serde(default)]
     pub provenance: BTreeMap<String, String>,
+    #[serde(default)]
+    pub signatures: Vec<PackageSignature>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

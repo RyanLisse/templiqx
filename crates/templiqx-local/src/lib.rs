@@ -627,6 +627,7 @@ pub fn create_package(
         migrations: vec![],
         templates: vec![],
         provenance: Default::default(),
+        signatures: vec![],
     };
     let yaml =
         serde_yaml_ng::to_string(&manifest).map_err(|e| PortError::InvalidData(e.to_string()))?;

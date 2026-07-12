@@ -26,3 +26,20 @@ delays and retry-after values are simulated without sleeping.
 Production deployment should provide real package stores, runtime adapters,
 document adapters and host policy at the edge. The same Templiqx service methods
 must remain the semantic boundary for humans and agents.
+
+## Supply chain
+
+CI builds the CLI image with BuildKit provenance and SBOM attestation. Consumers
+verify artifacts with:
+
+```sh
+./scripts/supply-chain-smoke.sh
+```
+
+The smoke script asserts SBOM generation, Grype high/critical gate, and (in CI)
+`artifacts/supply-chain/build-metadata.json` plus `provenance.json` linkage.
+Package manifest signing is documented in
+[`adr-package-trust.md`](adr-package-trust.md).
+
+Host integration procedures: [`../guides/host-integration.md`](../guides/host-integration.md).
+

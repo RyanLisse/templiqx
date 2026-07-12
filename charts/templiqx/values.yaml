@@ -3,6 +3,10 @@ image:
   tag: pre-crm3
   pullPolicy: IfNotPresent
 
+conformance:
+  scenarios:
+    - intake-document-01
+
 mock:
   enabled: false
   gateway:

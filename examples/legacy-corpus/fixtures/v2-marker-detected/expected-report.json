@@ -1,0 +1,9 @@
+{
+  "categories": ["unsupported"],
+  "findings": [
+    {
+      "category": "unsupported",
+      "detail_contains": "V2"
+    }
+  ]
+}

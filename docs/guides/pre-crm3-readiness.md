@@ -33,6 +33,15 @@ Always-required local gates:
 just verify
 ```
 
+`just verify` runs formatting, clippy, workspace tests, boundary checks,
+`scripts/check-ci-gates.sh`, and `qlty check --level=low` — matching CI policy.
+
+Fresh-clone reproducibility:
+
+```sh
+just fresh-clone
+```
+
 Environment-dependent deploy gates:
 
 ```sh
@@ -40,3 +49,5 @@ just verify-deploy
 ```
 
 Compose failure profiles (`mock-failure-unavailable`, `mock-failure-timeout`) and the kind gateway-down job prove typed transport failures and host retry exhaustion without sleeps in test code. Golden fixture updates require a `GOLDEN_REVIEW:` commit marker or `ALLOW_GOLDEN_UPDATE=1` in CI.
+
+Host integration guidance lives in [host-integration.md](host-integration.md).

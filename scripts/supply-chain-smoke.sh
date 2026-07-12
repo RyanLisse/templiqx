@@ -10,6 +10,8 @@ GRYPE_JSON="$ARTIFACT_DIR/grype.json"
 GRYPE_LOG="$ARTIFACT_DIR/grype.log"
 IMAGE_METADATA="$ARTIFACT_DIR/image-metadata.json"
 IMAGE_INSPECT="$ARTIFACT_DIR/image-inspect.json"
+BUILD_METADATA="$ARTIFACT_DIR/build-metadata.json"
+PROVENANCE_FILE="$ARTIFACT_DIR/provenance.json"
 FAILURE_LOG="$ARTIFACT_DIR/failure.log"
 
 mkdir -p "$ARTIFACT_DIR"
@@ -24,7 +26,7 @@ fail() {
 }
 
 skip_env() {
-  if [[ "${CI:-}" == "true" ]]; then
+  if [[ ${CI:-} == "true" ]]; then
     fail "$1" "missing=$2"
   fi
   printf 'SKIP_ENV command=./scripts/supply-chain-smoke.sh reason=%s missing=%s\n' "$1" "$2"
@@ -35,6 +37,7 @@ command -v docker >/dev/null 2>&1 || skip_env "missing Docker CLI" "docker"
 docker info >/dev/null 2>&1 || skip_env "Docker daemon unavailable" "docker-daemon"
 command -v syft >/dev/null 2>&1 || skip_env "missing SBOM scanner" "syft"
 command -v grype >/dev/null 2>&1 || skip_env "missing vulnerability scanner" "grype"
+command -v jq >/dev/null 2>&1 || skip_env "missing jq" "jq"
 
 docker image inspect "$IMAGE" >"$IMAGE_INSPECT"
 
@@ -43,11 +46,11 @@ image_os="$(docker image inspect "$IMAGE" --format '{{.Os}}')"
 image_arch="$(docker image inspect "$IMAGE" --format '{{.Architecture}}')"
 actual_platform="$image_os/$image_arch"
 
-if [[ -z "$image_id" || "$image_id" != sha256:* ]]; then
+if [[ -z $image_id || $image_id != sha256:* ]]; then
   fail "missing-image-id" "image=$IMAGE"
 fi
 
-if [[ -n "$EXPECTED_PLATFORM" && "$actual_platform" != "$EXPECTED_PLATFORM" ]]; then
+if [[ -n $EXPECTED_PLATFORM && $actual_platform != "$EXPECTED_PLATFORM" ]]; then
   fail "unexpected-platform" "expected=$EXPECTED_PLATFORM actual=$actual_platform image=$IMAGE"
 fi
 
@@ -75,6 +78,44 @@ test -s "$SBOM_FILE"
 grype "$IMAGE" --output json >"$GRYPE_JSON"
 test -s "$GRYPE_JSON"
 grype "$IMAGE" --fail-on high --output table 2>&1 | tee "$GRYPE_LOG"
+
+if [[ ${CI:-} == "true" ]]; then
+  if [[ ! -s $BUILD_METADATA ]]; then
+    fail "missing-build-metadata" "expected=$BUILD_METADATA"
+  fi
+  build_digest="$(jq -er '."containerimage.digest"' "$BUILD_METADATA")"
+  image_id_short="${image_id#sha256:}"
+  build_digest_short="${build_digest#sha256:}"
+  if [[ $build_digest_short != "$image_id_short" ]]; then
+    fail "provenance-digest-mismatch" "build=$build_digest inspect=$image_id"
+  fi
+  jq -n \
+    --arg image "$IMAGE" \
+    --arg digest "$image_id" \
+    --arg platform "$actual_platform" \
+    --arg sbom "$SBOM_FILE" \
+    --slurpfile build "$BUILD_METADATA" \
+    '{
+      api_version: "templiqx/supply-chain/v1",
+      image: $image,
+      digest: $digest,
+      platform: $platform,
+      sbom: $sbom,
+      build_metadata: $build[0]
+    }' >"$PROVENANCE_FILE"
+  test -s "$PROVENANCE_FILE"
+else
+  if [[ -s $BUILD_METADATA ]]; then
+    printf 'supply chain smoke: build_metadata=%s\n' "$BUILD_METADATA"
+  else
+    printf 'SKIP_ENV supply chain smoke: build provenance metadata optional outside CI\n'
+  fi
+fi
+
+if command -v cosign >/dev/null 2>&1 && [[ -n ${COSIGN_VERIFY:-} ]]; then
+  cosign verify "$IMAGE" --certificate-identity-regexp='.*' --certificate-oidc-issuer-regexp='.*' \
+    >/dev/null 2>&1 || skip_env "cosign verify unavailable for local tag" "cosign-verify"
+fi
 
 printf 'supply chain smoke: image=%s image_id=%s platform=%s sbom=%s scan=%s metadata=%s\n' \
   "$IMAGE" "$image_id" "$actual_platform" "$SBOM_FILE" "$GRYPE_JSON" "$IMAGE_METADATA"

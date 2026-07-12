@@ -1,0 +1,9 @@
+{
+  "categories": ["migrated"],
+  "findings": [
+    {
+      "category": "migrated",
+      "reference": "employee.name"
+    }
+  ]
+}

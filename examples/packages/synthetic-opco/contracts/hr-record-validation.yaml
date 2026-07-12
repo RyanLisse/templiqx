@@ -1,0 +1,70 @@
+api_version: templiqx/v1alpha1
+id: hr-record-validation
+version: 0.1.0
+description: Validate extracted HR record fields against expected onboarding schema.
+inputs:
+  employee_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+  department:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+context:
+  expected_department:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Confirm the record matches the expected department and return a validation verdict."
+  - role: user
+    content:
+      - kind: text
+        value: "Expected department: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.expected_department }
+        filters: [trim]
+      - kind: text
+        value: "\nRecord employee_id="
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.employee_id }
+        filters: [trim]
+      - kind: text
+        value: " department="
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.department }
+        filters: [trim]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [valid, reason]
+  properties:
+    valid:
+      type: boolean
+    reason:
+      type: string
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  owner: templiqx
+  classification: synthetic
+evals:
+  - id: valid-record
+    inputs:
+      employee_id: E-1042
+      department: Platform Engineering
+    context:
+      expected_department: Platform Engineering
+    fake_output:
+      valid: true
+      reason: department matches expected onboarding target

@@ -1,0 +1,63 @@
+api_version: templiqx/v1alpha1
+id: hr-record-extraction
+version: 0.1.0
+description: Extract typed HR onboarding fields from synthetic employee text.
+inputs:
+  employee_text:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Synthetic onboarding note text.
+context:
+  department_code:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Host-owned department code for the onboarding case.
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Extract only explicit employee_id and department from the text. Do not invent values."
+  - role: user
+    content:
+      - kind: text
+        value: "Department code: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.department_code }
+        filters: [trim]
+      - kind: text
+        value: "\nEmployee note:\n"
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.employee_text }
+        filters: [trim]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [employee_id, department]
+  properties:
+    employee_id:
+      type: string
+      minLength: 1
+    department:
+      type: string
+      minLength: 1
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  owner: templiqx
+  classification: synthetic
+evals:
+  - id: onboarding-01
+    inputs:
+      employee_text: "Employee ID E-1042 joined the Platform Engineering department."
+    context:
+      department_code: ENG-PLAT
+    fake_output:
+      employee_id: E-1042
+      department: Platform Engineering

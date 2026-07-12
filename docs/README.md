@@ -7,5 +7,6 @@
 - [Mock scenario format](contracts/mock-scenarios-v1alpha1.md)
 - [CLI](guides/cli.md)
 - [Pre-CRM3 readiness](guides/pre-crm3-readiness.md)
+- [Host integration handoff](guides/host-integration.md)
 - [Requirements](brainstorms/2026-07-11-templiqx-ai-native-template-engine-poc-requirements.md)
 - [Implementation plan](plans/2026-07-11-templiqx-poc-implementation-plan.md)

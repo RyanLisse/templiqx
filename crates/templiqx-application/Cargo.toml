@@ -12,6 +12,16 @@ templiqx-ports = { path = "../templiqx-ports" }
 serde.workspace = true
 serde_json.workspace = true
 semver.workspace = true
+sha2.workspace = true
+hex.workspace = true
+
+[dev-dependencies]
+templiqx-local = { path = "../templiqx-local" }
+templiqx-contracts = { path = "../templiqx-contracts" }
+templiqx-ports = { path = "../templiqx-ports" }
+tempfile.workspace = true
+serde_yaml_ng.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

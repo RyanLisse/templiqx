@@ -1,0 +1,16 @@
+api_version: templiqx/v1alpha1
+package: synthetic-opco
+version: 0.1.0
+description: Synthetic HR onboarding package proving format portability outside CRM3 shapes.
+contracts:
+  - hr-record-extraction
+  - hr-record-validation
+components: []
+evals: []
+migrations: []
+templates: []
+provenance:
+  owner: templiqx
+  pilot: synthetic-opco
+  classification: synthetic
+  domain: hr-onboarding
