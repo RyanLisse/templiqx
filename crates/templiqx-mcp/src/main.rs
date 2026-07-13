@@ -7,7 +7,16 @@ async fn main() -> anyhow::Result<()> {
         .map(PathBuf::from)
         .or_else(|| env::var_os("TEMPLIQX_PACKAGES_ROOT").map(PathBuf::from))
         .unwrap_or_else(|| PathBuf::from("."));
-    let application = templiqx_local::compose(&root)?;
-    templiqx_mcp::serve_stdio(templiqx_mcp::TempliqxMcp::new(application).with_packages_root(root))
-        .await
+    let workspace = env::args_os()
+        .nth(2)
+        .map(PathBuf::from)
+        .or_else(|| env::var_os("TEMPLIQX_WORKSPACE_ROOT").map(PathBuf::from))
+        .unwrap_or_else(|| root.join(".templiqx-workspace"));
+    let application = templiqx_local::compose_with_workspace(&root, &workspace)?;
+    templiqx_mcp::serve_stdio(
+        templiqx_mcp::TempliqxMcp::new(application)
+            .with_packages_root(root)
+            .with_workspace_root(workspace),
+    )
+    .await
 }

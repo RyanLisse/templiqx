@@ -5,93 +5,62 @@ status: informational
 related_plans:
   - docs/plans/2026-07-12-001-feat-template-engine-parity-plan.md
   - docs/plans/2026-07-12-002-feat-agent-native-parity-plan.md
+  - docs/plans/2026-07-13-001-feat-production-release-and-conformance-plan.md
 ---
 
-# Deferred work log — template-engine & agent-native parity
+# Deferred and host-blocked work log
 
-What was completed, what was intentionally left, and why. All completed work is
-on `main` and verified (unit + conformance suites green, `check-boundaries.sh`
-ok, full `cargo build --workspace --all-targets` clean).
+This log separates work now implemented in the Templiqx repository from work
+that cannot truthfully be completed without a release-tag run or the Basenet
+CRM3 host. It supersedes the earlier note that package trust and the expanded
+DOCX corpus were deferred.
 
-## Completed and verified
+## Closed in the production-readiness branch
 
-| Plan | Unit | Evidence |
-|------|------|----------|
-| 001 | U1 streaming port + CLI/MCP `--stream` | `tests/streaming.rs` |
-| 001 | U2 tool-contract refs | `core::resolve_tool_contract_refs`, `tests/tool_contract_refs.rs` |
-| 001 | U3 package dependencies + lock | `PackageLock`, `tests/package_dependencies.rs` |
-| 001 | U4 includes + cross-package | `Node::Include`, `tests/includes.rs` |
-| 001 | U5 locale filters | `format_date`/`format_number`, `tests/filters.rs` |
-| 001 | U6 explain graph | `Explanation.unresolved_references`/`fix_hints` |
-| 001 | U7 HTML/plain adapter | `templiqx-html-plain`, `tests/html_render.rs` |
-| 001 | U8 (partial) ODT ADR | `docs/architecture/adr-odt-compatibility.md` |
-| 002 | U1–U7 agent-native P0/P1 | prior-session commit, in `main` |
-| 002 | U5 MCP Resources | `templiqx://catalog`, `templiqx://packages`, stdio + unit tests |
+| Previously deferred item | Current repository evidence |
+|--------------------------|-----------------------------|
+| Package trust round trip | Canonical identity export, CAS signing, strict verification, tamper/replay/duplicate/unsupported-algorithm tests |
+| OCI distribution trust | Separate tag-gated Cosign signing and pulled-digest verification in `.github/workflows/release.yml` |
+| Expanded DOCX corpus | Deterministic generator plus V1/V2 detection, supported V5 cases, unresolved-data behavior, and hostile ZIP fixtures under `examples/legacy-corpus/` |
+| Agent-native lifecycle gaps | `update_package`, `delete_package`, and `delete_workspace_artifact`, all included in 26-operation behavior parity |
+| MCP bootstrap gaps | Explicit workspace root/resource and `bootstrap` / `run-eval` prompts |
+| Mock coverage gap | Strict 8-scenario inventory exercised in-process and through the HTTP gateway/deployment smoke paths |
 
-## Not done — and why
+The DOCX corpus is a measured synthetic compatibility surface, not a claim of
+general DOCX support. The `sha256-keyed` package signature is a local/CI
+tamper-evidence contract, not a production public-key identity. OCI digest
+trust remains separately enforced by the release workflow.
 
-### 001 U8: signing round-trip CI
+## Pending external evidence
 
-**What it is.** The package-trust ADR (`adr-package-trust.md`) and the local
-verification stub already exist and are tested (`tests/package_signing.rs`
-covers valid signature, tampered manifest, unsigned-package-passes). The
-*remaining* piece is a CI job that (1) signs the demo + synthetic-opco packages
-with cosign keyless OIDC inside GitHub Actions, and (2) runs a smoke that
-verifies the fresh signature and asserts tamper detection fails closed.
+### First immutable release run
 
-**Why deferred.**
-- **CI-only verification.** cosign keyless signing depends on the GitHub Actions
-  OIDC token issuer — it cannot be exercised on a local machine. Any workflow
-  YAML I add would be unverifiable here; I would be shipping an unrun change and
-  claiming it works, which violates the "verify before claiming completion"
-  rule. This needs a real CI run (and likely a couple of iterations against the
-  Actions environment) to confirm green.
-- **Low blast-radius, safe to add later.** It touches only `.github/workflows/`
-  and a smoke script — no source or contract-format changes. Adding it in a
-  branch with an actual CI run attached is the correct, low-risk path.
+The repository contains the release workflow, validation scripts, three-image
+artifact split, multi-platform definition, BuildKit SBOM/provenance settings,
+Cosign verification, and chart packaging/checksums. Publication is not complete
+until normal CI and a tag-triggered workflow succeed against GHCR and GitHub
+Release. Record the resulting immutable digests and Sigstore bundles; do not
+promote mutable tags alone.
 
-**To finish it.** Add a `sign-packages` step to the `supply-chain` job using
-`sigstore/cosign-installer` + `cosign sign-blob --yes` over the package manifest,
-store the signature as a build artifact, then a verify step that re-runs
-`validate_package` after re-injecting the signature and after a one-byte tamper
-(expect `TQX_PACKAGE_SIGNATURE_INVALID`). Gate it behind `id-token: write`
-permissions. Confirm green on a PR before merging.
+### CRM3 host integration
 
-### 001 U8: expanded DOCX corpus
+The following remain explicitly host-blocked and are not Templiqx repository
+defects:
 
-**What it is.** Grow the measured DOCX-V5 compatibility surface beyond the single
-CRM3 fixture class: add synthetic `.docx` files exercising nested tables, extra
-merge-field aliases, header/footer edge cases, and V1 BeanShell / V2
-detect-only markers — each with an expected migration-report JSON and, where
-applicable, an OOXML parity baseline.
+- real Basenet ModelGateway `RuntimeAdapter` wiring;
+- tenant, authentication, authorization, retrieval, approval, audit, retry,
+  and workflow policy;
+- sanitized production-customer fixture ingestion and legal acceptance;
+- production storage/secrets/network controls and deployment acceptance;
+- selection and validation of a real second opco package;
+- final BLI-61/BLI-62 host schema and human-review agreement.
 
-**Why deferred.**
-- **Fixtures are binary, hand-authoring is impractical.** A `.docx` is a ZIP of
-  OOXML parts. A *valid* fixture that meaningfully exercises the adapter
-  (`MERGEFIELD` codes in body/tables/headers, a nested section, a BeanShell
-  remnant) cannot be typed out as text — it must be generated by a Word-family
-  tool or a scripted OOXML builder, then checked in as a binary blob. Producing
-  correct binaries blind (without a rendering tool to validate them) risks
-  committing fixtures that don't actually test what they claim — worse than not
-  adding them, because a passing test over a malformed fixture reads as coverage
-  that isn't there.
-- **The claim it protects is already scoped honestly.** `adapters/templiqx-docx-v5/README.md`
-  already states the compatibility surface is exactly the current fixture class;
-  the corpus expansion widens that surface but the existing V5 slice + OOXML
-  parity tests remain green and the scope statement is accurate. No false claim
-  is standing while this is deferred.
+Host teams should run the same 8-scenario inventory and fingerprint contract
+against their adapter, preserving evidence grounding and failure semantics.
+See [Host integration](../guides/host-integration.md).
 
-**To finish it.** Generate fixtures with a scripted OOXML builder (e.g. a small
-`docx`-writing helper or a controlled Word export), commit each `.docx` with its
-expected migration-report JSON, and add assertions per fixture in
-`tests/crm3.rs` (categories `migrated`/`approximated`/`unsupported`/`unsafe`).
-Update the README coverage matrix. Requires a way to produce and eyeball the
-binaries, which is a desktop/tooling task, not an in-session edit.
+## Release claim boundary
 
-## Cleanup performed
-
-- Removed 6 stale agent worktrees (`.claude/worktrees/agent-*`) and their
-  branches. All were superseded parallel attempts at units already verified on
-  `main`; nothing unique was lost. This also cleared a recurring background
-  `cargo build -p templiqx-mock-gateway` that had been deadlocking the shared
-  `target/` lock.
+Once repository verification and the tag workflow are green, the valid claim
+is: **Templiqx-owned standalone compiler, packaging, and synthetic conformance
+artifacts are release-ready.** It is not: **CRM3 is production-ready.**

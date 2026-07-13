@@ -12,12 +12,19 @@ use std::{
     process::Command,
     sync::OnceLock,
 };
-use templiqx_application::{MigrateLegacyRequest, RenderDocumentRequest};
+use templiqx_application::{
+    CreatePackageRequest, DeleteContractRequest, DeletePackageRequest,
+    DeleteWorkspaceArtifactRequest, ListWorkspaceArtifactsRequest, MigrateLegacyRequest,
+    ReadArtifactRequest, RenderDocumentRequest, SignPackageRequest, UpdatePackageRequest,
+    VerifyPackageTrustRequest,
+};
 use templiqx_conformance::{
     ConformanceTraceReceipt, DocumentEvidence, InteractionEvidence, TRACE_API_VERSION,
     file_fingerprint, report_fingerprint,
 };
-use templiqx_contracts::{Contract, ExecutionReceipt, OperationEnvelope, RenderRequest};
+use templiqx_contracts::{
+    Contract, ExecutionReceipt, OperationEnvelope, RenderRequest, fingerprint_bytes,
+};
 use templiqx_docx_v5::DocxV5Adapter;
 use templiqx_mcp::TempliqxMcp;
 use templiqx_ports::{LegacyImportAdapter, LegacyImportRequest, LegacyImportResult};
@@ -360,7 +367,30 @@ fn cli_envelope(root: &Path, args: &[&str]) -> Result<Value> {
         .output()?;
     ensure!(
         output.status.success(),
-        "CLI failed: {}",
+        "CLI {args:?} failed with {:?}\nstdout: {}\nstderr: {}",
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(serde_json::from_slice(&output.stdout)?)
+}
+
+fn cli_failure_envelope(root: &Path, args: &[&str]) -> Result<Value> {
+    let repo = repo_root();
+    let binary = repo.join("target/debug").join(if cfg!(windows) {
+        "templiqx.exe"
+    } else {
+        "templiqx"
+    });
+    let output = Command::new(binary)
+        .arg("--root")
+        .arg(root)
+        .arg("--json")
+        .args(args)
+        .output()?;
+    ensure!(
+        output.status.code() == Some(2),
+        "CLI did not return the product-failure exit code: {}",
         String::from_utf8_lossy(&output.stderr)
     );
     Ok(serde_json::from_slice(&output.stdout)?)
@@ -386,6 +416,446 @@ fn assert_equal_envelopes(rust: &impl Serialize, cli: &Value, mcp: &Value) -> Re
     let rust = serde_json::to_value(rust)?;
     ensure!(rust == *cli, "Rust/CLI mismatch\nRust: {rust}\nCLI: {cli}");
     ensure!(rust == *mcp, "Rust/MCP mismatch\nRust: {rust}\nMCP: {mcp}");
+    Ok(())
+}
+
+const BEHAVIOR_PARITY_CASES: &[&str] = &[
+    "catalog",
+    "discover_packages",
+    "create_package",
+    "update_package",
+    "delete_package",
+    "export_package_identity",
+    "sign_package",
+    "verify_package_trust",
+    "inspect_contract",
+    "put_contract",
+    "delete_contract",
+    "validate_contract",
+    "validate_package",
+    "compile_contract",
+    "render_contract",
+    "execute_contract",
+    "migrate_legacy",
+    "render_document",
+    "list_workspace_artifacts",
+    "read_artifact",
+    "delete_workspace_artifact",
+    "test_package",
+    "list_evals",
+    "run_eval",
+    "diff_contract",
+    "explain_contract",
+];
+
+fn copy_dir(from: &Path, to: &Path) -> Result<()> {
+    fs::create_dir_all(to)?;
+    for entry in fs::read_dir(from)? {
+        let entry = entry?;
+        let destination = to.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_dir(&entry.path(), &destination)?;
+        } else {
+            fs::copy(entry.path(), destination)?;
+        }
+    }
+    Ok(())
+}
+
+fn package_fingerprint(envelope: &Value) -> Result<String> {
+    envelope["fingerprints"]["package"]
+        .as_str()
+        .map(ToOwned::to_owned)
+        .context("package fingerprint")
+}
+
+/// Exercises the mutable and discovery operations which cannot safely share
+/// the repository checkout used by the read-only CRM3 parity flow below.
+/// Each surface receives an identical private package/workspace tree; exact
+/// envelope equality therefore proves actor-neutral behavior rather than only
+/// checking that a tool name exists.
+#[tokio::test]
+async fn catalog_derived_mutable_operations_have_rust_cli_mcp_behavior_parity() -> Result<()> {
+    ensure!(
+        BEHAVIOR_PARITY_CASES == templiqx_application::CAPABILITY_CATALOG,
+        "CAPABILITY_CATALOG changed without a behavior-parity case"
+    );
+
+    let source = repo_root().join("examples/crm3");
+    let sandbox = tempfile::tempdir()?;
+    let rust_root = sandbox.path().join("rust-packages");
+    let cli_root = sandbox.path().join("cli-packages");
+    let mcp_root = sandbox.path().join("mcp-packages");
+    let rust_workspace = sandbox.path().join("rust-workspace");
+    let cli_workspace = sandbox.path().join("cli-workspace");
+    let mcp_workspace = sandbox.path().join("mcp-workspace");
+    for root in [&rust_root, &cli_root, &mcp_root] {
+        copy_dir(&source, &root.join(PACKAGE))?;
+    }
+    for workspace in [&rust_workspace, &cli_workspace, &mcp_workspace] {
+        fs::create_dir_all(workspace.join(PACKAGE))?;
+        fs::write(workspace.join(PACKAGE).join("proof.txt"), b"parity-proof")?;
+    }
+
+    let rust_service = templiqx_local::compose_with_workspace(&rust_root, &rust_workspace)?;
+    let mcp_service = templiqx_local::compose_with_workspace(&mcp_root, &mcp_workspace)?;
+    let (server_transport, client_transport) = tokio::io::duplex(256 * 1024);
+    let server_task = tokio::spawn(async move {
+        let running = TempliqxMcp::new(mcp_service)
+            .serve(server_transport)
+            .await?;
+        running.waiting().await?;
+        anyhow::Ok(())
+    });
+    let client = ().serve(client_transport).await?;
+
+    let rust_discover = rust_service.discover_packages();
+    let cli_discover = cli_envelope(&cli_root, &["discover"])?;
+    let mcp_discover = mcp_call(&client, "discover_packages", json!({})).await?;
+    assert_equal_envelopes(&rust_discover, &cli_discover, &mcp_discover)?;
+
+    let rust_inspect = rust_service.inspect_contract(PACKAGE, EXTRACTION);
+    let cli_inspect = cli_envelope(&cli_root, &["inspect", PACKAGE, EXTRACTION])?;
+    let mcp_inspect = mcp_call(
+        &client,
+        "inspect_contract",
+        json!({"package": PACKAGE, "contract": EXTRACTION}),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_inspect, &cli_inspect, &mcp_inspect)?;
+
+    let rust_evals = rust_service.list_evals(PACKAGE);
+    let cli_evals = cli_envelope(&cli_root, &["list-evals", PACKAGE])?;
+    let mcp_evals = mcp_call(&client, "list_evals", json!({"package": PACKAGE})).await?;
+    assert_equal_envelopes(&rust_evals, &cli_evals, &mcp_evals)?;
+
+    let capabilities = vec!["structured_output".to_owned()];
+    let rust_eval =
+        rust_service.run_eval(PACKAGE, EXTRACTION, "synthetic-fixed-term", &capabilities);
+    let cli_eval = cli_envelope(
+        &cli_root,
+        &[
+            "run-eval",
+            PACKAGE,
+            EXTRACTION,
+            "synthetic-fixed-term",
+            "--capability",
+            "structured_output",
+        ],
+    )?;
+    let mcp_eval = mcp_call(
+        &client,
+        "run_eval",
+        json!({
+            "package": PACKAGE,
+            "contract": EXTRACTION,
+            "fixture_id": "synthetic-fixed-term",
+            "capabilities": capabilities,
+        }),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_eval, &cli_eval, &mcp_eval)?;
+
+    let rust_list = rust_service.list_workspace_artifacts(&ListWorkspaceArtifactsRequest {
+        package: PACKAGE.into(),
+        workspace: None,
+        prefix: None,
+    });
+    let cli_workspace_string = cli_workspace.to_string_lossy().into_owned();
+    let cli_list = cli_envelope(
+        &cli_root,
+        &[
+            "list-workspace-artifacts",
+            PACKAGE,
+            "--workspace",
+            &cli_workspace_string,
+        ],
+    )?;
+    let mcp_list = mcp_call(
+        &client,
+        "list_workspace_artifacts",
+        json!({"package": PACKAGE}),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_list, &cli_list, &mcp_list)?;
+
+    let rust_read = rust_service.read_artifact(&ReadArtifactRequest {
+        package: PACKAGE.into(),
+        path: "proof.txt".into(),
+        workspace: None,
+    });
+    let cli_read = cli_envelope(
+        &cli_root,
+        &[
+            "read-artifact",
+            PACKAGE,
+            "proof.txt",
+            "--workspace",
+            &cli_workspace_string,
+        ],
+    )?;
+    let mcp_read = mcp_call(
+        &client,
+        "read_artifact",
+        json!({"package": PACKAGE, "path": "proof.txt"}),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_read, &cli_read, &mcp_read)?;
+
+    let artifact_fingerprint = fingerprint_bytes(b"parity-proof");
+    let rust_delete_artifact =
+        rust_service.delete_workspace_artifact(&DeleteWorkspaceArtifactRequest {
+            package: PACKAGE.into(),
+            path: "proof.txt".into(),
+            workspace: None,
+            expected_fingerprint: artifact_fingerprint.clone(),
+        });
+    let cli_delete_artifact = cli_envelope(
+        &cli_root,
+        &[
+            "delete-workspace-artifact",
+            PACKAGE,
+            "proof.txt",
+            "--workspace",
+            &cli_workspace_string,
+            "--expected-fingerprint",
+            &artifact_fingerprint,
+        ],
+    )?;
+    let mcp_delete_artifact = mcp_call(
+        &client,
+        "delete_workspace_artifact",
+        json!({
+            "package": PACKAGE,
+            "path": "proof.txt",
+            "expected_fingerprint": artifact_fingerprint,
+        }),
+    )
+    .await?;
+    assert_equal_envelopes(
+        &rust_delete_artifact,
+        &cli_delete_artifact,
+        &mcp_delete_artifact,
+    )?;
+
+    let rust_create = rust_service.create_package(&CreatePackageRequest {
+        name: "parity".into(),
+        version: "0.1.0".into(),
+    });
+    let cli_create = cli_envelope(&cli_root, &["create", "parity", "--version", "0.1.0"])?;
+    let mcp_create = mcp_call(
+        &client,
+        "create_package",
+        json!({"name": "parity", "version": "0.1.0"}),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_create, &cli_create, &mcp_create)?;
+
+    const CONTRACT_SOURCE: &str = r#"api_version: templiqx/v1alpha1
+id: greeting
+version: 0.1.0
+inputs:
+  name:
+    schema: {type: string}
+    required: true
+messages:
+  - role: user
+    content:
+      - kind: text
+        value: "Hello "
+      - kind: interpolate
+        expression: {kind: ref, path: inputs.name}
+output_schema: {type: object, required: [message], properties: {message: {type: string}}}
+evals:
+  - id: simple
+    inputs: {name: Ryan}
+    fake_output: {message: "Hello Ryan"}
+"#;
+    let contract_source_path = sandbox.path().join("greeting.yaml");
+    fs::write(&contract_source_path, CONTRACT_SOURCE)?;
+    let contract_source_string = contract_source_path.to_string_lossy().into_owned();
+    let rust_put = rust_service.put_contract("parity", "greeting", CONTRACT_SOURCE, None);
+    let cli_put = cli_envelope(
+        &cli_root,
+        &["put", "parity", "greeting", &contract_source_string],
+    )?;
+    let mcp_put = mcp_call(
+        &client,
+        "put_contract",
+        json!({
+            "package": "parity",
+            "contract": "greeting",
+            "source": CONTRACT_SOURCE,
+            "expected_fingerprint": null,
+        }),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_put, &cli_put, &mcp_put)?;
+
+    let contract_fingerprint = rust_put
+        .fingerprints
+        .get("contract")
+        .cloned()
+        .context("put contract fingerprint")?;
+    let rust_delete_contract = rust_service.delete_contract(&DeleteContractRequest {
+        package: "parity".into(),
+        contract: "greeting".into(),
+        expected_fingerprint: contract_fingerprint.clone(),
+    });
+    let cli_delete_contract = cli_envelope(
+        &cli_root,
+        &[
+            "delete",
+            "parity",
+            "greeting",
+            "--expected-fingerprint",
+            &contract_fingerprint,
+        ],
+    )?;
+    let mcp_delete_contract = mcp_call(
+        &client,
+        "delete_contract",
+        json!({
+            "package": "parity",
+            "contract": "greeting",
+            "expected_fingerprint": contract_fingerprint,
+        }),
+    )
+    .await?;
+    assert_equal_envelopes(
+        &rust_delete_contract,
+        &cli_delete_contract,
+        &mcp_delete_contract,
+    )?;
+
+    let rust_identity = rust_service.export_package_identity("parity");
+    let cli_identity = cli_envelope(&cli_root, &["export-package-identity", "parity"])?;
+    let mcp_identity = mcp_call(
+        &client,
+        "export_package_identity",
+        json!({"package": "parity"}),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_identity, &cli_identity, &mcp_identity)?;
+
+    // A repository cannot inject a production signing secret. Exercise the
+    // stable fail-closed behavior here; keyed success and tamper detection are
+    // covered independently by the package-signing contract tests.
+    let pre_sign_fingerprint = rust_service
+        .discover_packages()
+        .result
+        .context("Rust packages")?
+        .into_iter()
+        .find(|manifest| manifest.package == "parity")
+        .map(|manifest| templiqx_contracts::fingerprint(&manifest))
+        .transpose()?
+        .context("parity manifest")?;
+    let rust_sign = rust_service.sign_package(&SignPackageRequest {
+        package: "parity".into(),
+        key_id: "parity-key".into(),
+        expected_fingerprint: pre_sign_fingerprint.clone(),
+    });
+    let cli_sign = cli_failure_envelope(
+        &cli_root,
+        &[
+            "sign-package",
+            "parity",
+            "--key-id",
+            "parity-key",
+            "--expected-fingerprint",
+            &pre_sign_fingerprint,
+        ],
+    )?;
+    let mcp_sign = mcp_call(
+        &client,
+        "sign_package",
+        json!({
+            "package": "parity",
+            "key_id": "parity-key",
+            "expected_fingerprint": pre_sign_fingerprint,
+        }),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_sign, &cli_sign, &mcp_sign)?;
+    ensure!(!rust_sign.ok, "signing unexpectedly accepted a missing key");
+
+    let rust_trust = rust_service.verify_package_trust(&VerifyPackageTrustRequest {
+        package: "parity".into(),
+        strict: false,
+    });
+    let cli_trust = cli_envelope(&cli_root, &["verify-package-trust", "parity"])?;
+    let mcp_trust = mcp_call(
+        &client,
+        "verify_package_trust",
+        json!({"package": "parity", "strict": false}),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_trust, &cli_trust, &mcp_trust)?;
+
+    let signed_fingerprint = pre_sign_fingerprint;
+    let rust_update = rust_service.update_package(&UpdatePackageRequest {
+        package: "parity".into(),
+        version: Some("0.2.0".into()),
+        description: Some("behavior parity".into()),
+        expected_fingerprint: signed_fingerprint.clone(),
+    });
+    let cli_update = cli_envelope(
+        &cli_root,
+        &[
+            "update-package",
+            "parity",
+            "--version",
+            "0.2.0",
+            "--description",
+            "behavior parity",
+            "--expected-fingerprint",
+            &signed_fingerprint,
+        ],
+    )?;
+    let mcp_update = mcp_call(
+        &client,
+        "update_package",
+        json!({
+            "package": "parity",
+            "version": "0.2.0",
+            "description": "behavior parity",
+            "expected_fingerprint": signed_fingerprint,
+        }),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_update, &cli_update, &mcp_update)?;
+
+    let updated_fingerprint = package_fingerprint(&cli_update)?;
+    let rust_delete_package = rust_service.delete_package(&DeletePackageRequest {
+        package: "parity".into(),
+        expected_fingerprint: updated_fingerprint.clone(),
+    });
+    let cli_delete_package = cli_envelope(
+        &cli_root,
+        &[
+            "delete-package",
+            "parity",
+            "--expected-fingerprint",
+            &updated_fingerprint,
+        ],
+    )?;
+    let mcp_delete_package = mcp_call(
+        &client,
+        "delete_package",
+        json!({
+            "package": "parity",
+            "expected_fingerprint": updated_fingerprint,
+        }),
+    )
+    .await?;
+    assert_equal_envelopes(
+        &rust_delete_package,
+        &cli_delete_package,
+        &mcp_delete_package,
+    )?;
+
+    client.cancel().await?;
+    server_task.await??;
     Ok(())
 }
 

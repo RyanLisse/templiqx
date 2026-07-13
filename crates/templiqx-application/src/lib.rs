@@ -6,9 +6,9 @@ use serde_json::Value;
 use std::path::Path;
 use templiqx_contracts::{
     ArtifactContent, ContentEncoding, Contract, ContractDiff, ContractSummary, Diagnostic,
-    ExecutionRequest, Explanation, OperationEnvelope, PackageManifest, PackageSignature,
-    RenderRequest, Severity, TestCaseResult, TestReport, WorkspaceArtifact, fingerprint,
-    fingerprint_bytes,
+    ExecutionRequest, Explanation, OperationEnvelope, PackageIdentity, PackageManifest,
+    PackageSignature, PackageTrustReport, RenderRequest, Severity, TestCaseResult, TestReport,
+    WorkspaceArtifact, fingerprint, fingerprint_bytes,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer,
@@ -65,6 +65,40 @@ pub struct CreatePackageRequest {
     pub version: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct UpdatePackageRequest {
+    pub package: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub expected_fingerprint: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct DeletePackageRequest {
+    pub package: String,
+    pub expected_fingerprint: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SignPackageRequest {
+    pub package: String,
+    pub key_id: String,
+    pub expected_fingerprint: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct VerifyPackageTrustRequest {
+    pub package: String,
+    #[serde(default)]
+    pub strict: bool,
+}
+
 /// Actor-neutral request to delete one contract with CAS safety.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -95,6 +129,16 @@ pub struct ReadArtifactRequest {
     pub workspace: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct DeleteWorkspaceArtifactRequest {
+    pub package: String,
+    pub path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace: Option<String>,
+    pub expected_fingerprint: String,
+}
+
 /// One addressable `(contract, fixture)` pair, as enumerated by `list_evals`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -107,6 +151,11 @@ pub const CAPABILITY_CATALOG: &[&str] = &[
     "catalog",
     "discover_packages",
     "create_package",
+    "update_package",
+    "delete_package",
+    "export_package_identity",
+    "sign_package",
+    "verify_package_trust",
     "inspect_contract",
     "put_contract",
     "delete_contract",
@@ -119,6 +168,7 @@ pub const CAPABILITY_CATALOG: &[&str] = &[
     "render_document",
     "list_workspace_artifacts",
     "read_artifact",
+    "delete_workspace_artifact",
     "test_package",
     "list_evals",
     "run_eval",
@@ -288,6 +338,189 @@ where
             ),
             Err(e) => port_failure("create_package", e),
         }
+    }
+
+    pub fn update_package(
+        &self,
+        request: &UpdatePackageRequest,
+    ) -> OperationEnvelope<PackageManifest> {
+        if request.version.is_none() && request.description.is_none() {
+            return OperationEnvelope::new(
+                "update_package",
+                None,
+                vec![Diagnostic::error(
+                    "TQX_PACKAGE_UPDATE_EMPTY",
+                    "version or description must be provided",
+                    "/",
+                )],
+            );
+        }
+        if request
+            .version
+            .as_deref()
+            .is_some_and(|version| semver::Version::parse(version).is_err())
+        {
+            return OperationEnvelope::new(
+                "update_package",
+                None,
+                vec![Diagnostic::error(
+                    "TQX_MANIFEST_VERSION_INVALID",
+                    "manifest version must be semantic versioning",
+                    "/version",
+                )],
+            );
+        }
+        match self.store.update_package(
+            &request.package,
+            request.version.as_deref(),
+            request.description.as_deref(),
+            &request.expected_fingerprint,
+        ) {
+            Ok(manifest) => with_hash(
+                OperationEnvelope::new("update_package", Some(manifest.clone()), vec![]),
+                "package",
+                &manifest,
+            ),
+            Err(error) => port_failure("update_package", error),
+        }
+    }
+
+    pub fn delete_package(
+        &self,
+        request: &DeletePackageRequest,
+    ) -> OperationEnvelope<PackageManifest> {
+        let manifest = match self.store.manifest(&request.package) {
+            Ok(manifest) => manifest,
+            Err(error) => return port_failure("delete_package", error),
+        };
+        match self
+            .store
+            .delete_package(&request.package, &request.expected_fingerprint)
+        {
+            Ok(hash) => OperationEnvelope::new("delete_package", Some(manifest), vec![])
+                .fingerprint("package", hash),
+            Err(error) => port_failure("delete_package", error),
+        }
+    }
+
+    pub fn export_package_identity(&self, package: &str) -> OperationEnvelope<PackageIdentity> {
+        match self.canonical_package_identity(package) {
+            Ok(identity) => {
+                let manifest_hash = self
+                    .store
+                    .manifest(package)
+                    .ok()
+                    .and_then(|manifest| fingerprint(&manifest).ok())
+                    .unwrap_or_default();
+                with_hash(
+                    OperationEnvelope::new(
+                        "export_package_identity",
+                        Some(identity.clone()),
+                        vec![],
+                    )
+                    .fingerprint("manifest", manifest_hash),
+                    "package_identity",
+                    &identity,
+                )
+            }
+            Err(error) => port_failure("export_package_identity", error),
+        }
+    }
+
+    pub fn sign_package(&self, request: &SignPackageRequest) -> OperationEnvelope<PackageManifest> {
+        let Some(key) = package_signing_key() else {
+            return OperationEnvelope::new(
+                "sign_package",
+                None,
+                vec![Diagnostic::error(
+                    "TQX_PACKAGE_SIGNING_KEY_MISSING",
+                    "TEMPLIQX_PACKAGE_SIGNING_KEY is required for local dev/CI signing",
+                    "/signatures",
+                )],
+            );
+        };
+        let identity = match self.canonical_package_identity(&request.package) {
+            Ok(identity) => identity,
+            Err(error) => return port_failure("sign_package", error),
+        };
+        let signature = match sign_package_identity(&identity, key.as_bytes(), &request.key_id) {
+            Ok(signature) => signature,
+            Err(error) => {
+                return OperationEnvelope::new(
+                    "sign_package",
+                    None,
+                    vec![Diagnostic::error(
+                        "TQX_PACKAGE_SIGNATURE_INVALID",
+                        error.to_string(),
+                        "/signatures",
+                    )],
+                );
+            }
+        };
+        let identity_fingerprint = match fingerprint(&identity) {
+            Ok(value) => value,
+            Err(error) => {
+                return OperationEnvelope::new(
+                    "sign_package",
+                    None,
+                    vec![Diagnostic::error(
+                        "TQX_PACKAGE_SIGNATURE_INVALID",
+                        error.to_string(),
+                        "/signatures",
+                    )],
+                );
+            }
+        };
+        match self.store.attach_package_signature(
+            &request.package,
+            signature,
+            &request.expected_fingerprint,
+            &identity_fingerprint,
+        ) {
+            Ok(manifest) => with_hash(
+                OperationEnvelope::new("sign_package", Some(manifest.clone()), vec![]),
+                "package",
+                &manifest,
+            ),
+            Err(error) => port_failure("sign_package", error),
+        }
+    }
+
+    pub fn verify_package_trust(
+        &self,
+        request: &VerifyPackageTrustRequest,
+    ) -> OperationEnvelope<PackageTrustReport> {
+        let identity = match self.canonical_package_identity(&request.package) {
+            Ok(identity) => identity,
+            Err(error) => return port_failure("verify_package_trust", error),
+        };
+        let manifest = match self.store.manifest(&request.package) {
+            Ok(manifest) => manifest,
+            Err(error) => return port_failure("verify_package_trust", error),
+        };
+        let mut diagnostics = Vec::new();
+        let verified_key_ids = verify_package_signatures_with_mode(
+            &identity,
+            &manifest.signatures,
+            package_signing_key(),
+            request.strict,
+            &mut diagnostics,
+        );
+        let identity_fingerprint = fingerprint(&identity).unwrap_or_default();
+        OperationEnvelope::new(
+            "verify_package_trust",
+            Some(PackageTrustReport {
+                identity_fingerprint: identity_fingerprint.clone(),
+                strict: request.strict,
+                verified_key_ids,
+            }),
+            diagnostics,
+        )
+        .fingerprint("package_identity", identity_fingerprint)
+    }
+
+    fn canonical_package_identity(&self, package: &str) -> Result<PackageIdentity, PortError> {
+        self.store.package_identity(package)
     }
 
     pub fn delete_contract(
@@ -501,17 +734,20 @@ where
         // Content-addressed, no registry, no network fetch.
         let lock: Option<templiqx_contracts::PackageLock> =
             match self.store.artifact_bytes(package, "templiqx.lock") {
-                Ok(bytes) => match serde_yaml_ng::from_slice(&bytes) {
-                    Ok(parsed) => Some(parsed),
-                    Err(error) => {
-                        diagnostics.push(Diagnostic::error(
-                            "TQX_LOCK_INVALID",
-                            format!("templiqx.lock is not valid: {error}"),
-                            "/templiqx.lock",
-                        ));
-                        None
+                Ok(bytes) => {
+                    artifact_hashes.insert("templiqx.lock".into(), fingerprint_bytes(&bytes));
+                    match serde_yaml_ng::from_slice(&bytes) {
+                        Ok(parsed) => Some(parsed),
+                        Err(error) => {
+                            diagnostics.push(Diagnostic::error(
+                                "TQX_LOCK_INVALID",
+                                format!("templiqx.lock is not valid: {error}"),
+                                "/templiqx.lock",
+                            ));
+                            None
+                        }
                     }
-                },
+                }
                 Err(_) => None,
             };
         if !manifest.dependencies.is_empty() {
@@ -986,12 +1222,12 @@ where
             Ok(path) => path,
             Err(error) => return port_failure("render_document", error),
         };
-        let output = match self.workspace.resolve_output_path(
+        let output_lease = match self.workspace.lease_output_path(
             &request.package,
             &request.output,
             request.workspace.as_deref(),
         ) {
-            Ok(path) => path,
+            Ok(lease) => lease,
             Err(error) => return port_failure("render_document", error),
         };
         let rendered = match self
@@ -999,7 +1235,7 @@ where
             .render_document(&AdapterDocumentRenderRequest {
                 template,
                 data: request.data.clone(),
-                output,
+                output: output_lease.path().to_path_buf(),
             }) {
             Ok(result) => result,
             Err(error) => return port_failure("render_document", error),
@@ -1064,6 +1300,7 @@ where
             Ok(bytes) => bytes,
             Err(error) => return port_failure("read_artifact", error),
         };
+        let hash = fingerprint_bytes(&bytes);
         let (content_encoding, content) = encode_artifact_content(&request.path, &bytes);
         OperationEnvelope::new(
             "read_artifact",
@@ -1075,6 +1312,38 @@ where
             }),
             vec![],
         )
+        .fingerprint("artifact", hash)
+    }
+
+    pub fn delete_workspace_artifact(
+        &self,
+        request: &DeleteWorkspaceArtifactRequest,
+    ) -> OperationEnvelope<WorkspaceArtifact> {
+        let size = match self.workspace.read_artifact(
+            &request.package,
+            &request.path,
+            request.workspace.as_deref(),
+        ) {
+            Ok(bytes) => bytes.len() as u64,
+            Err(error) => return port_failure("delete_workspace_artifact", error),
+        };
+        match self.workspace.delete_artifact(
+            &request.package,
+            &request.path,
+            request.workspace.as_deref(),
+            &request.expected_fingerprint,
+        ) {
+            Ok(hash) => OperationEnvelope::new(
+                "delete_workspace_artifact",
+                Some(WorkspaceArtifact {
+                    path: request.path.clone(),
+                    size,
+                }),
+                vec![],
+            )
+            .fingerprint("artifact", hash),
+            Err(error) => port_failure("delete_workspace_artifact", error),
+        }
     }
 }
 
@@ -1094,6 +1363,11 @@ pub fn sign_package_identity(
     let mut hasher = Sha256::new();
     hasher.update(b"templiqx-package-signing-v1\0");
     hasher.update(key);
+    hasher.update(b"\0key-id\0");
+    hasher.update(key_id.as_bytes());
+    hasher.update(b"\0algorithm\0");
+    hasher.update(PACKAGE_SIGNATURE_ALGORITHM.as_bytes());
+    hasher.update(b"\0payload\0");
     hasher.update(&payload);
     Ok(PackageSignature {
         key_id: key_id.into(),
@@ -1109,16 +1383,28 @@ fn package_signing_key() -> Option<String> {
 }
 
 pub fn verify_package_signatures(
-    identity: &serde_json::Value,
+    identity: &impl Serialize,
     signatures: &[PackageSignature],
     signing_key: Option<String>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
+    let strict = std::env::var("TEMPLIQX_PACKAGE_STRICT").ok().as_deref() == Some("1");
+    let _ =
+        verify_package_signatures_with_mode(identity, signatures, signing_key, strict, diagnostics);
+}
+
+pub fn verify_package_signatures_with_mode(
+    identity: &impl Serialize,
+    signatures: &[PackageSignature],
+    signing_key: Option<String>,
+    strict: bool,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Vec<String> {
     if signatures.is_empty() {
-        if std::env::var("TEMPLIQX_PACKAGE_STRICT").ok().as_deref() == Some("1") {
+        if strict {
             diagnostics.push(Diagnostic {
                 code: "TQX_PACKAGE_UNSIGNED".into(),
-                severity: Severity::Warning,
+                severity: Severity::Error,
                 message: "package has no manifest signatures".into(),
                 file: None,
                 json_pointer: Some("/signatures".into()),
@@ -1129,7 +1415,36 @@ pub fn verify_package_signatures(
                 ),
             });
         }
-        return;
+        return Vec::new();
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    for signature in signatures {
+        if signature.algorithm != PACKAGE_SIGNATURE_ALGORITHM {
+            diagnostics.push(Diagnostic::error(
+                "TQX_PACKAGE_SIGNATURE_ALGORITHM_UNSUPPORTED",
+                format!(
+                    "unsupported package signature algorithm '{}'",
+                    signature.algorithm
+                ),
+                "/signatures",
+            ));
+        }
+        if !seen.insert((&signature.key_id, &signature.algorithm)) {
+            diagnostics.push(Diagnostic::error(
+                "TQX_PACKAGE_SIGNATURE_DUPLICATE",
+                format!(
+                    "duplicate package signature for key '{}' and algorithm '{}'",
+                    signature.key_id, signature.algorithm
+                ),
+                "/signatures",
+            ));
+        }
+    }
+    if diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.severity == Severity::Error)
+    {
+        return Vec::new();
     }
     let Some(key) = signing_key else {
         diagnostics.push(Diagnostic::error(
@@ -1137,29 +1452,42 @@ pub fn verify_package_signatures(
             "package signatures present but TEMPLIQX_PACKAGE_SIGNING_KEY is unset",
             "/signatures",
         ));
-        return;
+        return Vec::new();
     };
-    let expected = match sign_package_identity(identity, key.as_bytes(), "verify") {
-        Ok(signature) => signature.value,
-        Err(error) => {
+    let mut verified = Vec::with_capacity(signatures.len());
+    for signature in signatures {
+        let expected = match sign_package_identity(identity, key.as_bytes(), &signature.key_id) {
+            Ok(expected) => expected,
+            Err(error) => {
+                diagnostics.push(Diagnostic::error(
+                    "TQX_PACKAGE_SIGNATURE_INVALID",
+                    error.to_string(),
+                    "/signatures",
+                ));
+                return Vec::new();
+            }
+        };
+        if signature.value != expected.value {
             diagnostics.push(Diagnostic::error(
                 "TQX_PACKAGE_SIGNATURE_INVALID",
-                error.to_string(),
+                format!(
+                    "signature for key '{}' does not match package identity",
+                    signature.key_id
+                ),
                 "/signatures",
             ));
-            return;
+        } else {
+            verified.push(signature.key_id.clone());
         }
-    };
-    if signatures.iter().any(|signature| {
-        signature.algorithm == PACKAGE_SIGNATURE_ALGORITHM && signature.value == expected
-    }) {
-        return;
     }
-    diagnostics.push(Diagnostic::error(
-        "TQX_PACKAGE_SIGNATURE_INVALID",
-        "manifest signature does not match package identity",
-        "/signatures",
-    ));
+    if diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.severity == Severity::Error)
+    {
+        Vec::new()
+    } else {
+        verified
+    }
 }
 
 /// U6: walk contract content, recording every component name referenced by a

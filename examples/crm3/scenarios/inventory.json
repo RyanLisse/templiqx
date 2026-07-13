@@ -4,35 +4,43 @@
   "scenarios": [
     {
       "id": "ambiguous-date",
-      "manifest": "crm3/scenarios/ambiguous-date/manifest.json"
+      "manifest": "crm3/scenarios/ambiguous-date/manifest.json",
+      "expectation": {"status":"failure","diagnostic_code":"TQX_RUNTIME_INVALID_RESPONSE","output_schema_valid":null,"output_fingerprint":null,"receipt_fingerprint":"d207c182699547da43c4ae763afa3766207cf0a2ef96c17f24ff393dcef1c86b"}
     },
     {
       "id": "contradictory-evidence",
-      "manifest": "crm3/scenarios/contradictory-evidence/manifest.json"
+      "manifest": "crm3/scenarios/contradictory-evidence/manifest.json",
+      "expectation": {"status":"failure","diagnostic_code":"TQX_RUNTIME_PERMANENT","output_schema_valid":null,"output_fingerprint":null,"receipt_fingerprint":"1216607480226c91c78d4d87a84ad7cd0b3676d86aaf33abb2c30559e110ac90"}
     },
     {
       "id": "docx-unresolved-reference",
-      "manifest": "crm3/scenarios/docx-unresolved-reference/manifest.json"
+      "manifest": "crm3/scenarios/docx-unresolved-reference/manifest.json",
+      "expectation": {"status":"success","diagnostic_code":null,"output_schema_valid":true,"output_fingerprint":"54eae956be0ca2f14a0afc83294c656ebe7c1ee6358387094262faa4d46c8084","receipt_fingerprint":"d25081f3d037b0ee041e7e2baaab2eb4da7b493491a85299fd5fe99be30e3704"}
     },
     {
       "id": "draft-with-citations",
-      "manifest": "crm3/scenarios/draft-with-citations/manifest.json"
+      "manifest": "crm3/scenarios/draft-with-citations/manifest.json",
+      "expectation": {"status":"success","diagnostic_code":null,"output_schema_valid":true,"output_fingerprint":"54eae956be0ca2f14a0afc83294c656ebe7c1ee6358387094262faa4d46c8084","receipt_fingerprint":"d25081f3d037b0ee041e7e2baaab2eb4da7b493491a85299fd5fe99be30e3704"}
     },
     {
       "id": "intake-document-01",
-      "manifest": "crm3/scenarios/intake-document-01/manifest.json"
+      "manifest": "crm3/scenarios/intake-document-01/manifest.json",
+      "expectation": {"status":"success","diagnostic_code":null,"output_schema_valid":true,"output_fingerprint":"66d6c3fbb03611b4b22deabbe9ef669e5ad69f59c1e90be4dee92d9c3a5188de","receipt_fingerprint":"8b8720bad0213600b8c947e461e5f39f04817c34b9f2bffd36993c680e0e999f"}
     },
     {
       "id": "invalid-output-schema",
-      "manifest": "crm3/scenarios/invalid-output-schema/manifest.json"
+      "manifest": "crm3/scenarios/invalid-output-schema/manifest.json",
+      "expectation": {"status":"failure","diagnostic_code":"TQX_OUTPUT_SCHEMA","output_schema_valid":false,"output_fingerprint":null,"receipt_fingerprint":"a8ba323c1536f8f8b69e8e5529a62fe180a0344f7e4e715fb3f3b41cba4d4e89"}
     },
     {
       "id": "missing-notice-date",
-      "manifest": "crm3/scenarios/missing-notice-date/manifest.json"
+      "manifest": "crm3/scenarios/missing-notice-date/manifest.json",
+      "expectation": {"status":"failure","diagnostic_code":"TQX_RUNTIME_INVALID_RESPONSE","output_schema_valid":null,"output_fingerprint":null,"receipt_fingerprint":"7a7fcee86b41341e992a54d4465958474b87c0a2b93f962739dea37571a2b2e3"}
     },
     {
       "id": "missing-required-field",
-      "manifest": "crm3/scenarios/missing-required-field/manifest.json"
+      "manifest": "crm3/scenarios/missing-required-field/manifest.json",
+      "expectation": {"status":"failure","diagnostic_code":"TQX_RUNTIME_PERMANENT","output_schema_valid":null,"output_fingerprint":null,"receipt_fingerprint":"fcb5f3ff89d1cd269ea7168d28ecb5d4855841ac298979cb7daecbb3614880a5"}
     }
   ]
 }

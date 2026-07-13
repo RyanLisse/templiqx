@@ -79,14 +79,84 @@ if [[ -f Dockerfile ]] && awk '
     if (image ~ /^--platform=/) {
       image = $3
     }
-    if (image != "scratch" && image !~ /@sha256:/) {
+    if (image != "scratch" && image !~ /@sha256:/ && !stage[image]) {
       print FNR ":" $0
+    }
+    if ($(NF - 1) == "AS") {
+      stage[$NF] = 1
     }
   }
 ' Dockerfile >/tmp/templiqx-boundary-docker.txt && [[ -s /tmp/templiqx-boundary-docker.txt ]]; then
   cat /tmp/templiqx-boundary-docker.txt >&2
   fail "Dockerfile base image must be scratch or pinned by digest"
 fi
+
+# Release images are separate trust and deployment artifacts. Keep product
+# stages minimal at the Dockerfile boundary instead of relying only on a smoke
+# test that may not run on every developer machine.
+docker_stage() {
+  awk -v target="$1" '
+    /^FROM / { active = ($NF == target) }
+    active { print }
+  ' Dockerfile
+}
+
+for target in templiqx-cli templiqx-mcp templiqx-conformance; do
+  if ! rg -q "^FROM .* AS ${target}$" Dockerfile; then
+    fail "Dockerfile is missing explicit image target: $target"
+  fi
+done
+
+for target in templiqx-cli templiqx-mcp; do
+  stage_file="/tmp/templiqx-boundary-${target}.txt"
+  docker_stage "$target" >"$stage_file"
+
+  if rg -n '(templiqx-mock-gateway|templiqx-http-conformance|/packages|from=conformance-builder)' \
+    "$stage_file" >/tmp/templiqx-boundary-product-image.txt; then
+    cat /tmp/templiqx-boundary-product-image.txt >&2
+    fail "conformance binary or fixture leaked into product image target: $target"
+  fi
+
+  copy_count="$(rg -c '^COPY .* /usr/local/bin/' "$stage_file" || true)"
+  [[ $copy_count == 1 ]] || fail "$target must copy exactly one product binary (found $copy_count)"
+
+  # These are intentionally literal Dockerfile build-argument references.
+  # shellcheck disable=SC2016
+  for label in \
+    'org.opencontainers.image.source="https://github.com/RyanLisse/templiqx"' \
+    'org.opencontainers.image.version=$VERSION' \
+    'org.opencontainers.image.revision=$VCS_REF'; do
+    rg -Fq "$label" "$stage_file" || fail "$target is missing OCI label: $label"
+  done
+done
+
+cli_stage="$(docker_stage templiqx-cli)"
+mcp_stage="$(docker_stage templiqx-mcp)"
+[[ $cli_stage == *'/target/release/templiqx /usr/local/bin/templiqx'* ]] ||
+  fail "CLI image does not copy the CLI binary"
+[[ $mcp_stage == *'/target/release/templiqx-mcp /usr/local/bin/templiqx-mcp'* ]] ||
+  fail "MCP image does not copy the MCP binary"
+
+conformance_stage="$(docker_stage templiqx-conformance)"
+for required in templiqx-mock-gateway templiqx-http-conformance '/packages' \
+  'io.templiqx.artifact.class="synthetic-conformance-only"'; do
+  [[ $conformance_stage == *"$required"* ]] ||
+    fail "conformance image is missing required content: $required"
+done
+if [[ $conformance_stage == *'/target/release/templiqx /usr/local/bin/templiqx'* ]] ||
+  [[ $conformance_stage == *'/target/release/templiqx-mcp /usr/local/bin/templiqx-mcp'* ]]; then
+  fail "product binary leaked into conformance image"
+fi
+
+if rg -n '^\s*image:' deploy/compose.yml |
+  rg -v '\$\{CONFORMANCE_IMAGE:-templiqx-conformance:pre-crm3\}' \
+    >/tmp/templiqx-boundary-compose-image.txt; then
+  cat /tmp/templiqx-boundary-compose-image.txt >&2
+  fail "Compose mock profiles must use the explicit conformance image"
+fi
+
+rg -Fq 'io.templiqx.artifact.class: synthetic-conformance-only' charts/templiqx/Chart.yaml ||
+  fail "Helm chart must retain its synthetic conformance-only identity"
 
 if [[ -f charts/templiqx/values-mock.yaml ]]; then
   if rg -n 'mcp|LoadBalancer|NodePort' charts/templiqx/templates >/tmp/templiqx-boundary-helm.txt; then

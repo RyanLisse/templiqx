@@ -8,12 +8,13 @@ use std::{
     path::{Path, PathBuf},
 };
 use templiqx_contracts::{
-    AdapterDescriptor, Contract, ExecutionReceipt, ExecutionRequest, PackageManifest, fingerprint,
+    AdapterDescriptor, Contract, ExecutionReceipt, ExecutionRequest, PackageIdentity,
+    PackageManifest, PackageSignature, fingerprint, fingerprint_bytes,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentRenderRequest, DocumentRenderResult, DocumentRenderer,
     LegacyImportAdapter, LegacyImportRequest, LegacyImportResult, PackageStore, PortError,
-    RuntimeAdapter,
+    RuntimeAdapter, WorkspaceOutputLease,
 };
 
 #[derive(Debug, Clone)]
@@ -24,6 +25,17 @@ pub struct FilesystemPackageStore {
 #[derive(Debug, Clone)]
 pub struct FilesystemArtifactWorkspace {
     root: PathBuf,
+}
+
+struct FilesystemWorkspaceOutputLease {
+    path: PathBuf,
+    _lock: fs::File,
+}
+
+impl WorkspaceOutputLease for FilesystemWorkspaceOutputLease {
+    fn path(&self) -> &Path {
+        &self.path
+    }
 }
 
 impl FilesystemPackageStore {
@@ -213,6 +225,32 @@ impl FilesystemArtifactWorkspace {
         Ok(canonical)
     }
 
+    fn package_lock_file(
+        &self,
+        package: &str,
+        workspace: Option<&str>,
+    ) -> Result<fs::File, PortError> {
+        let selected_root = self.selected_root(workspace)?;
+        let lock_dir = selected_root.join(".templiqx-workspace-locks");
+        fs::create_dir_all(&lock_dir).map_err(io_error)?;
+        OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(lock_dir.join(format!(
+                "{}.lock",
+                FilesystemPackageStore::segment(package)?
+            )))
+            .map_err(io_error)
+    }
+
+    fn package_lock(&self, package: &str, workspace: Option<&str>) -> Result<fs::File, PortError> {
+        let lock = self.package_lock_file(package, workspace)?;
+        lock.lock_exclusive().map_err(io_error)?;
+        Ok(lock)
+    }
+
     fn output_path(
         &self,
         package: &str,
@@ -362,13 +400,18 @@ impl FilesystemArtifactWorkspace {
 }
 
 impl ArtifactWorkspace for FilesystemArtifactWorkspace {
-    fn resolve_output_path(
+    fn lease_output_path(
         &self,
         package: &str,
         relative_path: &str,
         workspace: Option<&str>,
-    ) -> Result<PathBuf, PortError> {
-        self.output_path(package, relative_path, workspace)
+    ) -> Result<Box<dyn WorkspaceOutputLease>, PortError> {
+        let lock = self.package_lock(package, workspace)?;
+        let path = self.output_path(package, relative_path, workspace)?;
+        Ok(Box::new(FilesystemWorkspaceOutputLease {
+            path,
+            _lock: lock,
+        }))
     }
 
     fn relative_artifact_path(
@@ -386,6 +429,8 @@ impl ArtifactWorkspace for FilesystemArtifactWorkspace {
         workspace: Option<&str>,
         prefix: Option<&str>,
     ) -> Result<Vec<(PathBuf, u64)>, PortError> {
+        let lock = self.package_lock_file(package, workspace)?;
+        FileExt::lock_shared(&lock).map_err(io_error)?;
         let prefix = Self::validated_prefix(prefix)?;
         let package_root = self.package_root(package, workspace)?;
         if !package_root.exists() {
@@ -394,6 +439,7 @@ impl ArtifactWorkspace for FilesystemArtifactWorkspace {
         let mut out = Vec::new();
         Self::collect_artifacts(&package_root, &package_root, prefix.as_deref(), &mut out)?;
         out.sort_by(|a, b| a.0.cmp(&b.0));
+        FileExt::unlock(&lock).map_err(io_error)?;
         Ok(out)
     }
 
@@ -403,12 +449,76 @@ impl ArtifactWorkspace for FilesystemArtifactWorkspace {
         relative_path: &str,
         workspace: Option<&str>,
     ) -> Result<Vec<u8>, PortError> {
+        let lock = self.package_lock_file(package, workspace)?;
+        FileExt::lock_shared(&lock).map_err(io_error)?;
         let path = self.existing_artifact_path(package, relative_path, workspace)?;
-        fs::read(path).map_err(io_error)
+        let bytes = fs::read(path).map_err(io_error)?;
+        FileExt::unlock(&lock).map_err(io_error)?;
+        Ok(bytes)
+    }
+
+    fn delete_artifact(
+        &self,
+        package: &str,
+        relative_path: &str,
+        workspace: Option<&str>,
+        expected_fingerprint: &str,
+    ) -> Result<String, PortError> {
+        let lock = self.package_lock(package, workspace)?;
+        let path = self.existing_artifact_path(package, relative_path, workspace)?;
+        let bytes = fs::read(&path).map_err(io_error)?;
+        let actual = templiqx_contracts::fingerprint_bytes(&bytes);
+        if actual != expected_fingerprint {
+            return Err(PortError::Conflict(format!(
+                "expected {expected_fingerprint}, found {actual}"
+            )));
+        }
+        fs::remove_file(path).map_err(io_error)?;
+        FileExt::unlock(&lock).map_err(io_error)?;
+        Ok(actual)
     }
 }
 
 impl PackageStore for FilesystemPackageStore {
+    fn package_identity(&self, package: &str) -> Result<PackageIdentity, PortError> {
+        let mut manifest = self.manifest(package)?;
+        manifest.signatures.clear();
+        manifest.contracts.sort();
+        manifest.components.sort();
+        manifest.evals.sort();
+        manifest.migrations.sort();
+        manifest.templates.sort();
+        let mut paths = manifest
+            .contracts
+            .iter()
+            .map(|id| format!("contracts/{id}.yaml"))
+            .collect::<Vec<_>>();
+        paths.extend(manifest.components.iter().cloned());
+        paths.extend(manifest.evals.iter().cloned());
+        paths.extend(manifest.migrations.iter().cloned());
+        paths.extend(manifest.templates.iter().cloned());
+        paths.sort();
+        paths.dedup();
+        let mut artifacts = std::collections::BTreeMap::new();
+        for path in paths {
+            artifacts.insert(
+                path.clone(),
+                fingerprint_bytes(&self.artifact_bytes(package, &path)?),
+            );
+        }
+        match self.artifact_bytes(package, "templiqx.lock") {
+            Ok(bytes) => {
+                artifacts.insert("templiqx.lock".to_owned(), fingerprint_bytes(&bytes));
+            }
+            Err(PortError::NotFound(_)) => {}
+            Err(error) => return Err(error),
+        }
+        Ok(PackageIdentity {
+            manifest,
+            artifacts,
+        })
+    }
+
     fn create_package(&self, name: &str, version: &str) -> Result<PackageManifest, PortError> {
         match self.existing_package(name) {
             Ok(_) => {
@@ -423,6 +533,139 @@ impl PackageStore for FilesystemPackageStore {
         self.manifest(name)
     }
 
+    fn update_package(
+        &self,
+        package: &str,
+        version: Option<&str>,
+        description: Option<&str>,
+        expected_fingerprint: &str,
+    ) -> Result<PackageManifest, PortError> {
+        let package_root = self.existing_package(package)?;
+        let lock = package_lock(&self.root, package)?;
+        lock.lock_exclusive().map_err(io_error)?;
+        let mut manifest = self.manifest(package)?;
+        let actual = fingerprint(&manifest).map_err(|e| PortError::InvalidData(e.to_string()))?;
+        if actual != expected_fingerprint {
+            FileExt::unlock(&lock).map_err(io_error)?;
+            return Err(PortError::Conflict(format!(
+                "expected {expected_fingerprint}, found {actual}"
+            )));
+        }
+        if let Some(version) = version {
+            manifest.version = version.to_owned();
+        }
+        if let Some(description) = description {
+            manifest.description = description.to_owned();
+        }
+        manifest.signatures.clear();
+        write_manifest(&package_root, &manifest)?;
+        FileExt::unlock(&lock).map_err(io_error)?;
+        Ok(manifest)
+    }
+
+    fn delete_package(
+        &self,
+        package: &str,
+        expected_fingerprint: &str,
+    ) -> Result<String, PortError> {
+        let package_root = self.existing_package(package)?;
+        let lock = package_lock(&self.root, package)?;
+        lock.lock_exclusive().map_err(io_error)?;
+        let manifest = self.manifest(package)?;
+        let actual = fingerprint(&manifest).map_err(|e| PortError::InvalidData(e.to_string()))?;
+        if actual != expected_fingerprint {
+            FileExt::unlock(&lock).map_err(io_error)?;
+            return Err(PortError::Conflict(format!(
+                "expected {expected_fingerprint}, found {actual}"
+            )));
+        }
+
+        for candidate in self.discover()? {
+            let lock_references_package = self
+                .artifact_bytes(&candidate.package, "templiqx.lock")
+                .ok()
+                .and_then(|bytes| {
+                    serde_yaml_ng::from_slice::<templiqx_contracts::PackageLock>(&bytes).ok()
+                })
+                .is_some_and(|lock| lock.dependencies.contains_key(package));
+            if candidate.package != package
+                && (candidate.dependencies.contains_key(package) || lock_references_package)
+            {
+                FileExt::unlock(&lock).map_err(io_error)?;
+                return Err(PortError::Conflict(format!(
+                    "package '{}' depends on '{package}'",
+                    candidate.package
+                )));
+            }
+        }
+
+        let mut tracked = std::collections::BTreeSet::from([
+            "templiqx.yaml".to_owned(),
+            "templiqx.lock".to_owned(),
+            ".templiqx.lock".to_owned(),
+        ]);
+        tracked.extend(
+            manifest
+                .contracts
+                .iter()
+                .map(|id| format!("contracts/{id}.yaml")),
+        );
+        tracked.extend(manifest.components.iter().cloned());
+        tracked.extend(manifest.evals.iter().cloned());
+        tracked.extend(manifest.migrations.iter().cloned());
+        tracked.extend(manifest.templates.iter().cloned());
+        let files = package_files(&package_root, &package_root)?;
+        if let Some(untracked) = files.iter().find(|path| !tracked.contains(*path)) {
+            FileExt::unlock(&lock).map_err(io_error)?;
+            return Err(PortError::Conflict(format!(
+                "untracked content would be lost: {untracked}"
+            )));
+        }
+        fs::remove_dir_all(&package_root).map_err(io_error)?;
+        Ok(actual)
+    }
+
+    fn attach_package_signature(
+        &self,
+        package: &str,
+        signature: PackageSignature,
+        expected_fingerprint: &str,
+        expected_identity_fingerprint: &str,
+    ) -> Result<PackageManifest, PortError> {
+        let package_root = self.existing_package(package)?;
+        let lock = package_lock(&self.root, package)?;
+        lock.lock_exclusive().map_err(io_error)?;
+        let mut manifest = self.manifest(package)?;
+        let actual = fingerprint(&manifest).map_err(|e| PortError::InvalidData(e.to_string()))?;
+        if actual != expected_fingerprint {
+            FileExt::unlock(&lock).map_err(io_error)?;
+            return Err(PortError::Conflict(format!(
+                "expected {expected_fingerprint}, found {actual}"
+            )));
+        }
+        let identity = self.package_identity(package)?;
+        let actual_identity =
+            fingerprint(&identity).map_err(|e| PortError::InvalidData(e.to_string()))?;
+        if actual_identity != expected_identity_fingerprint {
+            FileExt::unlock(&lock).map_err(io_error)?;
+            return Err(PortError::Conflict(format!(
+                "expected package identity {expected_identity_fingerprint}, found {actual_identity}"
+            )));
+        }
+        manifest.signatures.retain(|existing| {
+            existing.key_id != signature.key_id || existing.algorithm != signature.algorithm
+        });
+        manifest.signatures.push(signature);
+        manifest.signatures.sort_by(|left, right| {
+            left.key_id
+                .cmp(&right.key_id)
+                .then(left.algorithm.cmp(&right.algorithm))
+        });
+        write_manifest(&package_root, &manifest)?;
+        FileExt::unlock(&lock).map_err(io_error)?;
+        Ok(manifest)
+    }
+
     fn delete_contract(
         &self,
         package: &str,
@@ -431,14 +674,7 @@ impl PackageStore for FilesystemPackageStore {
     ) -> Result<String, PortError> {
         let target = self.contract_path(package, contract)?;
         let package_root = self.existing_package(package)?;
-        let lock_path = package_root.join(".templiqx.lock");
-        let lock = OpenOptions::new()
-            .create(true)
-            .truncate(false)
-            .read(true)
-            .write(true)
-            .open(lock_path)
-            .map_err(io_error)?;
+        let lock = package_lock(&self.root, package)?;
         lock.lock_exclusive().map_err(io_error)?;
 
         let parsed = self.contract(package, contract)?;
@@ -453,6 +689,7 @@ impl PackageStore for FilesystemPackageStore {
         let mut manifest = self.manifest(package)?;
         let had_entry = manifest.contracts.iter().any(|id| id == contract);
         manifest.contracts.retain(|id| id != contract);
+        manifest.signatures.clear();
 
         let manifest_target = package_root.join("templiqx.yaml");
         let manifest_tmp = package_root.join(format!("templiqx.yaml.tmp.{}", std::process::id()));
@@ -569,14 +806,7 @@ impl PackageStore for FilesystemPackageStore {
     ) -> Result<String, PortError> {
         let target = self.contract_path(package, contract)?;
         let package_root = self.existing_package(package)?;
-        let lock_path = package_root.join(".templiqx.lock");
-        let lock = OpenOptions::new()
-            .create(true)
-            .truncate(false)
-            .read(true)
-            .write(true)
-            .open(lock_path)
-            .map_err(io_error)?;
+        let lock = package_lock(&self.root, package)?;
         lock.lock_exclusive().map_err(io_error)?;
         let actual = if target.exists() {
             Some(
@@ -616,13 +846,17 @@ impl PackageStore for FilesystemPackageStore {
         }
         let hash = fingerprint(&parsed).map_err(|e| PortError::InvalidData(e.to_string()))?;
         let mut manifest = self.manifest(package)?;
-        let update_manifest = !manifest.contracts.iter().any(|id| id == contract);
+        let add_to_inventory = !manifest.contracts.iter().any(|id| id == contract);
+        let update_manifest = add_to_inventory || !manifest.signatures.is_empty();
+        manifest.signatures.clear();
         let manifest_target = package_root.join("templiqx.yaml");
         let manifest_tmp = package_root.join(format!("templiqx.yaml.tmp.{}", std::process::id()));
-        if update_manifest {
+        if add_to_inventory {
             manifest.contracts.push(contract.to_owned());
             manifest.contracts.sort();
             manifest.contracts.dedup();
+        }
+        if update_manifest {
             let manifest_source = serde_yaml_ng::to_string(&manifest)
                 .map_err(|e| PortError::InvalidData(e.to_string()))?;
             let mut manifest_file = OpenOptions::new()
@@ -681,6 +915,67 @@ impl PackageStore for FilesystemPackageStore {
         FileExt::unlock(&lock).map_err(io_error)?;
         Ok(hash)
     }
+}
+
+fn package_lock(root: &Path, package: &str) -> Result<std::fs::File, PortError> {
+    let lock_dir = root.join(".templiqx-package-locks");
+    fs::create_dir_all(&lock_dir).map_err(io_error)?;
+    let metadata = fs::symlink_metadata(&lock_dir).map_err(io_error)?;
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Err(PortError::InvalidPath(lock_dir.display().to_string()));
+    }
+    OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(lock_dir.join(format!(
+            "{}.lock",
+            FilesystemPackageStore::segment(package)?
+        )))
+        .map_err(io_error)
+}
+
+fn write_manifest(package_root: &Path, manifest: &PackageManifest) -> Result<(), PortError> {
+    let target = package_root.join("templiqx.yaml");
+    let temporary = package_root.join(format!("templiqx.yaml.tmp.{}", std::process::id()));
+    let source = serde_yaml_ng::to_string(manifest)
+        .map_err(|error| PortError::InvalidData(error.to_string()))?;
+    let mut file = OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&temporary)
+        .map_err(io_error)?;
+    if let Err(error) = file
+        .write_all(source.as_bytes())
+        .and_then(|()| file.sync_all())
+        .and_then(|()| fs::rename(&temporary, &target))
+    {
+        let _ = fs::remove_file(&temporary);
+        return Err(io_error(error));
+    }
+    Ok(())
+}
+
+fn package_files(directory: &Path, root: &Path) -> Result<Vec<String>, PortError> {
+    let mut files = Vec::new();
+    for entry in fs::read_dir(directory).map_err(io_error)? {
+        let entry = entry.map_err(io_error)?;
+        let path = entry.path();
+        let metadata = fs::symlink_metadata(&path).map_err(io_error)?;
+        if metadata.file_type().is_symlink() {
+            return Err(PortError::InvalidPath(path.display().to_string()));
+        }
+        if metadata.is_dir() {
+            files.extend(package_files(&path, root)?);
+        } else if metadata.is_file() {
+            let relative = path
+                .strip_prefix(root)
+                .map_err(|_| PortError::InvalidPath(path.display().to_string()))?;
+            files.push(portable_path(relative, &path)?);
+        }
+    }
+    Ok(files)
 }
 
 fn io_error(e: std::io::Error) -> PortError {
@@ -803,7 +1098,23 @@ pub fn create_package(
     version: &str,
 ) -> Result<PathBuf, PortError> {
     FilesystemPackageStore::segment(name)?;
-    let package = root.as_ref().join(name);
+    fs::create_dir_all(root.as_ref()).map_err(io_error)?;
+    let root = root.as_ref().canonicalize().map_err(io_error)?;
+    let lock = package_lock(&root, name)?;
+    lock.lock_exclusive().map_err(io_error)?;
+    let package = root.join(name);
+    match fs::symlink_metadata(&package) {
+        Ok(metadata) if metadata.file_type().is_symlink() => {
+            return Err(PortError::InvalidPath(package.display().to_string()));
+        }
+        Ok(_) => {
+            return Err(PortError::Conflict(format!(
+                "package '{name}' already exists"
+            )));
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(io_error(error)),
+    }
     for directory in [
         "contracts",
         "components",
@@ -831,6 +1142,7 @@ pub fn create_package(
     let yaml =
         serde_yaml_ng::to_string(&manifest).map_err(|e| PortError::InvalidData(e.to_string()))?;
     fs::write(package.join("templiqx.yaml"), yaml).map_err(io_error)?;
+    FileExt::unlock(&lock).map_err(io_error)?;
     Ok(package)
 }
 

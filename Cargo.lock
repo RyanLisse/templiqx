@@ -1569,10 +1569,21 @@ dependencies = [
 name = "templiqx-http-conformance"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "serde_json",
  "templiqx-contracts",
+ "templiqx-mock",
  "templiqx-ports",
  "templiqx-runtime-http-mock",
+]
+
+[[package]]
+name = "templiqx-legacy-docx-fixtures"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tempfile",
+ "zip",
 ]
 
 [[package]]

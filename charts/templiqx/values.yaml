@@ -1,6 +1,9 @@
 image:
   repository: templiqx
   tag: pre-crm3
+  # Published release charts set this to the verified OCI index digest. When
+  # present, digest takes precedence over tag and renders repository@digest.
+  digest: ""
   pullPolicy: IfNotPresent
 
 conformance:

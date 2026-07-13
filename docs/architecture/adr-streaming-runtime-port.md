@@ -132,8 +132,17 @@ into the same port without breaking `execute` or the deterministic mock.
   `PortError` from `execute_streaming`. The `Result` remains the authoritative
   outcome; the `Failed` event is the streaming projection of it.
 
-## Open questions
+## Live-provider boundary
 
-- A live streaming proof against a real host adapter (e.g. token-by-token
-  Langfuse) is still outstanding — the mock replays fixture deltas, but no
-  production adapter overrides `execute_streaming` yet (R12).
+`templiqx-runtime-langfuse` deliberately retains the default one-`Complete`
+streaming projection. OpenAI-compatible SSE event framing, cancellation, and
+tool-call assembly are provider wire concerns, not a Langfuse concern and not
+part of the provider-neutral port. Adding them here would silently turn the
+reference observability adapter into the default provider contract.
+
+A host that owns a concrete provider may override `execute_streaming` and must
+prove delta ordering, tool-call fragment assembly, exactly one terminal event,
+failure projection, cancellation, response-size bounds, and parity with
+`execute`. Until such an adapter and live credentials exist, R12's live stream
+proof remains host-gated. Local loopback tests prove the default terminal
+fallback and receipt fingerprint parity without claiming live SSE readiness.

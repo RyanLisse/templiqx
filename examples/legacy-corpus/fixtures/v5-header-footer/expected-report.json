@@ -1,0 +1,31 @@
+{
+  "approximated": 0,
+  "dialect": "v5",
+  "findings": [
+    {
+      "category": "migrated",
+      "construct": "v5_reference",
+      "detail": "supported V5 reference",
+      "part": "word/document.xml",
+      "reference": "case.number"
+    },
+    {
+      "category": "migrated",
+      "construct": "mergefield",
+      "detail": "ordinary Word MERGEFIELD",
+      "part": "word/footer1.xml",
+      "reference": "page.label"
+    },
+    {
+      "category": "migrated",
+      "construct": "v5_reference",
+      "detail": "supported V5 reference",
+      "part": "word/header1.xml",
+      "reference": "organisation.name"
+    }
+  ],
+  "migrated": 3,
+  "unresolved": 0,
+  "unsafe_constructs": 0,
+  "unsupported": 0
+}

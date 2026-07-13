@@ -1,0 +1,5 @@
+{
+  "contains": "exceeds per-entry limit",
+  "kind": "invalid_data",
+  "max_entry_bytes": 1024
+}

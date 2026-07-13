@@ -15,6 +15,7 @@ members = [
   "adapters/templiqx-runtime-langfuse",
   "tools/templiqx-mock-gateway",
   "tools/templiqx-http-conformance",
+  "tools/templiqx-legacy-docx-fixtures",
 ]
 resolver = "2"
 
@@ -23,6 +24,9 @@ version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
 rust-version = "1.88"
+description = "Provider-neutral AI interaction contract compiler and conformance toolkit"
+repository = "https://github.com/RyanLisse/templiqx"
+homepage = "https://github.com/RyanLisse/templiqx"
 
 [workspace.dependencies]
 anyhow = "1.0.103"

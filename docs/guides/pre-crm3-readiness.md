@@ -2,6 +2,14 @@
 
 Templiqx keeps CRM3-shaped proof work in conformance fixtures and deployment smoke paths. Core crates remain provider-neutral and CRM3-neutral.
 
+## Readiness boundary
+
+The repository-owned target is a releasable standalone compiler, identical
+26-operation Rust/CLI/MCP behavior, and reproducible synthetic conformance.
+Templiqx does not claim that CRM3 itself is production-ready: a real
+ModelGateway, tenant/auth/retrieval/approval/audit policy, customer-data
+validation, and host deployment acceptance are owned by the Basenet host.
+
 ## Workspace Contract
 
 Packages are read-only inputs. Runtime artifacts are written to a separate workspace:
@@ -24,6 +32,22 @@ Runtime adapters report typed failures with stable diagnostic codes:
 - `TQX_HOST_RETRY_EXHAUSTED`
 
 Failure envelopes have `ok=false` and no successful `ExecutionReceipt`.
+
+## Mock and legacy proof
+
+`examples/crm3/scenarios/inventory.json` is the authority for 8 scenarios. Each
+entry declares the expected success/failure status, diagnostic code, schema
+validity, output fingerprint, and receipt fingerprint. The in-process tests and
+the real HTTP mock-gateway matrix fail closed on drift; malformed, oversized,
+unknown, and path-escaping requests are rejected. The mock crates, gateway, and
+fixtures are conformance-only and boundary checks keep them out of the default
+application, CLI, and MCP graphs.
+
+The deterministic corpus under `examples/legacy-corpus/` covers V1 BeanShell
+detection, V2 marker detection, supported V5 nested-table/header/footer/alias
+cases, unresolved data, and hostile corrupt/oversized/traversal ZIPs. It defines
+a measured compatibility surface, not general DOCX or production-template
+support.
 
 ## Deploy Checks
 
@@ -48,6 +72,14 @@ Environment-dependent deploy gates:
 just verify-deploy
 ```
 
-Compose failure profiles (`mock-failure-unavailable`, `mock-failure-timeout`) and the kind gateway-down job prove typed transport failures and host retry exhaustion without sleeps in test code. Golden fixture updates require a `GOLDEN_REVIEW:` commit marker or `ALLOW_GOLDEN_UPDATE=1` in CI.
+Docker/Compose and kind enumerate the same 8 inventory scenarios. Product-image
+inspection also proves that the CLI and MCP images do not contain mock binaries
+or fixtures. Golden fixture updates require a `GOLDEN_REVIEW:` commit marker or
+`ALLOW_GOLDEN_UPDATE=1` in CI.
+
+The release workflow publishes separate CLI, MCP, and explicitly synthetic
+conformance images. Package-manifest `sha256-keyed` trust is only a local/CI
+tamper-evidence contract; OCI distribution trust is a separate Cosign-verified
+immutable digest. See [releasing.md](releasing.md).
 
 Host integration guidance lives in [host-integration.md](host-integration.md).

@@ -5,6 +5,8 @@ The CLI calls the same `TempliqxService` methods available to Rust hosts and MCP
 ```bash
 cargo run -p templiqx-cli -- --root examples/packages catalog
 cargo run -p templiqx-cli -- --root examples/packages discover
+cargo run -p templiqx-cli -- --root examples/packages update-package demo \
+  --version 0.2.0 --expected-fingerprint <manifest-fingerprint>
 cargo run -p templiqx-cli -- --root examples/packages validate demo greeting
 cargo run -p templiqx-cli -- --root examples/packages compile demo greeting \
   --values values.json --capability structured_output
@@ -33,7 +35,7 @@ the package-relative `canonical_template`, which can be passed directly to
 
 ## Agent workflows
 
-The same 20-operation catalog is exposed over MCP with identical envelopes, so
+The same 26-operation catalog is exposed over MCP with identical envelopes, so
 an agent can drive Templiqx entirely through catalog primitives. The MCP server
 also emits dynamic onboarding `instructions` at initialize (packages root,
 discovered package names, and the canonical tool sequence). Three suggested
@@ -49,8 +51,21 @@ flows:
 3. **Run an eval and read outputs.** `list_evals <package>` → `run_eval
    <package> <contract> <fixture>` (or `test_package` to run all) →
    `render_document` → `list_workspace_artifacts` → `read_artifact` to inspect
-   generated output without raw filesystem access.
+generated output without raw filesystem access.
+
+Package and workspace cleanup is available through `delete-package` and
+`delete-workspace-artifact`. Both require `--expected-fingerprint`; stale
+fingerprints return a structured `TQX_CAS_CONFLICT` and leave data untouched.
+`delete-package` also refuses dependent packages and untracked files, while
+`update-package` only changes version/description and clears stale signatures.
+
+The MCP binary accepts the package root as its first argument and the writable
+workspace as its second. `TEMPLIQX_PACKAGES_ROOT` and
+`TEMPLIQX_WORKSPACE_ROOT` provide the equivalent environment configuration.
+Agents can inspect `templiqx://workspace` and use the `bootstrap` and
+`run-eval` prompt templates; initialize instructions state both roots and the
+workspace confinement rules.
 
 Every operation returns a structured envelope with a stable `operation` name,
-`ok` flag, `diagnostics`, and content-addressed `hashes`, so an agent can chain
+`ok` flag, `diagnostics`, and content-addressed `fingerprints`, so an agent can chain
 steps and verify determinism by comparing fingerprints across runs.

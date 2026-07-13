@@ -24,7 +24,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: mock-gateway
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: {{ include "templiqx.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/usr/local/bin/templiqx-mock-gateway"]
           args: ["--listen", "0.0.0.0:{{ .Values.mock.gateway.port }}", "--scenario-root", "/packages/crm3/scenarios"]

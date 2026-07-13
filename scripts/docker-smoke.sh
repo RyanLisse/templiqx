@@ -2,6 +2,8 @@
 set -euo pipefail
 
 IMAGE="${IMAGE:-templiqx:pre-crm3}"
+MCP_IMAGE="${MCP_IMAGE:-${IMAGE}-mcp}"
+CONFORMANCE_IMAGE="${CONFORMANCE_IMAGE:-templiqx-conformance:pre-crm3}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="$REPO_ROOT/artifacts/docker-smoke"
 LOCAL_WORKSPACE="$ARTIFACT_DIR/local-workspace"
@@ -10,6 +12,7 @@ LOCAL_RECEIPT="$ARTIFACT_DIR/local-receipt.json"
 CONTAINER_RECEIPT="$CONTAINER_WORKSPACE/receipt.json"
 HTTP_GOLDEN="$REPO_ROOT/scripts/golden/http-conformance.json"
 HTTP_RECEIPT="$ARTIFACT_DIR/http-receipt.json"
+INVENTORY="$REPO_ROOT/examples/crm3/scenarios/inventory.json"
 
 cleanup() {
   # The hardened container writes into this bind mount as UID 65532, which has
@@ -71,24 +74,68 @@ cargo run -q -p templiqx-cli -- \
   --receipt "$LOCAL_RECEIPT" >/dev/null
 
 docker buildx build --load --platform "$DOCKER_PLATFORM" --target templiqx-cli -t "$IMAGE" "$REPO_ROOT"
+docker buildx build --load --platform "$DOCKER_PLATFORM" --target templiqx-mcp -t "$MCP_IMAGE" "$REPO_ROOT"
+docker buildx build --load --platform "$DOCKER_PLATFORM" --target templiqx-conformance -t "$CONFORMANCE_IMAGE" "$REPO_ROOT"
+
+assert_image_paths() {
+  local image="$1"
+  shift
+  local container archive
+  container="$(docker create "$image")"
+  archive="$ARTIFACT_DIR/${container}.tar"
+  docker export "$container" >"$archive"
+  docker rm "$container" >/dev/null
+  for path in "$@"; do
+    if tar -tf "$archive" | grep -Fxq "${path#/}"; then
+      printf 'FAIL command=./scripts/docker-smoke.sh reason=forbidden-image-path image=%s path=%s\n' "$image" "$path" >&2
+      exit 1
+    fi
+  done
+  rm -f "$archive"
+}
+
+assert_image_paths "$IMAGE" \
+  /usr/local/bin/templiqx-mcp \
+  /usr/local/bin/templiqx-mock-gateway \
+  /usr/local/bin/templiqx-http-conformance \
+  /packages
+assert_image_paths "$MCP_IMAGE" \
+  /usr/local/bin/templiqx \
+  /usr/local/bin/templiqx-mock-gateway \
+  /usr/local/bin/templiqx-http-conformance \
+  /packages
 
 # Exercise the same HTTP adapter path used by the Helm job, not only the
 # local deterministic service path.
-docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock up -d mock-gateway
+CONFORMANCE_IMAGE="$CONFORMANCE_IMAGE" docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock up -d mock-gateway
 for _ in {1..30}; do
   curl -fsS "http://127.0.0.1:${TEMPLIQX_MOCK_GATEWAY_PORT:-18080}/health/ready" >/dev/null && break
   sleep 1
 done
 curl -fsS "http://127.0.0.1:${TEMPLIQX_MOCK_GATEWAY_PORT:-18080}/health/ready" >/dev/null
-set +e
-docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock run --rm --no-deps conformance | tee "$HTTP_RECEIPT"
-compose_status=${PIPESTATUS[0]}
-set -e
-((compose_status == 0)) || exit "$compose_status"
+scenarios=()
+while IFS= read -r scenario; do
+  scenarios+=("$scenario")
+done < <(jq -r '.scenarios[].id' "$INVENTORY")
+[[ ${#scenarios[@]} -eq 8 ]] || {
+  printf 'FAIL expected 8 inventory scenarios, got %s\n' "${#scenarios[@]}" >&2
+  exit 1
+}
+for scenario in "${scenarios[@]}"; do
+  receipt="$ARTIFACT_DIR/http-${scenario}.json"
+  set +e
+  CONFORMANCE_IMAGE="$CONFORMANCE_IMAGE" docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock run --rm --no-deps \
+    -e "TEMPLIQX_RUNTIME_SCENARIO=$scenario" conformance | tee "$receipt"
+  compose_status=${PIPESTATUS[0]}
+  set -e
+  ((compose_status == 0)) || exit "$compose_status"
+  jq -e --arg scenario "$scenario" '.ok == true and .scenario_id == $scenario' "$receipt" >/dev/null
+done
+cp "$ARTIFACT_DIR/http-intake-document-01.json" "$HTTP_RECEIPT"
 jq -S . "$HTTP_RECEIPT" >/tmp/templiqx-http-receipt.sorted
 jq -S . "$HTTP_GOLDEN" >/tmp/templiqx-http-golden.sorted
 cmp /tmp/templiqx-http-receipt.sorted /tmp/templiqx-http-golden.sorted
-docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock down --volumes
+CONFORMANCE_IMAGE="$CONFORMANCE_IMAGE" docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile mock down --volumes
 
 docker run --rm \
   --read-only \
@@ -116,23 +163,23 @@ MCP_RESPONSE="$(printf '%s\n' "$MCP_INITIALIZE" | docker run --rm -i \
   --user 65532:65532 \
   --cap-drop ALL \
   --security-opt no-new-privileges \
-  --entrypoint /usr/local/bin/templiqx-mcp \
   --mount "type=bind,src=$REPO_ROOT/examples,dst=/packages,readonly" \
-  "$IMAGE" \
-  /packages)"
+  --mount "type=bind,src=$CONTAINER_WORKSPACE,dst=/workspace" \
+  "$MCP_IMAGE" \
+  /packages /workspace)"
 printf '%s\n' "$MCP_RESPONSE" | jq -e '.result.serverInfo.name == "templiqx-mcp"' >/dev/null
 
 printf 'docker smoke: mcp_stdio_initialize=ok\n'
 
-docker buildx build --load --platform "$DOCKER_PLATFORM" --target templiqx-mcp -t "${IMAGE}-mcp" "$REPO_ROOT"
 MCP_SLIM_RESPONSE="$(printf '%s\n' "$MCP_INITIALIZE" | docker run --rm -i \
   --read-only \
   --user 65532:65532 \
   --cap-drop ALL \
   --security-opt no-new-privileges \
   --mount "type=bind,src=$REPO_ROOT/examples,dst=/packages,readonly" \
-  "${IMAGE}-mcp" \
-  /packages)"
+  --mount "type=bind,src=$CONTAINER_WORKSPACE,dst=/workspace" \
+  "$MCP_IMAGE" \
+  /packages /workspace)"
 printf '%s\n' "$MCP_SLIM_RESPONSE" | jq -e '.result.serverInfo.name == "templiqx-mcp"' >/dev/null
 printf 'docker smoke: mcp_slim_image=ok\n'
 
@@ -142,7 +189,7 @@ run_failure_smoke() {
   local expected_code="$3"
   local log_file="$ARTIFACT_DIR/${profile}.log"
   set +e
-  docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile "$profile" run --rm --no-deps "$service" | tee "$log_file"
+  CONFORMANCE_IMAGE="$CONFORMANCE_IMAGE" docker compose -f "$REPO_ROOT/deploy/compose.yml" --profile "$profile" run --rm --no-deps "$service" | tee "$log_file"
   local status=${PIPESTATUS[0]}
   set -e
   if ((status != 2)); then

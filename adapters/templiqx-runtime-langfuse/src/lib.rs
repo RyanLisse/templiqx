@@ -14,13 +14,15 @@
 //! Langfuse's own docs now point new integrations at the OTLP endpoint
 //! instead — swap `emit_trace` for an OTLP exporter if/when that matters.
 
-use std::time::Duration;
+use std::{io::Read, time::Duration};
 
 use serde::Deserialize;
 use serde_json::{Value, json};
 use templiqx_contracts::{AdapterDescriptor, ExecutionReceipt, ExecutionRequest, fingerprint};
 use templiqx_ports::{PortError, RuntimeAdapter, RuntimeFailure, RuntimeFailureCode};
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
+
+const MAX_MODEL_RESPONSE_BYTES: u64 = 2 * 1024 * 1024;
 
 #[derive(Debug, Clone)]
 pub struct ModelConfig {
@@ -49,9 +51,11 @@ pub struct LangfuseTracedRuntime {
 impl LangfuseTracedRuntime {
     pub fn new(model: ModelConfig, langfuse: LangfuseConfig) -> Result<Self, PortError> {
         require_non_empty("model base_url", &model.base_url)?;
+        require_safe_http_url("model base_url", &model.base_url)?;
         require_non_empty("model api_key", &model.api_key)?;
         require_non_empty("model id", &model.model)?;
         require_non_empty("langfuse host", &langfuse.host)?;
+        require_safe_http_url("langfuse host", &langfuse.host)?;
         require_non_empty("langfuse public_key", &langfuse.public_key)?;
         require_non_empty("langfuse secret_key", &langfuse.secret_key)?;
         Ok(Self {
@@ -66,7 +70,16 @@ impl LangfuseTracedRuntime {
     }
 
     fn failure(&self, code: RuntimeFailureCode, detail: impl Into<String>) -> PortError {
-        let detail = detail.into();
+        self.failure_with_retry(code, detail, None)
+    }
+
+    fn failure_with_retry(
+        &self,
+        code: RuntimeFailureCode,
+        detail: impl Into<String>,
+        retry_after_ms: Option<u64>,
+    ) -> PortError {
+        let detail = self.redact(&detail.into());
         let fingerprint = fingerprint(&json!({
             "adapter": self.descriptor.id,
             "code": code.as_str(),
@@ -78,14 +91,17 @@ impl LangfuseTracedRuntime {
             adapter_id: self.descriptor.id.clone(),
             adapter_version: self.descriptor.version.clone(),
             scenario_id: None,
-            retry_after_ms: None,
+            retry_after_ms,
             fingerprint,
             detail,
         }
         .into()
     }
 
-    fn call_model(&self, messages: &Value) -> Result<(String, Option<ChatUsage>), PortError> {
+    fn call_model(
+        &self,
+        request: &ExecutionRequest,
+    ) -> Result<(String, Option<ChatUsage>), PortError> {
         let url = format!(
             "{}/chat/completions",
             self.model.base_url.trim_end_matches('/')
@@ -94,10 +110,38 @@ impl LangfuseTracedRuntime {
             .set("Authorization", &format!("Bearer {}", self.model.api_key))
             .set("Content-Type", "application/json")
             .timeout(self.model.timeout)
-            .send_json(json!({ "model": self.model.model, "messages": messages }));
+            .send_json(json!({
+                "model": self.model.model,
+                "messages": request.interaction.messages,
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "templiqx_output",
+                        "strict": true,
+                        "schema": request.interaction.output_schema,
+                    }
+                }
+            }));
 
         let response = response.map_err(|error| self.map_ureq_error(error))?;
-        let parsed: ChatCompletionResponse = response.into_json().map_err(|error| {
+        let mut bytes = Vec::new();
+        response
+            .into_reader()
+            .take(MAX_MODEL_RESPONSE_BYTES + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|error| {
+                self.failure(
+                    RuntimeFailureCode::InvalidResponse,
+                    format!("read model response: {error}"),
+                )
+            })?;
+        if bytes.len() as u64 > MAX_MODEL_RESPONSE_BYTES {
+            return Err(self.failure(
+                RuntimeFailureCode::InvalidResponse,
+                "model response exceeded 2097152 byte limit",
+            ));
+        }
+        let parsed: ChatCompletionResponse = serde_json::from_slice(&bytes).map_err(|error| {
             self.failure(
                 RuntimeFailureCode::InvalidResponse,
                 format!("decode model response: {error}"),
@@ -125,10 +169,13 @@ impl LangfuseTracedRuntime {
                     500..=599 => RuntimeFailureCode::Unavailable,
                     _ => RuntimeFailureCode::Permanent,
                 };
-                let body = response.into_string().unwrap_or_default();
-                self.failure(
+                let retry_after_ms = (status == 429)
+                    .then(|| normalized_retry_after_ms(&response))
+                    .flatten();
+                self.failure_with_retry(
                     code,
-                    format!("model gateway returned HTTP {status}: {body}"),
+                    format!("model gateway returned HTTP {status}"),
+                    retry_after_ms,
                 )
             }
             ureq::Error::Transport(transport) => {
@@ -146,6 +193,19 @@ impl LangfuseTracedRuntime {
         }
     }
 
+    fn redact(&self, detail: &str) -> String {
+        [
+            self.model.api_key.as_str(),
+            self.langfuse.public_key.as_str(),
+            self.langfuse.secret_key.as_str(),
+        ]
+        .into_iter()
+        .filter(|secret| !secret.is_empty())
+        .fold(detail.to_owned(), |safe, secret| {
+            safe.replace(secret, "[REDACTED]")
+        })
+    }
+
     /// Best-effort Langfuse ingestion. Never fails the caller: a tracing
     /// outage must not take down contract execution.
     fn emit_trace(
@@ -155,8 +215,13 @@ impl LangfuseTracedRuntime {
         usage: Option<ChatUsage>,
         trace_id: &str,
     ) {
-        if let Err(error) = self.try_emit_trace(request, output, usage, trace_id) {
-            eprintln!("templiqx-runtime-langfuse: trace emission failed: {error}");
+        if self
+            .try_emit_trace(request, output, usage, trace_id)
+            .is_err()
+        {
+            // Do not include the transport error: URL user-info, query strings,
+            // or provider response text may contain host-owned credentials.
+            eprintln!("templiqx-runtime-langfuse: trace emission failed (best effort)");
         }
     }
 
@@ -234,8 +299,7 @@ impl RuntimeAdapter for LangfuseTracedRuntime {
             )
         })?;
 
-        let messages = json!(request.interaction.messages);
-        let (content, usage) = self.call_model(&messages)?;
+        let (content, usage) = self.call_model(request)?;
         let output: Value = serde_json::from_str(&content).map_err(|error| {
             self.failure(
                 RuntimeFailureCode::InvalidResponse,
@@ -293,6 +357,37 @@ fn require_non_empty(field: &str, value: &str) -> Result<(), PortError> {
         return Err(PortError::InvalidData(format!("{field} must not be empty")));
     }
     Ok(())
+}
+
+fn require_safe_http_url(field: &str, value: &str) -> Result<(), PortError> {
+    let Some(rest) = value
+        .strip_prefix("https://")
+        .or_else(|| value.strip_prefix("http://"))
+    else {
+        return Err(PortError::InvalidData(format!(
+            "{field} must use http:// or https://"
+        )));
+    };
+    let authority = rest.split('/').next().unwrap_or_default();
+    if authority.is_empty() || authority.contains('@') || value.contains('?') || value.contains('#')
+    {
+        return Err(PortError::InvalidData(format!(
+            "{field} must not contain credentials, query, or fragment"
+        )));
+    }
+    Ok(())
+}
+
+fn normalized_retry_after_ms(response: &ureq::Response) -> Option<u64> {
+    response
+        .header("x-retry-after-ms")
+        .and_then(|value| value.parse().ok())
+        .or_else(|| {
+            response
+                .header("retry-after")
+                .and_then(|value| value.parse::<u64>().ok())
+                .and_then(|seconds| seconds.checked_mul(1_000))
+        })
 }
 
 fn basic_auth(username: &str, password: &str) -> String {

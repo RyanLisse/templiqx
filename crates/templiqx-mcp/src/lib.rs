@@ -7,8 +7,10 @@ use rmcp::{
         wrapper::{Json, Parameters},
     },
     model::{
-        Implementation, ListResourcesResult, PaginatedRequestParams, ReadResourceRequestParams,
-        ReadResourceResult, Resource, ResourceContents, ServerCapabilities, ServerInfo,
+        GetPromptRequestParams, GetPromptResult, Implementation, ListPromptsResult,
+        ListResourcesResult, PaginatedRequestParams, Prompt, PromptArgument, PromptMessage,
+        ReadResourceRequestParams, ReadResourceResult, Resource, ResourceContents, Role,
+        ServerCapabilities, ServerInfo,
     },
     schemars::{self, JsonSchema},
     service::RequestContext,
@@ -18,14 +20,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use templiqx_application::{
-    CreatePackageRequest, DeleteContractRequest, ListWorkspaceArtifactsRequest,
-    MigrateLegacyRequest, MigrationResult, ReadArtifactRequest, RenderDocumentRequest,
-    RenderDocumentResult, TempliqxService,
+    CreatePackageRequest, DeleteContractRequest, DeletePackageRequest,
+    DeleteWorkspaceArtifactRequest, ListWorkspaceArtifactsRequest, MigrateLegacyRequest,
+    MigrationResult, ReadArtifactRequest, RenderDocumentRequest, RenderDocumentResult,
+    SignPackageRequest, TempliqxService, UpdatePackageRequest, VerifyPackageTrustRequest,
 };
 use templiqx_contracts::{
     ArtifactContent, CompiledInteraction, CompiledMessage, Contract, ContractDiff, ContractSummary,
-    ExecutionReceipt, Explanation, OperationEnvelope, PackageManifest, RenderRequest, StreamEvent,
-    TestCaseResult, TestReport, WorkspaceArtifact,
+    ExecutionReceipt, Explanation, OperationEnvelope, PackageIdentity, PackageManifest,
+    PackageTrustReport, RenderRequest, StreamEvent, TestCaseResult, TestReport, WorkspaceArtifact,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentRenderer, LegacyImportAdapter, PackageStore, RuntimeAdapter,
@@ -36,12 +39,21 @@ pub const TOOL_CATALOG: &[&str] = templiqx_application::CAPABILITY_CATALOG;
 
 pub const RESOURCE_CATALOG_URI: &str = "templiqx://catalog";
 pub const RESOURCE_PACKAGES_URI: &str = "templiqx://packages";
+pub const RESOURCE_WORKSPACE_URI: &str = "templiqx://workspace";
 
 /// Object-safe routing view of the canonical application service.
 pub trait Operations: Send + Sync + 'static {
     fn catalog(&self) -> OperationEnvelope<Vec<String>>;
     fn discover_packages(&self) -> OperationEnvelope<Vec<PackageManifest>>;
     fn create_package(&self, request: &CreatePackageInput) -> OperationEnvelope<PackageManifest>;
+    fn update_package(&self, request: &UpdatePackageInput) -> OperationEnvelope<PackageManifest>;
+    fn delete_package(&self, request: &DeletePackageInput) -> OperationEnvelope<PackageManifest>;
+    fn export_package_identity(&self, package: &str) -> OperationEnvelope<PackageIdentity>;
+    fn sign_package(&self, request: &SignPackageInput) -> OperationEnvelope<PackageManifest>;
+    fn verify_package_trust(
+        &self,
+        request: &VerifyPackageTrustInput,
+    ) -> OperationEnvelope<PackageTrustReport>;
     fn inspect_contract(&self, package: &str, contract: &str) -> OperationEnvelope<Contract>;
     fn put_contract(&self, request: &PutContractInput) -> OperationEnvelope<ContractSummary>;
     fn delete_contract(&self, request: &DeleteContractInput) -> OperationEnvelope<ContractSummary>;
@@ -73,6 +85,10 @@ pub trait Operations: Send + Sync + 'static {
         request: &ListWorkspaceArtifactsInput,
     ) -> OperationEnvelope<Vec<WorkspaceArtifact>>;
     fn read_artifact(&self, request: &ReadArtifactInput) -> OperationEnvelope<ArtifactContent>;
+    fn delete_workspace_artifact(
+        &self,
+        request: &DeleteWorkspaceArtifactInput,
+    ) -> OperationEnvelope<WorkspaceArtifact>;
     fn test_package(&self, package: &str, capabilities: &[String])
     -> OperationEnvelope<TestReport>;
     fn list_evals(&self, package: &str) -> OperationEnvelope<Vec<templiqx_application::EvalCase>>;
@@ -99,6 +115,39 @@ where
         self.create_package(&CreatePackageRequest {
             name: r.name.clone(),
             version: r.version.clone(),
+        })
+    }
+    fn update_package(&self, r: &UpdatePackageInput) -> OperationEnvelope<PackageManifest> {
+        self.update_package(&UpdatePackageRequest {
+            package: r.package.clone(),
+            version: r.version.clone(),
+            description: r.description.clone(),
+            expected_fingerprint: r.expected_fingerprint.clone(),
+        })
+    }
+    fn delete_package(&self, r: &DeletePackageInput) -> OperationEnvelope<PackageManifest> {
+        self.delete_package(&DeletePackageRequest {
+            package: r.package.clone(),
+            expected_fingerprint: r.expected_fingerprint.clone(),
+        })
+    }
+    fn export_package_identity(&self, package: &str) -> OperationEnvelope<PackageIdentity> {
+        self.export_package_identity(package)
+    }
+    fn sign_package(&self, r: &SignPackageInput) -> OperationEnvelope<PackageManifest> {
+        self.sign_package(&SignPackageRequest {
+            package: r.package.clone(),
+            key_id: r.key_id.clone(),
+            expected_fingerprint: r.expected_fingerprint.clone(),
+        })
+    }
+    fn verify_package_trust(
+        &self,
+        r: &VerifyPackageTrustInput,
+    ) -> OperationEnvelope<PackageTrustReport> {
+        self.verify_package_trust(&VerifyPackageTrustRequest {
+            package: r.package.clone(),
+            strict: r.strict,
         })
     }
     fn inspect_contract(&self, p: &str, c: &str) -> OperationEnvelope<Contract> {
@@ -185,6 +234,17 @@ where
             workspace: r.workspace.clone(),
         })
     }
+    fn delete_workspace_artifact(
+        &self,
+        r: &DeleteWorkspaceArtifactInput,
+    ) -> OperationEnvelope<WorkspaceArtifact> {
+        self.delete_workspace_artifact(&DeleteWorkspaceArtifactRequest {
+            package: r.package.clone(),
+            path: r.path.clone(),
+            workspace: r.workspace.clone(),
+            expected_fingerprint: r.expected_fingerprint.clone(),
+        })
+    }
     fn test_package(&self, p: &str, c: &[String]) -> OperationEnvelope<TestReport> {
         self.test_package(p, c)
     }
@@ -223,6 +283,34 @@ pub struct PackageInput {
 pub struct CreatePackageInput {
     pub name: String,
     pub version: String,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct UpdatePackageInput {
+    pub package: String,
+    pub version: Option<String>,
+    pub description: Option<String>,
+    pub expected_fingerprint: String,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct DeletePackageInput {
+    pub package: String,
+    pub expected_fingerprint: String,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SignPackageInput {
+    pub package: String,
+    pub key_id: String,
+    pub expected_fingerprint: String,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct VerifyPackageTrustInput {
+    pub package: String,
+    #[serde(default)]
+    pub strict: bool,
 }
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -314,6 +402,15 @@ pub struct ReadArtifactInput {
 }
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct DeleteWorkspaceArtifactInput {
+    pub package: String,
+    pub path: String,
+    #[serde(default)]
+    pub workspace: Option<String>,
+    pub expected_fingerprint: String,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct TestPackageInput {
     pub package: String,
     #[serde(default)]
@@ -343,6 +440,7 @@ pub struct StructuredEnvelope {
     pub api_version: String,
     pub operation: String,
     pub ok: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
     pub diagnostics: Vec<StructuredDiagnostic>,
     pub fingerprints: BTreeMap<String, String>,
@@ -355,9 +453,13 @@ pub struct StructuredDiagnostic {
     pub code: String,
     pub severity: String,
     pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub json_pointer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub span: Option<StructuredSourceSpan>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub help: Option<String>,
 }
 #[derive(Debug, Clone, Serialize, JsonSchema)]
@@ -408,6 +510,7 @@ impl StructuredEnvelope {
 pub struct TempliqxMcp {
     operations: Arc<dyn Operations>,
     packages_root: Option<PathBuf>,
+    workspace_root: Option<PathBuf>,
     #[allow(dead_code)] // rmcp's generated handler accesses the router through generated code.
     tool_router: ToolRouter<Self>,
 }
@@ -422,10 +525,16 @@ impl TempliqxMcp {
         self
     }
     #[must_use]
+    pub fn with_workspace_root(mut self, root: PathBuf) -> Self {
+        self.workspace_root = Some(root);
+        self
+    }
+    #[must_use]
     pub fn from_arc(operations: Arc<dyn Operations>) -> Self {
         Self {
             operations,
             packages_root: None,
+            workspace_root: None,
             tool_router: Self::tool_router(),
         }
     }
@@ -458,6 +567,10 @@ impl TempliqxMcp {
                 }
             }
         }
+        if let Some(root) = &self.workspace_root {
+            lines.push(format!("Workspace root: {}", root.display()));
+        }
+        lines.push("Workspace writes are package-scoped and traversal/symlink confined.".into());
         lines.join("\n")
     }
 
@@ -471,6 +584,15 @@ impl TempliqxMcp {
         let envelope = StructuredEnvelope::from_operation(self.operations.discover_packages());
         serde_json::to_string(&envelope)
             .map_err(|error| McpError::internal_error(error.to_string(), None))
+    }
+
+    fn workspace_resource_text(&self) -> Result<String, McpError> {
+        serde_json::to_string(&serde_json::json!({
+            "workspace": self.workspace_root.as_ref().map(|path| path.display().to_string()),
+            "default": self.workspace_root.is_none(),
+            "safety": "package-scoped; absolute artifact paths, traversal, backslashes and symlink escapes are rejected"
+        }))
+        .map_err(|error| McpError::internal_error(error.to_string(), None))
     }
 }
 
@@ -495,6 +617,51 @@ impl TempliqxMcp {
     ) -> Json<StructuredEnvelope> {
         Json(StructuredEnvelope::from_operation(
             self.operations.create_package(&i),
+        ))
+    }
+    #[tool(description = "Update package version/description with CAS; invalidates signatures")]
+    fn update_package(
+        &self,
+        Parameters(i): Parameters<UpdatePackageInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.update_package(&i),
+        ))
+    }
+    #[tool(description = "Delete a package with CAS, dependency and untracked-content safety")]
+    fn delete_package(
+        &self,
+        Parameters(i): Parameters<DeletePackageInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.delete_package(&i),
+        ))
+    }
+    #[tool(description = "Export canonical signature-free manifest plus sorted artifact hashes")]
+    fn export_package_identity(
+        &self,
+        Parameters(i): Parameters<PackageInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.export_package_identity(&i.package),
+        ))
+    }
+    #[tool(description = "Attach a local dev/CI signature using the server environment key")]
+    fn sign_package(
+        &self,
+        Parameters(i): Parameters<SignPackageInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.sign_package(&i),
+        ))
+    }
+    #[tool(description = "Verify package trust; strict mode rejects unsigned packages")]
+    fn verify_package_trust(
+        &self,
+        Parameters(i): Parameters<VerifyPackageTrustInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.verify_package_trust(&i),
         ))
     }
     #[tool(description = "Inspect one canonical contract")]
@@ -609,6 +776,15 @@ impl TempliqxMcp {
             self.operations.read_artifact(&i),
         ))
     }
+    #[tool(description = "Delete one confined workspace artifact with byte-fingerprint CAS")]
+    fn delete_workspace_artifact(
+        &self,
+        Parameters(i): Parameters<DeleteWorkspaceArtifactInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.delete_workspace_artifact(&i),
+        ))
+    }
     #[tool(description = "Run all deterministic package eval fixtures")]
     fn test_package(
         &self,
@@ -657,6 +833,7 @@ impl ServerHandler for TempliqxMcp {
             ServerCapabilities::builder()
                 .enable_tools()
                 .enable_resources()
+                .enable_prompts()
                 .build(),
         )
         .with_instructions(self.agent_instructions())
@@ -678,6 +855,9 @@ impl ServerHandler for TempliqxMcp {
             Resource::new(RESOURCE_PACKAGES_URI, "packages")
                 .with_description("Discovered portable package manifest summaries")
                 .with_mime_type("application/json"),
+            Resource::new(RESOURCE_WORKSPACE_URI, "workspace")
+                .with_description("Configured writable artifact workspace and safety boundary")
+                .with_mime_type("application/json"),
         ]))
     }
 
@@ -689,6 +869,7 @@ impl ServerHandler for TempliqxMcp {
         let text = match request.uri.as_str() {
             RESOURCE_CATALOG_URI => self.catalog_resource_text()?,
             RESOURCE_PACKAGES_URI => self.packages_resource_text()?,
+            RESOURCE_WORKSPACE_URI => self.workspace_resource_text()?,
             uri => {
                 return Err(McpError::resource_not_found(
                     format!("unknown resource: {uri}"),
@@ -699,6 +880,56 @@ impl ServerHandler for TempliqxMcp {
         Ok(ReadResourceResult::new(vec![
             ResourceContents::text(text, request.uri).with_mime_type("application/json"),
         ]))
+    }
+
+    async fn list_prompts(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListPromptsResult, McpError> {
+        Ok(ListPromptsResult::with_all_items(vec![
+            Prompt::new(
+                "bootstrap",
+                Some("Discover or create and validate a Templiqx package"),
+                Some(vec![PromptArgument::new("package").with_required(true)]),
+            ),
+            Prompt::new(
+                "run-eval",
+                Some("List and run one deterministic package eval"),
+                Some(vec![PromptArgument::new("package").with_required(true)]),
+            ),
+        ]))
+    }
+
+    async fn get_prompt(
+        &self,
+        request: GetPromptRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<GetPromptResult, McpError> {
+        let package = request
+            .arguments
+            .as_ref()
+            .and_then(|args| args.get("package"))
+            .and_then(Value::as_str)
+            .unwrap_or("PACKAGE");
+        let text = match request.name.as_str() {
+            "bootstrap" => format!(
+                "Call discover_packages. If '{package}' is absent, call create_package, then validate_package. Keep package sources separate from the writable workspace."
+            ),
+            "run-eval" => format!(
+                "Call list_evals for '{package}', choose one returned contract_id/fixture_id pair, then call run_eval with that exact pair."
+            ),
+            name => {
+                return Err(McpError::invalid_params(
+                    format!("unknown prompt: {name}"),
+                    None,
+                ));
+            }
+        };
+        Ok(GetPromptResult::new(vec![PromptMessage::new_text(
+            Role::User,
+            text,
+        )]))
     }
 }
 
@@ -729,9 +960,13 @@ mod tests {
         tokio::task::JoinHandle<anyhow::Result<()>>,
     )> {
         let application = templiqx_local::compose(root)?;
+        let packages_root = root.to_owned();
+        let workspace_root = root.join(".templiqx-workspace");
         let (server_transport, client_transport) = tokio::io::duplex(64 * 1024);
         let server_task = tokio::spawn(async move {
             let service = TempliqxMcp::new(application)
+                .with_packages_root(packages_root)
+                .with_workspace_root(workspace_root)
                 .serve(server_transport)
                 .await?;
             service.waiting().await?;
@@ -752,6 +987,7 @@ mod tests {
         let info = client.peer_info().expect("initialize handshake completed");
         assert!(info.capabilities.tools.is_some());
         assert!(info.capabilities.resources.is_some());
+        assert!(info.capabilities.prompts.is_some());
         assert!(
             info.instructions
                 .as_deref()
@@ -813,6 +1049,34 @@ mod tests {
             .collect();
         assert!(uris.contains(&RESOURCE_CATALOG_URI));
         assert!(uris.contains(&RESOURCE_PACKAGES_URI));
+        assert!(uris.contains(&RESOURCE_WORKSPACE_URI));
+
+        let workspace = client
+            .read_resource(ReadResourceRequestParams::new(RESOURCE_WORKSPACE_URI))
+            .await?;
+        let workspace_text = workspace
+            .contents
+            .first()
+            .and_then(|content| match content {
+                ResourceContents::TextResourceContents { text, .. } => Some(text.as_str()),
+                _ => None,
+            })
+            .expect("workspace resource text");
+        assert!(workspace_text.contains(".templiqx-workspace"));
+
+        let prompts = client.list_prompts(None).await?;
+        assert_eq!(
+            prompts
+                .prompts
+                .iter()
+                .map(|prompt| prompt.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["bootstrap", "run-eval"]
+        );
+        let prompt = client
+            .get_prompt(rmcp::model::GetPromptRequestParams::new("bootstrap"))
+            .await?;
+        assert_eq!(prompt.messages.len(), 1);
 
         let catalog_tool = client
             .call_tool(CallToolRequestParams::new("catalog"))

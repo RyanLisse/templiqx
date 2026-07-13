@@ -14,3 +14,19 @@ Safety limits are applied before OOXML is parsed. Only selected story parts
 are changed; every other ZIP member is copied byte-for-byte at the content
 level. Output member ordering and timestamps are deterministic.
 
+## Measured compatibility corpus
+
+The generated synthetic corpus in `examples/legacy-corpus/` is the executable
+boundary of the compatibility claim. It covers V5 placeholders and ordinary
+Word merge fields in nested tables, headers, and footers; aliases converging on
+one canonical field; missing render data; V1 BeanShell detection; and V2 marker
+detection. Corrupt, oversized, and path-traversing ZIPs are rejected before XML
+processing. V1 code is inspected as text and is never executed.
+
+Regenerate and verify the byte-stable fixtures with:
+
+```sh
+cargo run -p templiqx-legacy-docx-fixtures
+cargo test -p templiqx-legacy-docx-fixtures
+cargo test -p templiqx-docx-v5 legacy_corpus
+```
