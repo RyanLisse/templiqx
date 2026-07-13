@@ -4,9 +4,9 @@ on:
   push:
   pull_request:
 
-# Runners are resource-constrained; fresh-clone and helm-kind each spin up a
-# kind cluster plus full workspace builds. Overlapping runs on the same ref
-# were stacking concurrent kind clusters/builds and exhausting the runner,
+# Runners are resource-constrained; helm-kind spins up a kind cluster plus full
+# workspace builds. Overlapping runs on the same ref were stacking concurrent
+# kind clusters/builds and exhausting the runner,
 # which killed jobs mid-step with "runner has received a shutdown signal"
 # rather than a normal test failure. Cancel superseded runs instead.
 concurrency:
