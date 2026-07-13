@@ -34,11 +34,13 @@ jobs:
       - name: Create OpenWiki update pull request
         uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
+          # Docs only. The workflow file is intentionally NOT here: the default
+          # GITHUB_TOKEN cannot push changes to .github/workflows/** (it lacks
+          # the `workflows` scope), so including it makes the PR push fail closed.
           add-paths: |
             openwiki
             AGENTS.md
             CLAUDE.md
-            .github/workflows/openwiki-update.yml
           branch: openwiki/update
           commit-message: "docs: update OpenWiki"
           title: "docs: update OpenWiki"
