@@ -38,6 +38,10 @@ printf 'fresh-clone: worktree=%s cargo_home=%s target=%s\n' "$WORKTREE" "$CARGO_
 
 cd "$WORKTREE"
 cargo fetch
+# Skip qlty here: linting is gated by the dedicated `qlty` CI job, and a cold
+# clone re-initializes all qlty plugins from scratch which blows this job's time
+# budget. Fresh-clone proves the checkout builds and tests reproducibly.
+export SKIP_QLTY=1
 just verify
 
 if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
