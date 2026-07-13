@@ -110,6 +110,42 @@ fn binary_stdio_is_protocol_clean_and_serves_tools() -> Result<()> {
 
     send(
         &mut stdin,
+        &json!({"jsonrpc":"2.0","id":4,"method":"resources/list","params":{}}),
+    )?;
+    let resources = response(&rx, 4, &mut seen)?;
+    ensure!(
+        resources["result"]["resources"]
+            .as_array()
+            .is_some_and(|items| {
+                items
+                    .iter()
+                    .any(|item| item["uri"] == templiqx_mcp::RESOURCE_CATALOG_URI)
+                    && items
+                        .iter()
+                        .any(|item| item["uri"] == templiqx_mcp::RESOURCE_PACKAGES_URI)
+            }),
+        "resources/list missing templiqx resources: {resources}"
+    );
+
+    send(
+        &mut stdin,
+        &json!({
+            "jsonrpc":"2.0",
+            "id":5,
+            "method":"resources/read",
+            "params":{"uri": templiqx_mcp::RESOURCE_CATALOG_URI}
+        }),
+    )?;
+    let catalog = response(&rx, 5, &mut seen)?;
+    ensure!(
+        catalog["result"]["contents"]
+            .as_array()
+            .is_some_and(|contents| !contents.is_empty()),
+        "resources/read catalog failed: {catalog}"
+    );
+
+    send(
+        &mut stdin,
         &json!({
             "jsonrpc":"2.0",
             "id":3,

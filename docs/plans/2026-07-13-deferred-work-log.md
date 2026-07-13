@@ -26,6 +26,7 @@ ok, full `cargo build --workspace --all-targets` clean).
 | 001 | U7 HTML/plain adapter | `templiqx-html-plain`, `tests/html_render.rs` |
 | 001 | U8 (partial) ODT ADR | `docs/architecture/adr-odt-compatibility.md` |
 | 002 | U1–U7 agent-native P0/P1 | prior-session commit, in `main` |
+| 002 | U5 MCP Resources | `templiqx://catalog`, `templiqx://packages`, stdio + unit tests |
 
 ## Not done — and why
 
@@ -86,27 +87,6 @@ expected migration-report JSON, and add assertions per fixture in
 `tests/crm3.rs` (categories `migrated`/`approximated`/`unsupported`/`unsafe`).
 Update the README coverage matrix. Requires a way to produce and eyeball the
 binaries, which is a desktop/tooling task, not an in-session edit.
-
-### 002 U5: MCP Resources (`list_resources` / `read_resource`)
-
-**What it is.** Expose `templiqx://catalog` and `templiqx://packages` as
-read-only MCP Resources so agents can bootstrap context without a tool call.
-
-**Why deferred.**
-- **Optional by the plan's own design.** The plan's open questions record the
-  rmcp resource API as uncertain and set the default to an "instructions-only
-  fallback (still hits ~50% context at P0)." That fallback is *already
-  implemented* — `agent_instructions()` injects packages root, discovered
-  package names, and the canonical tool sequence at initialize.
-- **API uncertainty.** rmcp 2.2's resource-handler surface could not be confirmed
-  from the available source; implementing it blind risks a compile-error rabbit
-  hole for a feature that duplicates context the instructions string already
-  carries.
-
-**To finish it.** Confirm the rmcp 2.2 `ServerHandler::list_resources` /
-`read_resource` signatures, enable `ServerCapabilities::enable_resources()`, and
-return the catalog/packages summaries as resource contents. Add MCP stdio tests
-asserting the resource URIs are listed and readable.
 
 ## Cleanup performed
 

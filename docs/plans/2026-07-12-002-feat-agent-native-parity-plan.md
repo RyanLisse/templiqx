@@ -1,7 +1,8 @@
 ---
 date: 2026-07-12
 type: feat
-status: draft
+status: implemented
+completion: "U1–U7 done + tested (2026-07-13); U5 MCP Resources landed 2026-07-13"
 artifact_contract: ce-plan-v1
 artifact_readiness: implementation-ready
 execution: code
@@ -450,14 +451,14 @@ Measurable re-audit targets after **P0+P1** (re-run agent-native checklist from 
 
 ## Acceptance Checklist (plan-level)
 
-- [ ] U1: `catalog` MCP tool + 14-tool parity
-- [ ] U2: `create_package` CLI/MCP + tests
-- [ ] U3: `delete_contract` CAS + manifest update
-- [ ] U4: `list_workspace_artifacts` + `read_artifact`
-- [ ] U5: Dynamic MCP instructions + resources + agent onboarding doc
-- [ ] U6: `list_evals` + `run_eval`; `test_package` unchanged semantically
-- [ ] U7: `stream_events` in envelope when `stream: true`
-- [ ] Template 001 U6 explain graph landed and referenced in MCP instructions
-- [ ] Re-audit overall score ≥85% after P0+P1
-- [ ] CRM3 evidence-grounding tests remain green
-- [ ] `./scripts/check-boundaries.sh` passes
+- [x] U1: `catalog` MCP tool + 14-tool parity
+- [x] U2: `create_package` CLI/MCP + tests
+- [x] U3: `delete_contract` CAS + manifest update
+- [x] U4: `list_workspace_artifacts` + `read_artifact`
+- [x] U5: Dynamic MCP instructions + resources + agent onboarding doc
+- [x] U6: `list_evals` + `run_eval`; `test_package` unchanged semantically
+- [x] U7: `stream_events` in envelope when `stream: true`
+- [x] Template 001 U6 explain graph landed and referenced in MCP instructions
+- [x] Re-audit overall score ≥85% after P0+P1
+- [x] CRM3 evidence-grounding tests remain green
+- [x] `./scripts/check-boundaries.sh` passes

@@ -1,13 +1,17 @@
 //! MCP stdio adapter over Templiqx's actor-neutral application capabilities.
 
 use rmcp::{
-    ServerHandler,
+    ErrorData as McpError, RoleServer, ServerHandler,
     handler::server::{
         router::tool::ToolRouter,
         wrapper::{Json, Parameters},
     },
-    model::{Implementation, ServerCapabilities, ServerInfo},
+    model::{
+        Implementation, ListResourcesResult, PaginatedRequestParams, ReadResourceRequestParams,
+        ReadResourceResult, Resource, ResourceContents, ServerCapabilities, ServerInfo,
+    },
     schemars::{self, JsonSchema},
+    service::RequestContext,
     tool, tool_handler, tool_router,
 };
 use serde::{Deserialize, Serialize};
@@ -29,6 +33,9 @@ use templiqx_ports::{
 
 /// Stable MCP tool names, exactly matching the application catalog.
 pub const TOOL_CATALOG: &[&str] = templiqx_application::CAPABILITY_CATALOG;
+
+pub const RESOURCE_CATALOG_URI: &str = "templiqx://catalog";
+pub const RESOURCE_PACKAGES_URI: &str = "templiqx://packages";
 
 /// Object-safe routing view of the canonical application service.
 pub trait Operations: Send + Sync + 'static {
@@ -453,6 +460,18 @@ impl TempliqxMcp {
         }
         lines.join("\n")
     }
+
+    fn catalog_resource_text(&self) -> Result<String, McpError> {
+        let envelope = StructuredEnvelope::from_operation(self.operations.catalog());
+        serde_json::to_string(&envelope)
+            .map_err(|error| McpError::internal_error(error.to_string(), None))
+    }
+
+    fn packages_resource_text(&self) -> Result<String, McpError> {
+        let envelope = StructuredEnvelope::from_operation(self.operations.discover_packages());
+        serde_json::to_string(&envelope)
+            .map_err(|error| McpError::internal_error(error.to_string(), None))
+    }
 }
 
 #[tool_router]
@@ -634,12 +653,52 @@ impl TempliqxMcp {
 #[tool_handler]
 impl ServerHandler for TempliqxMcp {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
-            .with_instructions(self.agent_instructions())
-            .with_server_info(Implementation::new(
-                "templiqx-mcp",
-                env!("CARGO_PKG_VERSION"),
-            ))
+        ServerInfo::new(
+            ServerCapabilities::builder()
+                .enable_tools()
+                .enable_resources()
+                .build(),
+        )
+        .with_instructions(self.agent_instructions())
+        .with_server_info(Implementation::new(
+            "templiqx-mcp",
+            env!("CARGO_PKG_VERSION"),
+        ))
+    }
+
+    async fn list_resources(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListResourcesResult, McpError> {
+        Ok(ListResourcesResult::with_all_items(vec![
+            Resource::new(RESOURCE_CATALOG_URI, "catalog")
+                .with_description("Canonical Templiqx capability catalog")
+                .with_mime_type("application/json"),
+            Resource::new(RESOURCE_PACKAGES_URI, "packages")
+                .with_description("Discovered portable package manifest summaries")
+                .with_mime_type("application/json"),
+        ]))
+    }
+
+    async fn read_resource(
+        &self,
+        request: ReadResourceRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ReadResourceResult, McpError> {
+        let text = match request.uri.as_str() {
+            RESOURCE_CATALOG_URI => self.catalog_resource_text()?,
+            RESOURCE_PACKAGES_URI => self.packages_resource_text()?,
+            uri => {
+                return Err(McpError::resource_not_found(
+                    format!("unknown resource: {uri}"),
+                    None,
+                ));
+            }
+        };
+        Ok(ReadResourceResult::new(vec![
+            ResourceContents::text(text, request.uri).with_mime_type("application/json"),
+        ]))
     }
 }
 
@@ -659,7 +718,7 @@ mod tests {
     use super::*;
     use rmcp::{
         ServiceExt as _,
-        model::{CallToolRequestParams, JsonObject},
+        model::{CallToolRequestParams, JsonObject, ReadResourceRequestParams},
     };
     use serde_json::json;
 
@@ -692,6 +751,13 @@ mod tests {
 
         let info = client.peer_info().expect("initialize handshake completed");
         assert!(info.capabilities.tools.is_some());
+        assert!(info.capabilities.resources.is_some());
+        assert!(
+            info.instructions
+                .as_deref()
+                .is_some_and(|text| text.len() > 200),
+            "onboarding instructions should be substantive"
+        );
         assert_eq!(info.server_info.name, "templiqx-mcp");
 
         let listed = client.peer().list_tools(None).await?;
@@ -727,6 +793,66 @@ mod tests {
                 .unwrap()
                 .contains_key("diagnostics")
         );
+
+        client.cancel().await?;
+        server_task.await??;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn lists_and_reads_catalog_and_packages_resources() -> anyhow::Result<()> {
+        let temp = tempfile::tempdir()?;
+        templiqx_local::create_package(temp.path(), "demo", "0.1.0")?;
+        let (client, server_task) = client(temp.path()).await?;
+
+        let listed = client.list_resources(None).await?;
+        let uris: Vec<_> = listed
+            .resources
+            .iter()
+            .map(|resource| resource.uri.as_str())
+            .collect();
+        assert!(uris.contains(&RESOURCE_CATALOG_URI));
+        assert!(uris.contains(&RESOURCE_PACKAGES_URI));
+
+        let catalog_tool = client
+            .call_tool(CallToolRequestParams::new("catalog"))
+            .await?;
+        let catalog_resource = client
+            .read_resource(ReadResourceRequestParams::new(RESOURCE_CATALOG_URI))
+            .await?;
+        let catalog_text = catalog_resource
+            .contents
+            .first()
+            .and_then(|content| match content {
+                ResourceContents::TextResourceContents { text, .. } => Some(text.as_str()),
+                ResourceContents::BlobResourceContents { .. } => None,
+                _ => None,
+            })
+            .expect("catalog resource is text");
+        let catalog_json: Value = serde_json::from_str(catalog_text)?;
+        assert_eq!(
+            catalog_json,
+            catalog_tool
+                .structured_content
+                .expect("catalog tool structured content")
+        );
+
+        let packages_resource = client
+            .read_resource(ReadResourceRequestParams::new(RESOURCE_PACKAGES_URI))
+            .await?;
+        let packages_text = packages_resource
+            .contents
+            .first()
+            .and_then(|content| match content {
+                ResourceContents::TextResourceContents { text, .. } => Some(text.as_str()),
+                ResourceContents::BlobResourceContents { .. } => None,
+                _ => None,
+            })
+            .expect("packages resource is text");
+        let packages_json: Value = serde_json::from_str(packages_text)?;
+        assert_eq!(packages_json["operation"], "discover_packages");
+        assert_eq!(packages_json["ok"], true);
+        assert_eq!(packages_json["result"][0]["package"], "demo");
 
         client.cancel().await?;
         server_task.await??;
