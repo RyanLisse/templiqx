@@ -1,7 +1,8 @@
 ---
 date: 2026-07-12
 type: feat
-status: draft
+status: implemented
+completion: "U1–U7 done + tested (2026-07-13); U8 ODT ADR done, signing-CI + DOCX corpus deferred"
 origin: docs/brainstorms/2026-07-12-templiqx-best-in-class-template-engine-gap-analysis.md
 requirements:
   - docs/brainstorms/2026-07-12-templiqx-best-in-class-template-engine-gap-analysis.md
@@ -404,13 +405,13 @@ flowchart TB
 
 ## Acceptance Checklist (plan-level)
 
-- [ ] U1: Streaming mock conformance + CLI/MCP `--stream`
-- [ ] U2: Tool-contract refs compile and fail closed
-- [ ] U3: Dependency lock validation
-- [ ] U4: Includes + cross-package components with cycle detection
-- [ ] U5: Locale format filters registered and tested
-- [ ] U6: Explain graph JSON stable across surfaces
-- [ ] U7: HTML golden render + boundary-clean adapter
-- [ ] U8: CI signing round-trip + expanded DOCX corpus + ODT ADR
-- [ ] CRM3 grounded-evidence tests remain green
-- [ ] `./scripts/check-boundaries.sh` passes
+- [x] U1: Streaming mock conformance + CLI/MCP `--stream`
+- [x] U2: Tool-contract refs compile and fail closed (`core::resolve_tool_contract_refs`, `tests/tool_contract_refs.rs`)
+- [x] U3: Dependency lock validation (`PackageLock`, `tests/package_dependencies.rs`)
+- [x] U4: Includes + cross-package components with cycle detection (`Node::Include`, `tests/includes.rs`)
+- [x] U5: Locale format filters registered and tested (`format_date`/`format_number`, `tests/filters.rs`)
+- [x] U6: Explain graph JSON stable across surfaces (`Explanation.unresolved_references`/`fix_hints`)
+- [x] U7: HTML golden render + boundary-clean adapter (`templiqx-html-plain`, `tests/html_render.rs`)
+- [~] U8: ODT ADR done (`adr-odt-compatibility.md`); signing round-trip CI + expanded DOCX corpus deferred (binary fixtures / CI-only verification)
+- [x] CRM3 grounded-evidence tests remain green (full conformance suite passes)
+- [x] `./scripts/check-boundaries.sh` passes
