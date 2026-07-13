@@ -1,0 +1,39 @@
+name: fresh-clone
+
+# Reproducibility gate: a clean checkout with empty Cargo/Docker caches must
+# build, test, and pass deploy smokes from scratch. It is expensive (full cold
+# rebuild + kind cluster) and largely overlaps the per-push `ci` jobs, so it runs
+# weekly (and on demand) rather than on every push — local `just verify` and the
+# per-push `ci` workflow cover day-to-day changes.
+on:
+  schedule:
+    - cron: "0 4 * * 1" # Mondays 04:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: fresh-clone-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fresh-clone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: extractions/setup-just@v2
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - uses: azure/setup-helm@v4
+      - uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: templiqx-fresh-clone
+      - name: Fresh-clone verification
+        run: ./scripts/fresh-clone-verify.sh
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: fresh-clone-logs
+          path: artifacts/fresh-clone/
+          if-no-files-found: ignore
