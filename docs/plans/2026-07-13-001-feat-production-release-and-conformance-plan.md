@@ -1,7 +1,7 @@
 ---
 title: "feat: Complete Templiqx-owned production release and conformance"
 type: feat
-status: active
+status: complete
 date: 2026-07-13
 origin:
   - docs/brainstorms/2026-07-11-templiqx-ai-native-template-engine-poc-requirements.md
@@ -286,7 +286,7 @@ flowchart LR
 
 **Verification:** A release workflow dry run validates configuration; a real candidate tag or dedicated workflow path produces pullable digest-addressed artifacts whose signatures and checksums verify externally.
 
-- [ ] **U9: Close cold-start, security, documentation, and release evidence**
+- [x] **U9: Close cold-start, security, documentation, and release evidence**
 
 **Goal:** Produce truthful final readiness evidence and remove stale claims.
 
@@ -305,6 +305,15 @@ flowchart LR
 **Test scenarios:** docs/catalog drift check, license/security presence, no stale 9/20 table, no mock-as-production wording, no unsupported compatibility or multi-arch claim, no skipped CI deploy gate.
 
 **Verification:** Local/full deploy gates pass; fresh-clone and final CI/release evidence are green; documentation distinguishes Templiqx-owned release readiness from CRM3 host readiness.
+
+### Closeout evidence — 2026-07-13
+
+- Local repository gates passed: `just verify`, `just verify-deploy`, `qlty fmt`, and `qlty check --fix --level=low`. Compose and kind each exercised all 8 inventory scenarios; the supply-chain scan found 0 vulnerabilities.
+- The mutable Rust/CLI/MCP parity test passed 10 consecutive concurrent full-test iterations after package-local scratch directories were excluded from fixture copies. The canonical catalog remains 26/26 behavior-covered and the agent-native audit remains 94/100.
+- Final PR CI is green across boundaries, qlty, Rust, Docker, Helm/kind, and supply-chain: <https://github.com/RyanLisse/templiqx/actions/runs/29260040887>.
+- The release dry-run source, version, test, and boundary gate is green: <https://github.com/RyanLisse/templiqx/actions/runs/29260042334/job/86850531785>. Its three downstream image jobs were prevented from starting by GitHub's account billing/spending limit, before checkout or build execution; local multi-artifact/deploy evidence remains green and the workflow can be re-run unchanged after that external limit is cleared.
+- At the owner's request, the manual fresh-clone rerun was cancelled to avoid duplicating the already-green gates. The pinned weekly `fresh-clone` schedule remains the recurring cold-start proof; its missing Syft/Grype bootstrap found during this closeout is fixed in the workflow.
+- Scope remains explicit: this closes Templiqx-owned standalone release and synthetic-conformance readiness. Real CRM3 ModelGateway wiring, tenant/auth/retrieval/approval/audit policy, customer-data acceptance, and the production host/control plane remain host-owned.
 
 ## System-Wide Impact
 
