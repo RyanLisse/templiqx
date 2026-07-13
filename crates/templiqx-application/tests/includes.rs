@@ -7,7 +7,7 @@ use templiqx_contracts::Node;
 fn service(temp: &tempfile::TempDir) -> templiqx_local::LocalService {
     let ws = temp.path().join(".ws");
     std::fs::create_dir_all(&ws).expect("workspace dir");
-    templiqx_local::compose_with_workspace(temp.path().to_path_buf(), ws).expect("service")
+    templiqx_local::compose_with_workspace(temp.path(), ws).expect("service")
 }
 
 fn write(temp: &tempfile::TempDir, rel: &str, body: &str) {
@@ -83,7 +83,11 @@ fn cyclic_include_fails() {
 
     let env = service(&temp).inspect_contract("app", "main");
     assert!(!env.ok);
-    assert!(has_code(&env.diagnostics, "TQX_INCLUDE_CYCLE"), "{:?}", env.diagnostics);
+    assert!(
+        has_code(&env.diagnostics, "TQX_INCLUDE_CYCLE"),
+        "{:?}",
+        env.diagnostics
+    );
 }
 
 #[test]

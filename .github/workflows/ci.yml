@@ -17,7 +17,7 @@ jobs:
   boundaries:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Validate script syntax
         run: bash -n scripts/check-boundaries.sh scripts/check-ci-gates.sh scripts/docker-smoke.sh scripts/fresh-clone-verify.sh scripts/kind-smoke.sh scripts/supply-chain-smoke.sh
       - name: Install ripgrep
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: boundaries
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install qlty
         run: |
           curl -fsSL https://qlty.sh | bash
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: boundaries
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: boundaries
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
@@ -75,7 +75,7 @@ jobs:
           echo "$HOME/.qlty/bin" >> "$GITHUB_PATH"
       - name: Fresh-clone verification
         run: ./scripts/fresh-clone-verify.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: fresh-clone-logs
@@ -86,9 +86,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: boundaries
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: ./scripts/docker-smoke.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: docker-smoke-receipts
@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: boundaries
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: azure/setup-helm@v4
       - uses: helm/kind-action@v1.12.0
         with:
@@ -108,7 +108,7 @@ jobs:
       - run: mkdir -p artifacts/helm-render
       - run: helm template templiqx charts/templiqx -f charts/templiqx/values-mock.yaml | tee artifacts/helm-render/templiqx.yaml
       - run: ./scripts/kind-smoke.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: helm-kind-receipts-render-logs
@@ -126,7 +126,7 @@ jobs:
       SYFT_VERSION: v1.20.0
       GRYPE_VERSION: v0.86.1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # The classic Docker Engine storage driver can't `--load` an image that
       # carries provenance/SBOM attestations (buildx has to emit a
       # multi-manifest index to hold them, and the docker exporter rejects
@@ -169,7 +169,7 @@ jobs:
             --load \
             . 2>&1 | tee artifacts/supply-chain/no-cache-linux-amd64-build.log
       - run: ./scripts/supply-chain-smoke.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: supply-chain-sbom-digest-logs

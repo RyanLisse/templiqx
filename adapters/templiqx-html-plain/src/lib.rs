@@ -18,9 +18,7 @@ use std::collections::BTreeSet;
 use std::fs;
 
 use serde_json::Value;
-use templiqx_ports::{
-    DocumentRenderRequest, DocumentRenderResult, DocumentRenderer, PortError,
-};
+use templiqx_ports::{DocumentRenderRequest, DocumentRenderResult, DocumentRenderer, PortError};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct HtmlPlainAdapter;
@@ -35,7 +33,8 @@ impl DocumentRenderer for HtmlPlainAdapter {
         let mut unresolved = BTreeSet::new();
         let rendered = render(&template, &request.data, &mut unresolved);
         if let Some(parent) = request.output.parent() {
-            fs::create_dir_all(parent).map_err(|e| PortError::Io(format!("create output dir: {e}")))?;
+            fs::create_dir_all(parent)
+                .map_err(|e| PortError::Io(format!("create output dir: {e}")))?;
         }
         fs::write(&request.output, rendered.as_bytes())
             .map_err(|e| PortError::Io(format!("write output: {e}")))?;
@@ -158,15 +157,15 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    fn go(tpl: &str, data: Value) -> (String, Vec<String>) {
+    fn go(tpl: &str, data: &Value) -> (String, Vec<String>) {
         let mut unresolved = BTreeSet::new();
-        let out = render(tpl, &data, &mut unresolved);
+        let out = render(tpl, data, &mut unresolved);
         (out, unresolved.into_iter().collect())
     }
 
     #[test]
     fn fields_are_escaped() {
-        let (out, unresolved) = go("<p>{{ name }}</p>", json!({ "name": "<b> & \"x\"" }));
+        let (out, unresolved) = go("<p>{{ name }}</p>", &json!({ "name": "<b> & \"x\"" }));
         assert_eq!(out, "<p>&lt;b&gt; &amp; &quot;x&quot;</p>");
         assert!(unresolved.is_empty());
     }
@@ -175,7 +174,7 @@ mod tests {
     fn each_over_objects() {
         let (out, _) = go(
             "<ul>{{#each items}}<li>{{ label }}</li>{{/each}}</ul>",
-            json!({ "items": [{ "label": "a" }, { "label": "b" }] }),
+            &json!({ "items": [{ "label": "a" }, { "label": "b" }] }),
         );
         assert_eq!(out, "<ul><li>a</li><li>b</li></ul>");
     }
@@ -184,14 +183,14 @@ mod tests {
     fn each_over_scalars_uses_this() {
         let (out, _) = go(
             "{{#each xs}}[{{ this }}]{{/each}}",
-            json!({ "xs": ["p", "q"] }),
+            &json!({ "xs": ["p", "q"] }),
         );
         assert_eq!(out, "[p][q]");
     }
 
     #[test]
     fn missing_field_is_reported_and_empty() {
-        let (out, unresolved) = go("<p>{{ ghost }}</p>", json!({}));
+        let (out, unresolved) = go("<p>{{ ghost }}</p>", &json!({}));
         assert_eq!(out, "<p></p>");
         assert_eq!(unresolved, vec!["ghost".to_owned()]);
     }
