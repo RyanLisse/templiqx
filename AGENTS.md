@@ -2,7 +2,9 @@
 
 ## OpenWiki
 
-Recurring code documentation lives under `openwiki/` (start at `openwiki/quickstart.md`). The scheduled GitHub Actions workflow regenerates it — do not hand-edit OpenWiki pages unless explicitly asked; update source or `docs/` instead.
+This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+
+The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
 
 <!-- OPENWIKI:END -->
 
