@@ -19,7 +19,10 @@ Content is data, not executable source. Supported nodes are:
 - `interpolate`: a typed expression with fixed `trim`, `lower`, `upper`, `json`, `format_date`, or `format_number` filters;
 - `when`: deterministic conditional content;
 - `for_each`: deterministic iteration over an array;
-- `component`: a local component invocation with explicit values.
+- `component`: a local component invocation with explicit values;
+- `include`: splice a package-relative partial (`path`) of content nodes, optionally sourced from a dependency package (`from_dependency`).
+
+The `include` node is expanded by the composition layer before validation and compilation — the portable core never reads files. The referenced partial is a YAML list of content nodes; it is spliced in place and may itself contain further includes. Includes are cycle-checked (`TQX_INCLUDE_CYCLE`), path-confined like every package artifact (traversal yields `TQX_INCLUDE_UNRESOLVED`), and a malformed partial fails with `TQX_INCLUDE_INVALID`. After expansion the content tree contains no include nodes, so all downstream diagnostics are the ordinary content diagnostics.
 
 Expressions are limited to references, JSON literals, equality, boolean negation, conjunction, and disjunction. Shell, Rust, JavaScript, BeanShell, provider code, template-language directives, and dynamic filters cannot execute.
 

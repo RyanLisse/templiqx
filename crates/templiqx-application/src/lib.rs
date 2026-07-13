@@ -172,7 +172,100 @@ where
                 return Err(diagnostics);
             }
         }
+        // U4 (plan 001): expand `include` nodes (package-relative, optionally
+        // cross-package) before validation/compilation. The portable core never
+        // reads files, so expansion, cycle detection, and path confinement live
+        // here. After this, the content tree contains no Include nodes.
+        for message in &mut parsed.messages {
+            let content = std::mem::take(&mut message.content);
+            message.content = self.expand_includes(package, content, &mut Vec::new())?;
+        }
+        for definition in parsed.components.values_mut() {
+            match definition {
+                templiqx_contracts::ComponentDefinition::Typed(component) => {
+                    let content = std::mem::take(&mut component.content);
+                    component.content = self.expand_includes(package, content, &mut Vec::new())?;
+                }
+                templiqx_contracts::ComponentDefinition::Legacy(nodes) => {
+                    let content = std::mem::take(nodes);
+                    *nodes = self.expand_includes(package, content, &mut Vec::new())?;
+                }
+            }
+        }
         Ok(parsed)
+    }
+
+    /// Recursively replace `Include` nodes with the parsed content of the
+    /// referenced partial. `stack` holds `pkg::path` keys already being expanded
+    /// so cycles fail with a stable diagnostic. Path confinement is enforced by
+    /// the store (traversal rejected); missing/invalid partials fail closed.
+    fn expand_includes(
+        &self,
+        package: &str,
+        nodes: Vec<templiqx_contracts::Node>,
+        stack: &mut Vec<String>,
+    ) -> Result<Vec<templiqx_contracts::Node>, Vec<Diagnostic>> {
+        use templiqx_contracts::Node;
+        let mut out = Vec::with_capacity(nodes.len());
+        for node in nodes {
+            match node {
+                Node::Include {
+                    path,
+                    from_dependency,
+                } => {
+                    let target = from_dependency.as_deref().unwrap_or(package);
+                    let key = format!("{target}::{path}");
+                    if stack.contains(&key) {
+                        return Err(vec![Diagnostic::error(
+                            "TQX_INCLUDE_CYCLE",
+                            format!("include cycle detected at '{key}'"),
+                            "",
+                        )]);
+                    }
+                    let bytes = self.store.artifact_bytes(target, &path).map_err(|error| {
+                        vec![Diagnostic::error(
+                            "TQX_INCLUDE_UNRESOLVED",
+                            format!("cannot resolve include '{key}': {error}"),
+                            "",
+                        )]
+                    })?;
+                    let partial: Vec<Node> =
+                        serde_yaml_ng::from_slice(&bytes).map_err(|error| {
+                            vec![Diagnostic::error(
+                                "TQX_INCLUDE_INVALID",
+                                format!("include '{key}' is not a valid node list: {error}"),
+                                "",
+                            )]
+                        })?;
+                    stack.push(key);
+                    let expanded = self.expand_includes(target, partial, stack)?;
+                    stack.pop();
+                    out.extend(expanded);
+                }
+                Node::When {
+                    condition,
+                    then,
+                    otherwise,
+                } => out.push(Node::When {
+                    condition,
+                    then: self.expand_includes(package, then, stack)?,
+                    otherwise: self.expand_includes(package, otherwise, stack)?,
+                }),
+                Node::ForEach {
+                    collection,
+                    item,
+                    body,
+                    separator,
+                } => out.push(Node::ForEach {
+                    collection,
+                    item,
+                    body: self.expand_includes(package, body, stack)?,
+                    separator,
+                }),
+                other => out.push(other),
+            }
+        }
+        Ok(out)
     }
 
     pub fn catalog(&self) -> OperationEnvelope<Vec<String>> {
@@ -1089,7 +1182,7 @@ fn collect_component_refs(
                 collect_component_refs(otherwise, out);
             }
             Node::ForEach { body, .. } => collect_component_refs(body, out),
-            Node::Text { .. } | Node::Interpolate { .. } => {}
+            Node::Text { .. } | Node::Interpolate { .. } | Node::Include { .. } => {}
         }
     }
 }

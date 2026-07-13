@@ -275,6 +275,15 @@ pub enum Node {
     Text {
         value: String,
     },
+    /// U4 (plan 001): splice a package-relative partial (`Vec<Node>`) at author
+    /// time. Optionally sourced from a dependency package. Expanded by the
+    /// composition layer before validation/compilation — the portable core
+    /// never performs file IO. Cycle- and traversal-checked at expansion.
+    Include {
+        path: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        from_dependency: Option<String>,
+    },
     Interpolate {
         expression: Expr,
         #[serde(default)]

@@ -251,7 +251,7 @@ fn validate_component_cycles(contract: &Contract, out: &mut Vec<Diagnostic>) {
                     references(otherwise, found);
                 }
                 Node::ForEach { body, .. } => references(body, found),
-                Node::Text { .. } | Node::Interpolate { .. } => {}
+                Node::Text { .. } | Node::Interpolate { .. } | Node::Include { .. } => {}
             }
         }
     }
@@ -320,6 +320,11 @@ fn validate_nodes(
         let p = format!("{ptr}/{i}");
         match node {
             Node::Text { .. } => {}
+            Node::Include { .. } => out.push(Diagnostic::error(
+                "TQX_INCLUDE_UNEXPANDED",
+                "include node reached validation unexpanded (composition layer must expand includes)",
+                &p,
+            )),
             Node::Interpolate {
                 expression,
                 filters,
@@ -513,7 +518,7 @@ fn component_arguments(nodes: &[Node]) -> BTreeSet<String> {
                         expression_roots(expression, locals, found);
                     }
                 }
-                Node::Text { .. } => {}
+                Node::Text { .. } | Node::Include { .. } => {}
             }
         }
     }
@@ -1235,6 +1240,13 @@ fn render_nodes(
     for node in nodes {
         match node {
             Node::Text { value } => out.push_str(value),
+            Node::Include { .. } => {
+                return Err(vec![Diagnostic::error(
+                    "TQX_INCLUDE_UNEXPANDED",
+                    "include node reached rendering unexpanded (composition layer must expand includes)",
+                    "",
+                )]);
+            }
             Node::Interpolate {
                 expression,
                 filters,
