@@ -15,3 +15,4 @@
 - [Requirements](brainstorms/2026-07-11-templiqx-ai-native-template-engine-poc-requirements.md)
 - [Implementation plan](plans/2026-07-11-templiqx-poc-implementation-plan.md)
 - [Agent-native architecture audit (2026-07-12)](audits/2026-07-12-agent-native-architecture-review.md)
+- [Agent-native architecture re-audit v2 (2026-07-13)](audits/2026-07-13-agent-native-architecture-review-v2.md)
