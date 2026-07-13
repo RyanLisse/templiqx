@@ -49,6 +49,10 @@ The docs in this wiki intentionally mirror that shape:
 - `workflows.md` covers how commands and tools use the same application catalog.
 - `testing.md` covers the main validation commands and what each suite protects.
 
+## Documentation maintenance
+
+The repository workflow runs OpenWiki on a daily schedule or by manual dispatch, then opens an update pull request containing the generated `openwiki/` pages and OpenWiki instruction files. Treat the pages here as generated documentation: update source or repository docs for normal changes, and use the workflow to refresh this guide.
+
 ## Where to go next
 
 If you are changing core behavior, read the architecture page first. If you are changing contract syntax or examples, read the domain page. If you are changing CLI/MCP behavior, read the workflow page. If you are changing adapter boundaries or package layout, expect the tests and smoke scripts to matter.

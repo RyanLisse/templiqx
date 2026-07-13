@@ -87,3 +87,13 @@ Synthetic multi-step workflow: discover → validate → BLI-61 extraction → B
 - **Kubernetes:** `charts/templiqx/` (lint with `helm lint charts/templiqx -f charts/templiqx/values-mock.yaml`), `./scripts/kind-smoke.sh`
 - **Supply chain:** `./scripts/supply-chain-smoke.sh` (SBOM/digest checks; CI pins Syft/Grype)
 - **CI jobs:** boundaries → qlty + rust + docker + helm-kind + supply-chain (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml))
+
+<!-- OPENWIKI:START -->
+
+## OpenWiki
+
+This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+
+The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+
+<!-- OPENWIKI:END -->
