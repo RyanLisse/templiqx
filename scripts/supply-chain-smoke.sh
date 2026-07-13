@@ -79,10 +79,7 @@ grype "$IMAGE" --output json >"$GRYPE_JSON"
 test -s "$GRYPE_JSON"
 grype "$IMAGE" --fail-on high --output table 2>&1 | tee "$GRYPE_LOG"
 
-if [[ ${CI:-} == "true" ]]; then
-  if [[ ! -s $BUILD_METADATA ]]; then
-    fail "missing-build-metadata" "expected=$BUILD_METADATA"
-  fi
+if [[ -s $BUILD_METADATA ]]; then
   build_digest="$(jq -er '."containerimage.digest"' "$BUILD_METADATA")"
   image_id_short="${image_id#sha256:}"
   build_digest_short="${build_digest#sha256:}"
@@ -105,10 +102,10 @@ if [[ ${CI:-} == "true" ]]; then
     }' >"$PROVENANCE_FILE"
   test -s "$PROVENANCE_FILE"
 else
-  if [[ -s $BUILD_METADATA ]]; then
-    printf 'supply chain smoke: build_metadata=%s\n' "$BUILD_METADATA"
+  if [[ ${CI:-} == "true" && ${SUPPLY_CHAIN_PROVENANCE_OPTIONAL:-} != "1" ]]; then
+    fail "missing-build-metadata" "expected=$BUILD_METADATA"
   else
-    printf 'SKIP_ENV supply chain smoke: build provenance metadata optional outside CI\n'
+    printf 'SKIP_ENV supply chain smoke: build provenance metadata verified by dedicated CI lane\n'
   fi
 fi
 

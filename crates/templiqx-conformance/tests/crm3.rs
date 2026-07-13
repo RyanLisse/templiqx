@@ -342,24 +342,36 @@ fn composes_grounded_interactions_and_explicit_v5_document_conformance() -> Resu
     Ok(())
 }
 
-fn cli_envelope(root: &Path, args: &[&str]) -> Result<Value> {
-    static BUILT: OnceLock<()> = OnceLock::new();
-    let repo = repo_root();
-    if BUILT.get().is_none() {
+fn cli_binary() -> Result<&'static Path> {
+    static BINARY: OnceLock<Result<PathBuf, String>> = OnceLock::new();
+    let binary = BINARY.get_or_init(|| {
+        let repo = repo_root();
         let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
         let build = Command::new(&cargo)
             .current_dir(&repo)
             .args(["build", "--quiet", "-p", "templiqx-cli"])
-            .status()?;
-        ensure!(build.success(), "failed to build templiqx CLI");
-        let _ = BUILT.set(());
-    }
-    let binary = repo.join("target/debug").join(if cfg!(windows) {
-        "templiqx.exe"
-    } else {
-        "templiqx"
+            .status()
+            .map_err(|error| format!("failed to start templiqx CLI build: {error}"))?;
+        if !build.success() {
+            return Err("failed to build templiqx CLI".into());
+        }
+        let binary = repo.join("target/debug").join(if cfg!(windows) {
+            "templiqx.exe"
+        } else {
+            "templiqx"
+        });
+        binary
+            .is_file()
+            .then_some(binary)
+            .ok_or_else(|| "templiqx CLI build produced no executable".into())
     });
-    let output = Command::new(binary)
+    binary
+        .as_deref()
+        .map_err(|message| anyhow!(message.clone()))
+}
+
+fn cli_envelope(root: &Path, args: &[&str]) -> Result<Value> {
+    let output = Command::new(cli_binary()?)
         .arg("--root")
         .arg(root)
         .arg("--json")
@@ -376,13 +388,7 @@ fn cli_envelope(root: &Path, args: &[&str]) -> Result<Value> {
 }
 
 fn cli_failure_envelope(root: &Path, args: &[&str]) -> Result<Value> {
-    let repo = repo_root();
-    let binary = repo.join("target/debug").join(if cfg!(windows) {
-        "templiqx.exe"
-    } else {
-        "templiqx"
-    });
-    let output = Command::new(binary)
+    let output = Command::new(cli_binary()?)
         .arg("--root")
         .arg(root)
         .arg("--json")
@@ -452,7 +458,14 @@ fn copy_dir(from: &Path, to: &Path) -> Result<()> {
     fs::create_dir_all(to)?;
     for entry in fs::read_dir(from)? {
         let entry = entry?;
-        let destination = to.join(entry.file_name());
+        let file_name = entry.file_name();
+        // Other conformance cases intentionally create package-local scratch
+        // directories. They can disappear while this parity fixture is being
+        // copied and are not part of the source package under test.
+        if file_name.to_string_lossy().starts_with(".templiqx-") {
+            continue;
+        }
+        let destination = to.join(file_name);
         if entry.file_type()?.is_dir() {
             copy_dir(&entry.path(), &destination)?;
         } else {
