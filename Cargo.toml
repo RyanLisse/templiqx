@@ -10,6 +10,7 @@ members = [
   "crates/templiqx-mcp",
   "crates/templiqx-conformance",
   "adapters/templiqx-docx-v5",
+  "adapters/templiqx-html-plain",
   "adapters/templiqx-runtime-http-mock",
   "adapters/templiqx-runtime-langfuse",
   "tools/templiqx-mock-gateway",

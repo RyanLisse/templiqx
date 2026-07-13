@@ -22,6 +22,7 @@ rmcp = { version = "2.2.0", default-features = false, features = ["client", "mac
 tempfile.workspace = true
 templiqx-mock = { path = "../templiqx-mock" }
 templiqx-runtime-http-mock = { path = "../../adapters/templiqx-runtime-http-mock" }
+templiqx-html-plain = { path = "../../adapters/templiqx-html-plain" }
 templiqx-mcp = { path = "../templiqx-mcp" }
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 
