@@ -30,6 +30,21 @@ for crate in templiqx-application templiqx-cli templiqx-mcp; do
   fi
 done
 
+# Production HTTP transport is allowed to own HTTP server dependencies, but
+# it must remain a thin TempliqxService surface and never import conformance mocks.
+if [[ -e crates/templiqx-http ]]; then
+  require_path crates/templiqx-http/Cargo.toml
+  if rg -n -i \
+    '(templiqx[-_]?mock|templiqx[-_]?runtime[-_]?http[-_]?mock|templiqx[-_]?mock[-_]?gateway|mock[-_]?gateway)' \
+    crates/templiqx-http/Cargo.toml crates/templiqx-http/src \
+    >/tmp/templiqx-boundary-http-prod.txt 2>/dev/null; then
+    cat /tmp/templiqx-boundary-http-prod.txt >&2
+    fail "production templiqx-http must not depend on conformance mocks"
+  fi
+fi
+
+require_path openapi/templiqx-operations-v1.yaml
+
 # HTTP transport mocks are edge-only concerns. Keep the core, contracts,
 # ports, application, CLI, and MCP surfaces free of HTTP client/server mock
 # crates and implementations.

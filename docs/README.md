@@ -9,6 +9,8 @@ Published docs site: [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/
 - [Actor-neutral capability map](architecture/capability-map.md)
 - [Deployment boundary](architecture/deployment.md)
 - [Observability seam](architecture/observability.md)
+- [Operations HTTP API boundary](architecture/adr-operations-http-api.md)
+- [Operations OpenAPI v1](https://github.com/RyanLisse/templiqx/blob/main/openapi/templiqx-operations-v1.yaml)
 - [Contract format](contracts/v1alpha1.md)
 - [Mock scenario format](contracts/mock-scenarios-v1alpha1.md)
 - [CLI](guides/cli.md)

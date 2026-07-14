@@ -5,9 +5,13 @@
   "scripts": {
     "dev": "blume dev",
     "build": "blume build --strict",
-    "doctor": "blume doctor"
+    "doctor": "blume doctor",
+    "openapi:validate": "node scripts/openapi/validate.mjs openapi/templiqx-operations-v1.yaml"
   },
   "dependencies": {
     "blume": "^1.0.3"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.0"
   }
 }
