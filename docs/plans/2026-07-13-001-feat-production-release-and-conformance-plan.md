@@ -43,7 +43,7 @@ The plan preserves the product decisions in the origin requirements: one actor-n
 - **R7 — Reproducible document corpus.** A deterministic OOXML fixture builder produces checked-in/snapshotted legacy fixtures and exact expected reports/parity assertions for the claimed V1/V2/V5 surface and hostile archive cases.
 - **R8 — Production adapter contracts.** The Langfuse runtime adapter has deterministic loopback coverage for request mapping, structured-output validation, timeout/malformed responses, and best-effort trace failure semantics; live-provider ownership remains outside the default graph.
 - **R9 — Verifiable release.** A tag-driven workflow builds tested release artifacts, publishes by digest, emits SBOM/provenance/checksums, signs and verifies artifacts, packages the conformance chart, and creates a GitHub release.
-- **R10 — Cold and deploy evidence.** `just verify`, deploy smokes, fresh-clone, and release dry-run/live Actions evidence all pass without environment skips in CI.
+- **R10 — Cold and deploy evidence.** `just verify` passes in minimal PR CI; deploy, supply-chain, and fresh-clone proof are local-first; tagged publication remains gated by release validation and an immutable-image vulnerability scan.
 - **R11 — Truthful documentation.** LICENSE, SECURITY, release/versioning guidance, capability tables, compatibility claims, and readiness status agree with executable gates.
 - **R12 — Boundary preservation.** No provider SDK, mock crate/tool, CRM3 domain policy, tenant/auth/retrieval/approval logic, or production payload enters core/default product composition.
 
@@ -56,7 +56,7 @@ The plan preserves the product decisions in the origin requirements: one actor-n
 - Repository-owned filesystem package/workspace semantics.
 - Package trust format and operator/release verification.
 - Deterministic synthetic DOCX/OOXML generation and measured compatibility.
-- CI, fresh-clone, security/release metadata, and evidence capture.
+- Minimal PR CI, local fresh-clone/deploy proof, security/release metadata, and evidence capture.
 
 ### Explicitly host-owned / out of scope
 
@@ -300,11 +300,11 @@ flowchart LR
 - Modify: `docs/audits/2026-07-13-agent-native-architecture-review-v2.md`, `docs/plans/2026-07-13-deferred-work-log.md`
 - Modify: `justfile`, CI/release evidence docs if needed
 
-**Approach:** Align versions, license, reporting policy, capability catalog, artifact names, trust model, compatibility corpus, and readiness language. Dispatch and verify fresh-clone plus final CI/release workflows. Record URLs/digests without turning time-sensitive status into architecture truth.
+**Approach:** Align versions, license, reporting policy, capability catalog, artifact names, trust model, compatibility corpus, and readiness language. Run fresh-clone locally when cold reproducibility proof is intentionally required, then verify the final minimal CI and release workflows. Record URLs/digests without turning time-sensitive status into architecture truth.
 
 **Test scenarios:** docs/catalog drift check, license/security presence, no stale 9/20 table, no mock-as-production wording, no unsupported compatibility or multi-arch claim, no skipped CI deploy gate.
 
-**Verification:** Local/full deploy gates pass; fresh-clone and final CI/release evidence are green; documentation distinguishes Templiqx-owned release readiness from CRM3 host readiness.
+**Verification:** Local/full deploy gates pass; intentional local fresh-clone and final CI/release evidence are green; documentation distinguishes Templiqx-owned release readiness from CRM3 host readiness.
 
 ### Closeout evidence — 2026-07-13
 
@@ -312,7 +312,7 @@ flowchart LR
 - The mutable Rust/CLI/MCP parity test passed 10 consecutive concurrent full-test iterations after package-local scratch directories were excluded from fixture copies. The canonical catalog remains 26/26 behavior-covered and the agent-native audit remains 94/100.
 - Final PR CI is green across boundaries, qlty, Rust, Docker, Helm/kind, and supply-chain: <https://github.com/RyanLisse/templiqx/actions/runs/29260040887>.
 - The release dry-run source, version, test, and boundary gate is green: <https://github.com/RyanLisse/templiqx/actions/runs/29260042334/job/86850531785>. Its three downstream image jobs were prevented from starting by GitHub's account billing/spending limit, before checkout or build execution; local multi-artifact/deploy evidence remains green and the workflow can be re-run unchanged after that external limit is cleared.
-- At the owner's request, the manual fresh-clone rerun was cancelled to avoid duplicating the already-green gates. The pinned weekly `fresh-clone` schedule remains the recurring cold-start proof; its missing Syft/Grype bootstrap found during this closeout is fixed in the workflow.
+- At the owner's request, hosted cold-clone automation is disabled to avoid recurring Docker/kind runner cost. Cold reproducibility remains available locally through `just fresh-clone`; tagged releases scan every published immutable image with pinned, checksum-verified Grype before signing and publication.
 - Scope remains explicit: this closes Templiqx-owned standalone release and synthetic-conformance readiness. Real CRM3 ModelGateway wiring, tenant/auth/retrieval/approval/audit policy, customer-data acceptance, and the production host/control plane remain host-owned.
 
 ## System-Wide Impact
@@ -328,7 +328,7 @@ flowchart LR
 1. **Foundation:** U1 artifact split and U2 mock expectation matrix.
 2. **Parallel core lanes:** U3/U4 lifecycle and parity; U5 trust; U6 corpus; U7 adapter contracts.
 3. **Release integration:** U8 publication/signatures after all product semantics stabilize.
-4. **Evidence and truth:** U9 full verification, fresh-clone/release Actions, docs and audit closeout.
+4. **Evidence and truth:** U9 full local verification, minimal CI, tagged-release evidence, docs and audit closeout.
 
 ## Risks & Mitigations
 

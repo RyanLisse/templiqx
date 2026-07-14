@@ -20,6 +20,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
+  GRYPE_VERSION: v0.86.1
 
 jobs:
   prepare:
@@ -121,6 +122,23 @@ jobs:
           sbom: true
           cache-from: type=gha,scope=release-${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=release-${{ matrix.target }}
+      - name: Scan the published immutable image for high-severity vulnerabilities
+        if: github.event_name == 'push'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ needs.prepare.outputs.namespace }}/${{ matrix.target }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          version="${GRYPE_VERSION#v}"
+          archive="grype_${version}_linux_amd64.tar.gz"
+          base="https://github.com/anchore/grype/releases/download/${GRYPE_VERSION}"
+          curl -sSfL "$base/$archive" -o "/tmp/$archive"
+          curl -sSfL "$base/grype_${version}_checksums.txt" -o /tmp/grype-checksums.txt
+          grep "  ${archive}$" /tmp/grype-checksums.txt | (cd /tmp && sha256sum -c -)
+          sudo tar -C /usr/local/bin -xzf "/tmp/$archive" grype
+          mkdir -p artifacts/release
+          grype "${IMAGE}@${DIGEST}" --output json >"artifacts/release/${{ matrix.target }}-grype.json"
+          grype "${IMAGE}@${DIGEST}" --fail-on high --output table
       - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
         if: github.event_name == 'push'
       - name: Sign and verify the pulled immutable digest
