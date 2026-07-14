@@ -1,5 +1,10 @@
 # Templiqx documentation
 
+Published docs site: [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/templiqx) (Blume). Local preview: `npm install && npm run dev` or `just docs-dev`.
+
+- **Handbook tab** — curated specs, ADRs, and guides under `docs/`
+- **Code docs tab** — OpenWiki pages under `openwiki/` (refreshed automatically by CI)
+
 - [POC architecture](architecture/poc.md)
 - [Actor-neutral capability map](architecture/capability-map.md)
 - [Deployment boundary](architecture/deployment.md)

@@ -11,6 +11,8 @@ Templiqx is a standalone, provider-neutral AI interaction contract compiler: por
 ```bash
 just verify                              # fmt, clippy, tests, boundaries, CI gates, qlty
 just verify-deploy                       # docker/kind/supply-chain smoke + boundaries
+just docs-dev                            # Blume docs site (npm run dev)
+just docs-build                          # static docs build to dist/
 just fresh-clone                         # isolated worktree + empty Cargo cache
 
 qlty fmt                                 # format (CI + pre-commit expectation)

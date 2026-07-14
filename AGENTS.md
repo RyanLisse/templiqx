@@ -25,3 +25,4 @@ The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do
 - **Mocks are conformance-only:** `templiqx-mock`, `templiqx-runtime-http-mock`, and `templiqx-mock-gateway` must not appear in the default CLI/MCP/application graph.
 - **CRM3 proof:** synthetic fixture at `examples/crm3`; scenarios under `examples/crm3/scenarios/**`; tests in `templiqx-conformance`.
 - **Deployment:** Docker (`Dockerfile`, `deploy/compose.yml`), Helm (`charts/templiqx/`), smoke scripts (`scripts/docker-smoke.sh`, `scripts/kind-smoke.sh`, `scripts/supply-chain-smoke.sh`).
+- **Docs site:** Blume (`just docs-dev`, `just docs-build` → `dist/`); GitHub Pages deploy via `.github/workflows/docs.yml`; handbook from `docs/`, auto-refreshed code docs from `openwiki/` at `/wiki`.

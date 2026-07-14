@@ -1,0 +1,88 @@
+---
+title: Introduction
+description: Provider-neutral AI interaction contract compiler for Basenet CRM3 pre-readiness.
+---
+
+Templiqx is a standalone, provider-neutral **AI interaction contract compiler**. It turns portable `templiqx/v1alpha1` contracts (strict YAML) into deterministic, fingerprinted model interactions — one contract, one model interaction, no invented facts.
+
+A single actor-neutral service (`TempliqxService`) backs the CLI, MCP server, and any Rust host, so humans and agents get identical validation, diagnostics, and compare-and-swap package writes.
+
+:::note
+**Handbook** pages are curated specs and guides under `docs/`. **Code docs** (OpenWiki tab) are generated from the codebase on a daily schedule and stay in sync with the Rust workspace automatically.
+:::
+
+## Architecture at a glance
+
+```mermaid
+flowchart TD
+    subgraph portable["Portable core"]
+        Contracts["templiqx-contracts\nDTOs · fingerprints"]
+        Ports["templiqx-ports\nhost traits"]
+        Core["templiqx-core\nparse · validate · compile"]
+    end
+
+    subgraph edges["Host-owned adapters"]
+        Adapters["adapters/*\nmock · langfuse · docx-v5"]
+    end
+
+    Application["templiqx-application\nTempliqxService · capability catalog"]
+    Local["templiqx-local\nfilesystem composition"]
+    Transports["CLI · MCP · Rust hosts"]
+
+    Contracts --> Core
+    Ports --> Core
+    Core --> Application
+    Adapters --> Application
+    Application --> Local
+    Local --> Transports
+```
+
+## One catalog, every transport
+
+```text
+Human (CLI) ──┐
+              ├──► TempliqxService ──► same envelopes · diagnostics · fingerprints
+Agent (MCP) ──┘
+```
+
+## CRM3 conformance trace
+
+```mermaid
+sequenceDiagram
+    participant Host
+    participant TQX as TempliqxService
+    participant Mock as deterministic runtime
+
+    Host->>TQX: discover + validate package
+    Host->>TQX: execute BLI-61 extraction
+    TQX->>Mock: compile + run contract
+    Mock-->>TQX: schema-valid extraction output
+    Host->>TQX: execute BLI-62 drafting
+    TQX->>Mock: grounded draft (no invented facts)
+    Host->>TQX: migrate DOCX V5 template
+    Host->>TQX: render document
+    TQX-->>Host: trace receipt (fingerprints + evidence)
+```
+
+## Quick start
+
+```bash
+just verify                              # fmt, clippy, tests, boundary checks
+just verify-deploy                       # docker/kind/supply-chain smoke
+
+cargo test -p templiqx-conformance --test crm3   # CRM3 end-to-end conformance
+./scripts/check-boundaries.sh            # after touching Cargo.toml or adapter wiring
+```
+
+CLI usage: `cargo run -p templiqx-cli -- <command> --root <package-dir> [--json]`. Exit codes: `0` = ok envelope, `2` = product/diagnostic failure, `1` = CLI/IO failure.
+
+## Where to go next
+
+| Topic | Page |
+| ----- | ---- |
+| Contract format | [v1alpha1](contracts/v1alpha1) |
+| CLI and agent workflows | [CLI guide](guides/cli) |
+| Host integration | [Host integration](guides/host-integration) |
+| Pre-CRM3 readiness | [Pre-CRM3 readiness](guides/pre-crm3-readiness) |
+| Architecture | [POC architecture](architecture/poc) |
+| Code docs (OpenWiki) | [Quickstart](/wiki/quickstart) |

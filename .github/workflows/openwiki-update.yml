@@ -39,6 +39,7 @@ jobs:
             openwiki
             AGENTS.md
             CLAUDE.md
+          # openwiki/meta.ts is hand-maintained for the Blume docs site sidebar.
           branch: openwiki/update
           commit-message: "docs: update OpenWiki"
           title: "docs: update OpenWiki"

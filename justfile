@@ -20,3 +20,9 @@ verify-all: verify verify-deploy
 
 fresh-clone:
     ./scripts/fresh-clone-verify.sh
+
+docs-dev:
+    npm run dev
+
+docs-build:
+    npm run build

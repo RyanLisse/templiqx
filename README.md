@@ -170,6 +170,7 @@ Checked in CI and by `just verify` — run `./scripts/check-boundaries.sh` expli
 
 | Need | Location |
 |------|----------|
+| **Docs site (Blume)** | [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/templiqx) — `just docs-dev` locally |
 | Navigation hub | [`docs/README.md`](docs/README.md) |
 | Contract format | [`docs/contracts/v1alpha1.md`](docs/contracts/v1alpha1.md) |
 | Architecture / deployment detail | [`docs/architecture/`](docs/architecture/) |
