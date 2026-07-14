@@ -23,7 +23,7 @@ for crate in templiqx-contracts templiqx-ports templiqx-core; do
   fi
 done
 
-for crate in templiqx-application templiqx-cli templiqx-mcp; do
+for crate in templiqx-application templiqx-cli templiqx-mcp templiqx-http-server; do
   manifest="crates/$crate/Cargo.toml"
   if grep -Eq 'templiqx-mock|templiqx-runtime-http-mock|templiqx-mock-gateway' "$manifest"; then
     fail "default composition depends on conformance mock: $manifest"
@@ -40,6 +40,19 @@ if [[ -e crates/templiqx-http ]]; then
     >/tmp/templiqx-boundary-http-prod.txt 2>/dev/null; then
     cat /tmp/templiqx-boundary-http-prod.txt >&2
     fail "production templiqx-http must not depend on conformance mocks"
+  fi
+fi
+
+# The host-owned production server may wire real runtime adapters, but it must
+# remain completely isolated from synthetic conformance mocks.
+if [[ -e crates/templiqx-http-server ]]; then
+  require_path crates/templiqx-http-server/Cargo.toml
+  if rg -n -i \
+    '(templiqx[-_]?mock|templiqx[-_]?runtime[-_]?http[-_]?mock|templiqx[-_]?mock[-_]?gateway|mock[-_]?gateway)' \
+    crates/templiqx-http-server/Cargo.toml crates/templiqx-http-server/src \
+    >/tmp/templiqx-boundary-http-server-prod.txt 2>/dev/null; then
+    cat /tmp/templiqx-boundary-http-server-prod.txt >&2
+    fail "production templiqx-http-server must not depend on conformance mocks"
   fi
 fi
 
@@ -66,6 +79,7 @@ if rg -n -i \
   '(templiqx[-_]?mock[-_]?gateway|templiqx[-_]?runtime[-_]?http[-_]?mock|runtime[-_]?http[-_]?mock)' \
   crates/templiqx-core crates/templiqx-contracts crates/templiqx-ports \
   crates/templiqx-application crates/templiqx-cli crates/templiqx-mcp \
+  crates/templiqx-http-server \
   >/tmp/templiqx-boundary-mock-composition.txt; then
   cat /tmp/templiqx-boundary-mock-composition.txt >&2
   fail "HTTP mock gateway composition leaked outside tools/adapters"
@@ -116,13 +130,17 @@ docker_stage() {
   ' Dockerfile
 }
 
-for target in templiqx-cli templiqx-mcp templiqx-conformance; do
+for target in templiqx-cli templiqx-mcp templiqx-http-server templiqx-conformance; do
   if ! rg -q "^FROM .* AS ${target}$" Dockerfile; then
     fail "Dockerfile is missing explicit image target: $target"
   fi
 done
+rg -Fq 'FROM source AS http-server-builder' Dockerfile ||
+  fail "Dockerfile is missing the product-only HTTP server builder"
+rg -Fq 'cargo build --release -p templiqx-http-server' Dockerfile ||
+  fail "HTTP server builder does not build templiqx-http-server"
 
-for target in templiqx-cli templiqx-mcp; do
+for target in templiqx-cli templiqx-mcp templiqx-http-server; do
   stage_file="/tmp/templiqx-boundary-${target}.txt"
   docker_stage "$target" >"$stage_file"
 
@@ -147,10 +165,15 @@ done
 
 cli_stage="$(docker_stage templiqx-cli)"
 mcp_stage="$(docker_stage templiqx-mcp)"
+http_server_stage="$(docker_stage templiqx-http-server)"
 [[ $cli_stage == *'/target/release/templiqx /usr/local/bin/templiqx'* ]] ||
   fail "CLI image does not copy the CLI binary"
 [[ $mcp_stage == *'/target/release/templiqx-mcp /usr/local/bin/templiqx-mcp'* ]] ||
   fail "MCP image does not copy the MCP binary"
+[[ $http_server_stage == *'/target/release/templiqx-http-server /usr/local/bin/templiqx-http-server'* ]] ||
+  fail "HTTP server image does not copy the HTTP server binary"
+[[ $http_server_stage == *'EXPOSE 8080'* ]] ||
+  fail "HTTP server image does not expose port 8080"
 
 conformance_stage="$(docker_stage templiqx-conformance)"
 for required in templiqx-mock-gateway templiqx-http-conformance '/packages' \
@@ -159,28 +182,39 @@ for required in templiqx-mock-gateway templiqx-http-conformance '/packages' \
     fail "conformance image is missing required content: $required"
 done
 if [[ $conformance_stage == *'/target/release/templiqx /usr/local/bin/templiqx'* ]] ||
-  [[ $conformance_stage == *'/target/release/templiqx-mcp /usr/local/bin/templiqx-mcp'* ]]; then
+  [[ $conformance_stage == *'/target/release/templiqx-mcp /usr/local/bin/templiqx-mcp'* ]] ||
+  [[ $conformance_stage == *'/target/release/templiqx-http-server /usr/local/bin/templiqx-http-server'* ]]; then
   fail "product binary leaked into conformance image"
 fi
 
 if rg -n '^\s*image:' deploy/compose.yml |
-  rg -v '\$\{CONFORMANCE_IMAGE:-templiqx-conformance:pre-crm3\}' \
+  rg -v '(\$\{CONFORMANCE_IMAGE:-templiqx-conformance:pre-crm3\}|\$\{HTTP_SERVER_IMAGE:-templiqx-http-server:pre-crm3\})' \
     >/tmp/templiqx-boundary-compose-image.txt; then
   cat /tmp/templiqx-boundary-compose-image.txt >&2
   fail "Compose mock profiles must use the explicit conformance image"
 fi
+rg -Fq 'image: ${HTTP_SERVER_IMAGE:-templiqx-http-server:pre-crm3}' deploy/compose.yml ||
+  fail "Compose HTTP server must use the explicit product image"
 
-rg -Fq 'io.templiqx.artifact.class: synthetic-conformance-only' charts/templiqx/Chart.yaml ||
-  fail "Helm chart must retain its synthetic conformance-only identity"
+rg -Fq 'io.templiqx.chart.class: product-and-conformance' charts/templiqx/Chart.yaml ||
+  fail "Helm chart must identify its separate product and conformance surfaces"
 
 if [[ -f charts/templiqx/values-mock.yaml ]]; then
   if rg -n 'mcp|LoadBalancer|NodePort' charts/templiqx/templates >/tmp/templiqx-boundary-helm.txt; then
     cat /tmp/templiqx-boundary-helm.txt >&2
-    fail "chart must not expose MCP or a general HTTP service"
+    fail "chart must not expose MCP or a non-ClusterIP service"
   fi
-  if rg -n 'kind: Service' charts/templiqx/templates | rg -v 'mock-gateway.yaml' >/tmp/templiqx-boundary-helm.txt; then
+  if rg -n 'kind: Service' charts/templiqx/templates |
+    rg -v '(mock-gateway.yaml|http-server.yaml)' >/tmp/templiqx-boundary-helm.txt; then
     cat /tmp/templiqx-boundary-helm.txt >&2
-    fail "only the mock gateway may define a Kubernetes Service"
+    fail "only the product HTTP server and mock gateway may define a Kubernetes Service"
+  fi
+  rg -Fq 'httpServer:' charts/templiqx/values-mock.yaml ||
+    fail "mock values must explicitly configure the product HTTP server toggle"
+  if rg -n -i '(templiqx[-_]?mock|mock[-_]?gateway|conformance)' \
+    charts/templiqx/templates/http-server.yaml >/tmp/templiqx-boundary-helm-product.txt; then
+    cat /tmp/templiqx-boundary-helm-product.txt >&2
+    fail "conformance content leaked into the Helm product HTTP server"
   fi
 fi
 

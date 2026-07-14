@@ -1,4 +1,28 @@
 services:
+  templiqx-http-server:
+    image: ${HTTP_SERVER_IMAGE:-templiqx-http-server:pre-crm3}
+    user: "65532:65532"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      TEMPLIQX_HTTP_ADDR: 0.0.0.0:8080
+      TEMPLIQX_ROOT: /packages
+      TEMPLIQX_WORKSPACE: /workspace
+    volumes:
+      - ../examples/packages:/packages:ro
+      - templiqx-http-workspace:/workspace:rw
+    ports:
+      - "${TEMPLIQX_HTTP_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/templiqx-http-server", "--healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
   conformance:
     image: ${CONFORMANCE_IMAGE:-templiqx-conformance:pre-crm3}
     profiles: ["mock"]
@@ -66,3 +90,4 @@ services:
 
 volumes:
   templiqx-workspace: {}
+  templiqx-http-workspace: {}

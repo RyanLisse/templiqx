@@ -6,6 +6,35 @@ image:
   digest: ""
   pullPolicy: IfNotPresent
 
+httpServer:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: templiqx-http-server
+    tag: pre-crm3
+    digest: ""
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  runtime:
+    # deterministic-fake needs no credentials. Set mode to langfuse and
+    # provide the non-secret endpoints plus a Secret reference below.
+    mode: deterministic-fake
+    modelBaseUrl: ""
+    modelId: ""
+    modelTimeoutMs: 30000
+    langfuseHost: ""
+    credentialsSecret:
+      name: ""
+      modelApiKeyKey: MODEL_API_KEY
+      langfusePublicKeyKey: LANGFUSE_PUBLIC_KEY
+      langfuseSecretKeyKey: LANGFUSE_SECRET_KEY
+  packages:
+    existingClaim: ""
+  workspace:
+    existingClaim: ""
+
 conformance:
   scenarios:
     - intake-document-01

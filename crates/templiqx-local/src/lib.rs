@@ -1062,6 +1062,13 @@ pub type LocalService = templiqx_application::TempliqxService<
     templiqx_docx_v5::DocxV5Adapter,
     templiqx_docx_v5::DocxV5Adapter,
 >;
+pub type ServiceWithRuntime<R> = templiqx_application::TempliqxService<
+    FilesystemPackageStore,
+    FilesystemArtifactWorkspace,
+    R,
+    templiqx_docx_v5::DocxV5Adapter,
+    templiqx_docx_v5::DocxV5Adapter,
+>;
 
 pub fn compose_core(root: impl AsRef<Path>) -> Result<CoreOnlyService, PortError> {
     let root = root.as_ref();
@@ -1083,10 +1090,18 @@ pub fn compose_with_workspace(
     root: impl AsRef<Path>,
     workspace: impl AsRef<Path>,
 ) -> Result<LocalService, PortError> {
+    compose_with_runtime(root, workspace, DeterministicFakeRuntime)
+}
+
+pub fn compose_with_runtime<R: RuntimeAdapter>(
+    root: impl AsRef<Path>,
+    workspace: impl AsRef<Path>,
+    runtime: R,
+) -> Result<ServiceWithRuntime<R>, PortError> {
     Ok(templiqx_application::TempliqxService::new(
         FilesystemPackageStore::new(root)?,
         FilesystemArtifactWorkspace::new(workspace)?,
-        DeterministicFakeRuntime,
+        runtime,
         templiqx_docx_v5::DocxV5Adapter::default(),
         templiqx_docx_v5::DocxV5Adapter::default(),
     ))

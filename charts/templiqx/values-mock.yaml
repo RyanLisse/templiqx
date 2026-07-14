@@ -4,6 +4,9 @@ mock:
     enabled: true
     port: 8080
 
+httpServer:
+  enabled: false
+
 conformance:
   scenarios:
     - ambiguous-date

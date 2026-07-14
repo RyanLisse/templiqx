@@ -1,0 +1,129 @@
+{{- if .Values.httpServer.enabled }}
+{{- $mode := .Values.httpServer.runtime.mode -}}
+{{- if not (has $mode (list "deterministic-fake" "langfuse")) -}}
+{{- fail "httpServer.runtime.mode must be deterministic-fake or langfuse" -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "templiqx.httpServerFullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "templiqx.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: http-server
+spec:
+  replicas: {{ .Values.httpServer.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "templiqx.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: http-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "templiqx.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: http-server
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: http-server
+          image: {{ include "templiqx.httpServerImage" . | quote }}
+          imagePullPolicy: {{ .Values.httpServer.image.pullPolicy }}
+          env:
+            - name: TEMPLIQX_HTTP_ADDR
+              value: "0.0.0.0:{{ .Values.httpServer.service.port }}"
+            - name: TEMPLIQX_ROOT
+              value: /packages
+            - name: TEMPLIQX_WORKSPACE
+              value: /workspace
+            {{- if eq $mode "langfuse" }}
+            - name: MODEL_BASE_URL
+              value: {{ required "httpServer.runtime.modelBaseUrl is required in langfuse mode" .Values.httpServer.runtime.modelBaseUrl | quote }}
+            - name: MODEL_ID
+              value: {{ required "httpServer.runtime.modelId is required in langfuse mode" .Values.httpServer.runtime.modelId | quote }}
+            - name: MODEL_TIMEOUT_MS
+              value: {{ .Values.httpServer.runtime.modelTimeoutMs | quote }}
+            - name: LANGFUSE_HOST
+              value: {{ required "httpServer.runtime.langfuseHost is required in langfuse mode" .Values.httpServer.runtime.langfuseHost | quote }}
+            - name: MODEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "httpServer.runtime.credentialsSecret.name is required in langfuse mode" .Values.httpServer.runtime.credentialsSecret.name | quote }}
+                  key: {{ .Values.httpServer.runtime.credentialsSecret.modelApiKeyKey | quote }}
+            - name: LANGFUSE_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.httpServer.runtime.credentialsSecret.name | quote }}
+                  key: {{ .Values.httpServer.runtime.credentialsSecret.langfusePublicKeyKey | quote }}
+            - name: LANGFUSE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.httpServer.runtime.credentialsSecret.name | quote }}
+                  key: {{ .Values.httpServer.runtime.credentialsSecret.langfuseSecretKeyKey | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.httpServer.service.port }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: packages
+              mountPath: /packages
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: packages
+          {{- if .Values.httpServer.packages.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.httpServer.packages.existingClaim | quote }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: workspace
+          {{- if .Values.httpServer.workspace.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.httpServer.workspace.existingClaim | quote }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "templiqx.httpServerFullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "templiqx.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: http-server
+spec:
+  type: {{ .Values.httpServer.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "templiqx.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: http-server
+  ports:
+    - name: http
+      port: {{ .Values.httpServer.service.port }}
+      targetPort: http
+{{- end }}

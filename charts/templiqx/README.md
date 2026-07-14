@@ -1,14 +1,13 @@
-# Templiqx Synthetic Conformance Chart
+# Templiqx Deployment Chart
 
-This is a **conformance-only** chart. It runs restricted jobs against the
-synthetic Templiqx mock gateway using the `templiqx-conformance` image. It is
-not a production Templiqx service chart and must not be used to deploy the CLI
-or MCP product images.
+This chart deploys the Templiqx Operations HTTP server in deterministic-fake
+mode by default, with no credentials required. Set `httpServer.runtime.mode`
+to `langfuse`, provide the model and Langfuse endpoints, and reference an
+existing Kubernetes Secret to enable the host-owned real runtime.
 
-The chart exposes only the in-cluster mock gateway required by the jobs. It
-does not expose MCP or a general Templiqx HTTP API. Production host concerns
-such as auth, tenancy, approval, retrieval, secrets, and provider wiring are
-deliberately outside this chart.
+The synthetic conformance jobs and mock gateway remain independently enabled
+through `values-mock.yaml` and use the separate `templiqx-conformance` image.
+That profile disables the product HTTP server and does not expose MCP.
 
 Source-chart development remains backward-compatible with
 `image.repository` plus `image.tag`. When `image.digest` is set, it takes
