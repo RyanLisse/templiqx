@@ -622,6 +622,12 @@ impl PackageStore for FilesystemPackageStore {
         tracked.extend(manifest.evals.iter().cloned());
         tracked.extend(manifest.migrations.iter().cloned());
         tracked.extend(manifest.templates.iter().cloned());
+        tracked.extend(
+            manifest
+                .translations
+                .iter()
+                .map(|locale| format!("translations/{locale}.yaml")),
+        );
         let files = package_files(&package_root, &package_root)?;
         if let Some(untracked) = files.iter().find(|path| !tracked.contains(*path)) {
             FileExt::unlock(&lock).map_err(io_error)?;

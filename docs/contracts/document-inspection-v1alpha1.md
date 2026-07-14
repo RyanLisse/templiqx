@@ -16,7 +16,7 @@ artifact.
 | `package` | string | yes | Portable package name |
 | `dialect` | string | yes | Explicit adapter dialect (e.g. `v5`) |
 | `template` | string | yes | Package-relative template path |
-| `aliases` | object | no | Migration alias map for dialect analysis |
+| `aliases` | object | no | Migration alias map for dialect analysis; omitted or `{}` |
 
 Unknown fields are rejected (`deny_unknown_fields`).
 

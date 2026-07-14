@@ -170,6 +170,34 @@ fn translate_resolves_locale_with_fallback() {
 }
 
 #[test]
+fn translate_normalizes_locale_tags_before_fallback() {
+    let mut context = BTreeMap::new();
+    context.insert("locale".into(), serde_json::json!("nl-NL"));
+    context.insert(
+        "_templiqx_translations".into(),
+        serde_json::json!({
+            "nl": {"greeting": "Hallo"}
+        }),
+    );
+    assert_eq!(
+        render_with_context("translate", context, serde_json::json!("greeting")).unwrap(),
+        "Hallo"
+    );
+}
+
+#[test]
+fn format_currency_uses_euro_symbol_for_eurozone_locales() {
+    assert_eq!(
+        render("format_currency", "fr-FR", serde_json::json!(42.5)).unwrap(),
+        "€42.50"
+    );
+    assert_eq!(
+        render("format_currency", "it-IT", serde_json::json!(42.5)).unwrap(),
+        "€42.50"
+    );
+}
+
+#[test]
 fn translate_missing_key_fails_closed() {
     let mut context = BTreeMap::new();
     context.insert("locale".into(), serde_json::json!("en"));

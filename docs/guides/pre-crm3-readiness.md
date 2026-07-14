@@ -5,7 +5,7 @@ Templiqx keeps CRM3-shaped proof work in conformance fixtures and deployment smo
 ## Readiness boundary
 
 The repository-owned target is a releasable standalone compiler, identical
-27-operation Rust/CLI/MCP behavior, and reproducible synthetic conformance.
+27-operation Rust/CLI/MCP/HTTP behavior, and reproducible synthetic conformance.
 Templiqx does not claim that CRM3 itself is production-ready: a real
 ModelGateway, tenant/auth/retrieval/approval/audit policy, customer-data
 validation, and host deployment acceptance are owned by the Basenet host.

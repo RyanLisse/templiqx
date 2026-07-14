@@ -1404,6 +1404,30 @@ fn apply_filter(
     })
 }
 
+fn primary_language_subtag(locale: &str) -> &str {
+    locale.split(['-', '_']).next().unwrap_or(locale)
+}
+
+fn locale_lookup_candidates(locale: &str, fallback: &str) -> Vec<String> {
+    let mut candidates = Vec::new();
+    let mut push = |value: &str| {
+        if value.is_empty() {
+            return;
+        }
+        if !candidates.iter().any(|candidate| candidate == value) {
+            candidates.push(value.to_owned());
+        }
+        let primary = primary_language_subtag(value);
+        if primary != value && !candidates.iter().any(|candidate| candidate == primary) {
+            candidates.push(primary.to_owned());
+        }
+    };
+    push(locale);
+    push(fallback);
+    push("en");
+    candidates
+}
+
 fn translate_key(v: &Value, locale: &str, root: &Value) -> Result<String, Vec<Diagnostic>> {
     let key = match v {
         Value::String(s) => s.as_str(),
@@ -1431,11 +1455,8 @@ fn translate_key(v: &Value, locale: &str, root: &Value) -> Result<String, Vec<Di
         .and_then(|c| c.get("fallback_locale"))
         .and_then(Value::as_str)
         .unwrap_or("");
-    for candidate in [locale, fallback, "en"] {
-        if candidate.is_empty() {
-            continue;
-        }
-        if let Some(bundle) = bundles.get(candidate).and_then(Value::as_object)
+    for candidate in locale_lookup_candidates(locale, fallback) {
+        if let Some(bundle) = bundles.get(&candidate).and_then(Value::as_object)
             && let Some(value) = bundle.get(key).and_then(Value::as_str)
         {
             return Ok(value.to_owned());
@@ -1460,11 +1481,26 @@ fn format_currency(v: &Value, locale: &str) -> Result<String, Vec<Diagnostic>> {
             )]
         })?;
     let formatted = format_number(&Value::from(number), locale)?;
-    let symbol = match locale_family(locale) {
-        "nl" | "de" => "€",
+    let symbol = match currency_symbol(locale) {
+        "eur" => "€",
         _ => "$",
     };
     Ok(format!("{symbol}{formatted}"))
+}
+
+fn currency_symbol(locale: &str) -> &'static str {
+    let lower = locale.to_ascii_lowercase();
+    if lower.starts_with("nl")
+        || lower.starts_with("de")
+        || lower.starts_with("fr")
+        || lower.starts_with("es")
+        || lower.starts_with("it")
+        || lower.starts_with("pt")
+    {
+        "eur"
+    } else {
+        "usd"
+    }
 }
 
 /// Locale families sharing a grouping/date convention. Kept intentionally small

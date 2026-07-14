@@ -498,25 +498,25 @@ fn analyze_xml(
             detail: "V2 is detected but not migrated by this adapter".into(),
         });
     }
+    if sources.iter().any(|source| source.contains("${#")) {
+        findings.push(Finding {
+            category: Category::Unsupported,
+            part: part.into(),
+            construct: "v5_repeat".into(),
+            reference: None,
+            detail: "repeated table rows are outside the measured POC subset".into(),
+        });
+    }
+    if sources.iter().any(|source| source.contains("${?")) {
+        findings.push(Finding {
+            category: Category::Unsupported,
+            part: part.into(),
+            construct: "v5_conditional".into(),
+            reference: None,
+            detail: "conditional document regions are outside the measured POC subset".into(),
+        });
+    }
     for source in &sources {
-        if source.contains("${#") {
-            findings.push(Finding {
-                category: Category::Unsupported,
-                part: part.into(),
-                construct: "v5_repeat".into(),
-                reference: None,
-                detail: "repeated table rows are outside the measured POC subset".into(),
-            });
-        }
-        if source.contains("${?") {
-            findings.push(Finding {
-                category: Category::Unsupported,
-                part: part.into(),
-                construct: "v5_conditional".into(),
-                reference: None,
-                detail: "conditional document regions are outside the measured POC subset".into(),
-            });
-        }
         for reference in extract_placeholders(source) {
             let mapped = aliases
                 .get(&reference)

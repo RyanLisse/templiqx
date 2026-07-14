@@ -1,5 +1,7 @@
 //! Deterministic local benchmark harness for contract and document operations.
 
+#![forbid(unsafe_code)]
+
 use anyhow::{Context, Result};
 use serde::Serialize;
 use serde_json::Value;
@@ -103,13 +105,13 @@ fn bench_contract_validate_compile(root: &Path) -> Result<BenchCase> {
 fn bench_document_inspect(root: &Path) -> Result<BenchCase> {
     let fixture = root.join("examples/legacy-corpus/fixtures/v5-nested-table");
     let package_root = tempfile::tempdir()?;
+    let workspace = tempfile::tempdir()?;
     fs::create_dir_all(package_root.path().join("demo"))?;
     fs::copy(
         fixture.join("source.docx"),
         package_root.path().join("demo/source.docx"),
     )?;
-    let service =
-        templiqx_local::compose_with_workspace(package_root.path(), tempfile::tempdir()?.path())?;
+    let service = templiqx_local::compose_with_workspace(package_root.path(), workspace.path())?;
     let aliases: Value = serde_json::from_slice(&fs::read(fixture.join("aliases.json"))?)?;
     let mut durations = Vec::new();
     let mut fingerprint = String::new();

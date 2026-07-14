@@ -461,9 +461,27 @@ pub async fn serve_from_root(
 }
 
 async fn shutdown_signal() {
-    tokio::signal::ctrl_c()
-        .await
-        .expect("failed to install CTRL+C handler");
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install SIGINT handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        () = ctrl_c => {}
+        () = terminate => {}
+    }
 }
 
 async fn timeout_error(error: BoxError) -> Response {

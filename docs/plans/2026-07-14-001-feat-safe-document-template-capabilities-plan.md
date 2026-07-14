@@ -53,7 +53,7 @@ portable, declarative and non-executable contract model (see origin:
   cover latency, allocation/peak memory where practical, output size,
   determinism, and hostile input limits before a cache is designed.
 - **D4 — Safe portable formatting and translation:** New formatting and i18n
-  features are typed, deterministic, package-versioned, fail closed on unknown
+  features are typed, deterministic, package-versioned, fail-closed on unknown
   keys/types, and do not execute host code.
 - **D5 — Boundary preservation:** Converter processes, retry/queue policy,
   tenant translation policy, provider SDKs, credentials, approval, and durable

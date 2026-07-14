@@ -66,7 +66,12 @@ pub struct InspectDocumentRequest {
     pub dialect: String,
     /// Portable template path relative to the selected package root.
     pub template: String,
+    #[serde(default = "default_empty_object")]
     pub aliases: Value,
+}
+
+fn default_empty_object() -> Value {
+    Value::Object(Default::default())
 }
 
 /// Portable document-inspection result returned identically on every surface.
