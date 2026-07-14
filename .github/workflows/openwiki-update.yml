@@ -3,6 +3,9 @@ name: OpenWiki Update
 on:
   workflow_dispatch:
 
+# Intentionally manual: generation consumes both a hosted runner and model API
+# tokens. Run it only when code documentation actually needs a refresh.
+
 permissions:
   contents: write
   pull-requests: write
@@ -39,6 +42,7 @@ jobs:
             openwiki
             AGENTS.md
             CLAUDE.md
+          # openwiki/meta.ts is hand-maintained for the Blume docs site sidebar.
           branch: openwiki/update
           commit-message: "docs: update OpenWiki"
           title: "docs: update OpenWiki"

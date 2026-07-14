@@ -2,6 +2,26 @@
 
 Templiqx is a standalone, provider-neutral AI interaction contract compiler. Its dependency direction is:
 
+```mermaid
+flowchart BT
+    Contracts["templiqx-contracts"]
+    Ports["templiqx-ports"]
+    Core["templiqx-core"]
+    Adapters["adapters/*"]
+    Application["templiqx-application"]
+    Local["templiqx-local"]
+    Surfaces["CLI / MCP / Rust hosts"]
+
+    Contracts --> Core
+    Ports --> Core
+    Adapters --> Application
+    Core --> Application
+    Application --> Local
+    Local --> Surfaces
+```
+
+ASCII equivalent (for terminals and plain-text readers):
+
 ```text
 contracts <- ports
     ^          ^

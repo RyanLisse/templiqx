@@ -50,14 +50,15 @@ fn mock_gateway_binary() -> Result<PathBuf> {
         .join("../..")
         .canonicalize()?;
     let binary = repo.join("target/debug/templiqx-mock-gateway");
-    if !binary.is_file() {
-        let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-        let status = Command::new(&cargo)
-            .current_dir(&repo)
-            .args(["build", "--quiet", "-p", "templiqx-mock-gateway"])
-            .status()?;
-        ensure!(status.success(), "failed to build templiqx-mock-gateway");
-    }
+    // An existing binary may belong to another checkout or an older source
+    // revision. Let Cargo perform its cheap incremental freshness check so the
+    // local-first verification gate never exercises a stale gateway.
+    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+    let status = Command::new(&cargo)
+        .current_dir(&repo)
+        .args(["build", "--quiet", "-p", "templiqx-mock-gateway"])
+        .status()?;
+    ensure!(status.success(), "failed to build templiqx-mock-gateway");
     Ok(BUILT.get_or_init(|| binary).clone())
 }
 

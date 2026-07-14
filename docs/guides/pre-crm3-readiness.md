@@ -10,6 +10,31 @@ Templiqx does not claim that CRM3 itself is production-ready: a real
 ModelGateway, tenant/auth/retrieval/approval/audit policy, customer-data
 validation, and host deployment acceptance are owned by the Basenet host.
 
+## Verification ladder
+
+```mermaid
+flowchart TD
+    A["just verify"] --> B["fmt · clippy · tests"]
+    B --> C["check-boundaries.sh"]
+    C --> D["check-ci-gates.sh"]
+    D --> E["qlty check"]
+
+    F["just verify-deploy"] --> G["docker-smoke.sh"]
+    G --> H["kind-smoke.sh"]
+    H --> I["supply-chain-smoke.sh"]
+    I --> C
+
+    J["just fresh-clone"] --> K["isolated worktree + cold Cargo cache"]
+    K --> A
+```
+
+```text
+Local PR gate     →  just verify
+Docs confidence   →  just docs-build
+Deploy confidence →  just verify-deploy  (needs Docker)
+Reproducibility   →  just fresh-clone
+```
+
 ## Workspace Contract
 
 Packages are read-only inputs. Runtime artifacts are written to a separate workspace:

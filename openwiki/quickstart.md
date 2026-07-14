@@ -51,7 +51,7 @@ The docs in this wiki intentionally mirror that shape:
 
 ## Documentation maintenance
 
-The repository workflow runs OpenWiki on a daily schedule or by manual dispatch, then opens an update pull request containing the generated `openwiki/` pages and OpenWiki instruction files. Treat the pages here as generated documentation: update source or repository docs for normal changes, and use the workflow to refresh this guide.
+The repository workflow runs OpenWiki only by manual dispatch, then opens an update pull request containing the generated `openwiki/` pages and OpenWiki instruction files. Treat the pages here as generated documentation: update source or repository docs for normal changes, and use the on-demand workflow to refresh this guide.
 
 ## Where to go next
 

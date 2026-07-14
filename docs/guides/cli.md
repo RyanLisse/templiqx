@@ -38,8 +38,30 @@ the package-relative `canonical_template`, which can be passed directly to
 The same 26-operation catalog is exposed over MCP with identical envelopes, so
 an agent can drive Templiqx entirely through catalog primitives. The MCP server
 also emits dynamic onboarding `instructions` at initialize (packages root,
-discovered package names, and the canonical tool sequence). Three suggested
-flows:
+discovered package names, and the canonical tool sequence).
+
+```mermaid
+flowchart LR
+    subgraph bootstrap["Bootstrap package"]
+        CP[create_package] --> PC[put_contract]
+        PC --> VP[validate_package]
+    end
+
+    subgraph author["Author contract"]
+        PC2[put_contract] --> EC[explain_contract]
+        EC --> CC[compile_contract]
+        CC --> XC[execute_contract]
+    end
+
+    subgraph eval["Eval + artifacts"]
+        LE[list_evals] --> RE[run_eval]
+        RE --> RD[render_document]
+        RD --> LA[list_workspace_artifacts]
+        LA --> RA[read_artifact]
+    end
+```
+
+Three suggested flows:
 
 1. **Bootstrap a package.** `create_package <name> --version 0.1.0` →
    `put_contract` to author a contract → `validate_package`. On MCP the

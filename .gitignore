@@ -11,3 +11,6 @@ sites
 .omc/
 .omx/
 .cursor/hooks/state/
+.blume/
+dist/
+node_modules/
