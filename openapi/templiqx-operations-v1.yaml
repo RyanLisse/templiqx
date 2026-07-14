@@ -60,8 +60,8 @@ paths:
   /operations/v1/openapi.yaml:
     get:
       tags: [Discovery]
-      summary: Return the checked-in OpenAPI document served by the transport
-      operationId: getOperationsV1OpenApi
+      summary: Return the checked-in OpenAPI document served by the transport (YAML)
+      operationId: getOperationsV1OpenApiYaml
       x-templiqx-idempotency: safe
       responses:
         '200':
@@ -70,6 +70,23 @@ paths:
             application/yaml:
               schema:
                 type: string
+            application/json:
+              schema:
+                type: string
+  /operations/v1/openapi.json:
+    get:
+      tags: [Discovery]
+      summary: Return the checked-in OpenAPI document served by the transport (JSON)
+      operationId: getOperationsV1OpenApi
+      x-templiqx-idempotency: safe
+      responses:
+        '200':
+          description: OpenAPI 3.1 document.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
   /operations/v1/catalog:
     get:
       tags: [Discovery]
@@ -108,6 +125,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PackageListEnvelope'
+    post:
+      tags: [Mutation]
+      summary: Create a package
+      operationId: createPackage
+      x-templiqx-idempotency: create-once
+      x-templiqx-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePackageRequest'
+      responses:
+        '200':
+          description: Created package envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageEnvelope'
   /operations/v1/packages/{package}/contracts/{contract}:
     get:
       tags: [Contracts]
@@ -129,6 +165,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContractEnvelope'
+    put:
+      tags: [Mutation]
+      summary: Create or replace a contract from raw YAML source
+      operationId: putContract
+      x-templiqx-idempotency: cas-idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+        - $ref: '#/components/parameters/OptionalIfMatch'
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+          application/yaml:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Contract summary envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryEnvelope'
+    delete:
+      tags: [Mutation]
+      summary: Delete a contract with CAS protection
+      operationId: deleteContract
+      x-templiqx-idempotency: cas-idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Deleted contract summary envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryEnvelope'
   /operations/v1/packages/{package}/contracts/{contract}/validate:
     post:
       tags: [Contracts]
@@ -215,7 +294,7 @@ paths:
     patch:
       tags: [Mutation]
       summary: Update package metadata with CAS protection
-      operationId: updateOperationsV1Package
+      operationId: updatePackage
       x-templiqx-idempotency: cas-idempotent
       x-templiqx-idempotent: true
       parameters:
@@ -245,6 +324,246 @@ paths:
                 $ref: '#/components/schemas/PackageEnvelope'
         '409':
           $ref: '#/components/responses/TransportFailure'
+    delete:
+      tags: [Mutation]
+      summary: Delete a package with CAS protection
+      operationId: deletePackage
+      x-templiqx-idempotency: cas-idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Deleted package envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageEnvelope'
+  /operations/v1/packages/{package}/validate:
+    post:
+      tags: [Contracts]
+      summary: Validate an entire package
+      operationId: validatePackage
+      x-templiqx-idempotency: idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/test:
+    post:
+      tags: [Execution]
+      summary: Run all package eval fixtures
+      operationId: testPackage
+      x-templiqx-idempotency: caller-defined
+      x-templiqx-idempotent: false
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CapabilitiesRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/identity:
+    get:
+      tags: [Discovery]
+      summary: Export the canonical package identity
+      operationId: exportPackageIdentity
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/sign:
+    post:
+      tags: [Mutation]
+      summary: Sign a package identity with CAS protection
+      operationId: signPackage
+      x-templiqx-idempotency: cas-idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignPackageRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/verify-trust:
+    post:
+      tags: [Contracts]
+      summary: Verify package signatures and trust policy
+      operationId: verifyPackageTrust
+      x-templiqx-idempotency: idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyPackageTrustRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/evals:
+    get:
+      tags: [Execution]
+      summary: List addressable eval fixtures
+      operationId: listEvals
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/evals/run:
+    post:
+      tags: [Execution]
+      summary: Run one eval fixture
+      operationId: runEval
+      x-templiqx-idempotency: caller-defined
+      x-templiqx-idempotent: false
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunEvalRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/contracts/{contract}/render:
+    post:
+      tags: [Contracts]
+      summary: Render compiled contract messages
+      operationId: renderContract
+      x-templiqx-idempotency: idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompileRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/contracts/{contract}/diff:
+    post:
+      tags: [Contracts]
+      summary: Diff this contract against another contract
+      operationId: diffContract
+      x-templiqx-idempotency: idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiffContractRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/contracts/{contract}/explain:
+    get:
+      tags: [Contracts]
+      summary: Explain a contract's shape and references
+      operationId: explainContract
+      parameters:
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/legacy/migrate:
+    post:
+      tags: [Mutation]
+      summary: Migrate a package-confined legacy template
+      operationId: migrateLegacy
+      x-templiqx-idempotency: caller-defined
+      x-templiqx-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MigrateLegacyRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/documents/render:
+    post:
+      tags: [Execution]
+      summary: Render a document into a workspace artifact
+      operationId: renderDocument
+      x-templiqx-idempotency: caller-defined
+      x-templiqx-idempotent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenderDocumentRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/artifacts:
+    get:
+      tags: [Discovery]
+      summary: List workspace artifacts for a package
+      operationId: listWorkspaceArtifacts
+      parameters:
+        - $ref: '#/components/parameters/PackageQuery'
+        - $ref: '#/components/parameters/WorkspaceQuery'
+        - $ref: '#/components/parameters/PrefixQuery'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/artifacts/{artifact}:
+    get:
+      tags: [Discovery]
+      summary: Read a workspace artifact
+      operationId: readArtifact
+      parameters:
+        - $ref: '#/components/parameters/ArtifactPath'
+        - $ref: '#/components/parameters/PackageQuery'
+        - $ref: '#/components/parameters/WorkspaceQuery'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
+    delete:
+      tags: [Mutation]
+      summary: Delete a workspace artifact with CAS protection
+      operationId: deleteWorkspaceArtifact
+      x-templiqx-idempotency: cas-idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/ArtifactPath'
+        - $ref: '#/components/parameters/PackageQuery'
+        - $ref: '#/components/parameters/WorkspaceQuery'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
 components:
   parameters:
     RequestId:
@@ -287,12 +606,50 @@ components:
       schema:
         type: string
         pattern: '^sha256:[A-Fa-f0-9]+$|^[A-Fa-f0-9]{64}$'
+    OptionalIfMatch:
+      name: If-Match
+      in: header
+      required: false
+      description: Current content fingerprint when replacing an existing contract.
+      schema:
+        type: string
+    PackageQuery:
+      name: package
+      in: query
+      required: true
+      schema:
+        type: string
+    WorkspaceQuery:
+      name: workspace
+      in: query
+      required: false
+      schema:
+        type: string
+    PrefixQuery:
+      name: prefix
+      in: query
+      required: false
+      schema:
+        type: string
+    ArtifactPath:
+      name: artifact
+      in: path
+      required: true
+      description: Forward-slash-separated path relative to the package workspace.
+      schema:
+        type: string
   headers:
     RequestId:
       description: Effective correlation ID for logs and downstream diagnostics.
       schema:
         type: string
   responses:
+    OperationEnvelope:
+      description: Operation envelope. Product failures are represented by ok=false diagnostics.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonValueEnvelope'
     TransportFailure:
       description: Transport-level failure before a product OperationEnvelope can be returned.
       headers:
@@ -627,6 +984,87 @@ components:
         description:
           type: string
       minProperties: 1
+      additionalProperties: false
+    CreatePackageRequest:
+      type: object
+      required: [name, version]
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+      additionalProperties: false
+    SignPackageRequest:
+      type: object
+      required: [key_id]
+      properties:
+        key_id:
+          type: string
+      additionalProperties: false
+    VerifyPackageTrustRequest:
+      type: object
+      properties:
+        strict:
+          type: boolean
+          default: false
+      additionalProperties: false
+    CapabilitiesRequest:
+      type: object
+      properties:
+        capabilities:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    RunEvalRequest:
+      type: object
+      required: [contract, fixture_id]
+      properties:
+        contract:
+          type: string
+        fixture_id:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    DiffContractRequest:
+      type: object
+      required: [right_package, right_contract]
+      properties:
+        right_package:
+          type: string
+        right_contract:
+          type: string
+      additionalProperties: false
+    MigrateLegacyRequest:
+      type: object
+      required: [package, dialect, source, aliases]
+      properties:
+        package:
+          type: string
+        dialect:
+          type: string
+        source:
+          type: string
+        aliases:
+          $ref: '#/components/schemas/JsonValue'
+      additionalProperties: false
+    RenderDocumentRequest:
+      type: object
+      required: [package, template, data, output]
+      properties:
+        package:
+          type: string
+        template:
+          type: string
+        data:
+          $ref: '#/components/schemas/JsonValue'
+        output:
+          type: string
+        workspace:
+          type: string
       additionalProperties: false
     ContractSummary:
       type: object

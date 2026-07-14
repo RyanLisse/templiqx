@@ -14,6 +14,8 @@ Published docs site: [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/
 - [Contract format](contracts/v1alpha1.md)
 - [Mock scenario format](contracts/mock-scenarios-v1alpha1.md)
 - [CLI](guides/cli.md)
+- [Operations HTTP API](guides/operations-api.md)
+- [Generated client policy](guides/generated-clients.md)
 - [Pre-CRM3 readiness](guides/pre-crm3-readiness.md)
 - [Host integration handoff](guides/host-integration.md)
 - [Release procedure and artifact verification](guides/releasing.md)

@@ -20,11 +20,20 @@ function walk(value, path = '$') {
   for (const [key, child] of Object.entries(value)) walk(child, `${path}.${key}`);
 }
 walk(spec);
+function resolveRef(pointer) {
+  if (!pointer.startsWith('#/')) return undefined;
+  return pointer
+    .slice(2)
+    .split('/')
+    .reduce(
+      (node, part) => node?.[part.replaceAll('~1', '/').replaceAll('~0', '~')],
+      spec,
+    );
+}
 for (const ref of refs) {
   const [, pointer] = ref.split(' -> ');
   if (!pointer.startsWith('#/')) fail(`external or invalid ref disallowed: ${ref}`);
-  const found = pointer.slice(2).split('/').reduce((node, part) => node?.[part.replaceAll('~1', '/').replaceAll('~0', '~')], spec);
-  if (found === undefined) fail(`unresolved ref: ${ref}`);
+  if (resolveRef(pointer) === undefined) fail(`unresolved ref: ${ref}`);
 }
 
 const operationIds = new Map();
@@ -38,9 +47,12 @@ for (const [path, pathItem] of Object.entries(spec.paths ?? {})) {
     operationIds.set(op.operationId, `${method.toUpperCase()} ${path}`);
     const response = op.responses?.['200'] ?? op.responses?.['201'] ?? op.responses?.['202'];
     if (!response) fail(`${method.toUpperCase()} ${path} missing 2xx response`);
-    const hasJsonSchema = Boolean(response?.content?.['application/json']?.schema);
-    const hasYamlSchema = Boolean(response?.content?.['application/yaml']?.schema);
-    if (!hasJsonSchema && !(op.operationId === 'getOperationsV1OpenApi' && hasYamlSchema)) {
+    const resolved = response?.$ref ? resolveRef(response.$ref) : response;
+    const hasJsonSchema = Boolean(resolved?.content?.['application/json']?.schema);
+    const hasYamlSchema = Boolean(resolved?.content?.['application/yaml']?.schema);
+    const openApiDocument =
+      op.operationId === 'getOperationsV1OpenApi' || op.operationId === 'getOperationsV1OpenApiYaml';
+    if (!hasJsonSchema && !(openApiDocument && hasYamlSchema)) {
       fail(`${method.toUpperCase()} ${path} missing supported response schema`);
     }
     if (method !== 'get' && op['x-templiqx-idempotent'] === undefined) fail(`${method.toUpperCase()} ${path} must declare x-templiqx-idempotent`);

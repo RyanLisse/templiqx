@@ -31,3 +31,6 @@ docs-build:
 
 openapi-validate:
     npm run openapi:validate
+
+openapi-typescript-proof:
+    npm run openapi:typescript-proof

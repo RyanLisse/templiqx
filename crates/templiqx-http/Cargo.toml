@@ -13,10 +13,12 @@ templiqx-application = { path = "../templiqx-application" }
 templiqx-contracts = { path = "../templiqx-contracts" }
 templiqx-local = { path = "../templiqx-local" }
 templiqx-ports = { path = "../templiqx-ports" }
+serde_yaml_ng.workspace = true
 tokio.workspace = true
 tower.workspace = true
 
 [dev-dependencies]
+serde_yaml_ng.workspace = true
 tempfile.workspace = true
 
 [lints]

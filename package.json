@@ -6,12 +6,14 @@
     "dev": "blume dev",
     "build": "blume build --strict",
     "doctor": "blume doctor",
-    "openapi:validate": "node scripts/openapi/validate.mjs openapi/templiqx-operations-v1.yaml"
+    "openapi:validate": "node scripts/openapi/validate.mjs openapi/templiqx-operations-v1.yaml",
+    "openapi:typescript-proof": "node scripts/openapi/generate-typescript.mjs openapi/templiqx-operations-v1.yaml"
   },
   "dependencies": {
     "blume": "^1.0.3"
   },
   "devDependencies": {
+    "openapi-typescript": "^7.10.1",
     "yaml": "^2.9.0"
   }
 }
