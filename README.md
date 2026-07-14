@@ -28,6 +28,7 @@ Templiqx turns portable `templiqx/v1alpha1` contracts (strict YAML) into determi
 ```bash
 just verify                              # fmt, clippy, tests, boundary checks — run before any PR
 just verify-deploy                       # docker/kind/supply-chain smoke + boundaries
+just verify-all                          # full local gate: verify + docs + deployment/supply-chain
 
 qlty fmt                                 # format (CI + pre-commit expectation)
 qlty check --fix --level=low             # lint fixes before commit
@@ -143,13 +144,12 @@ Run the in-process proof with `cargo test -p templiqx-conformance --test crm3`; 
 
 ```mermaid
 flowchart LR
-    subgraph CI["CI (.github/workflows/ci.yml)"]
-        direction LR
-        Boundaries["boundaries"] --> Qlty["qlty"] --> Rust["rust tests"] --> Docker["docker smoke"] --> Helm["helm-kind smoke"] --> Supply["supply-chain"]
-    end
-    Docker --> Image["Container image"]
-    Helm --> Chart["charts/templiqx (Helm)"]
-    Supply --> SBOM["SBOM + digest (Syft/Grype)"]
+    PR["Pull request"] --> CI["Minimal hosted CI\njust verify + docs build"]
+    Local["Local just verify-all"] --> Docker["Docker/Compose smoke"]
+    Docker --> Helm["Helm/kind smoke"]
+    Helm --> Supply["SBOM + vulnerability scan"]
+    Tag["Version tag"] --> Release["Multi-arch build + Grype + signing"]
+    Release --> GitHub["GitHub Release"]
 ```
 
 - **Docker:** separate minimal `templiqx-cli` and `templiqx-mcp` product images plus the explicitly synthetic `templiqx-conformance` image; `deploy/compose.yml` and `./scripts/docker-smoke.sh` exercise the 8/8 matrix and assert mocks are absent from product images.

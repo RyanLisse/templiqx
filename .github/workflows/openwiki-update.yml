@@ -3,6 +3,9 @@ name: OpenWiki Update
 on:
   workflow_dispatch:
 
+# Intentionally manual: generation consumes both a hosted runner and model API
+# tokens. Run it only when code documentation actually needs a refresh.
+
 permissions:
   contents: write
   pull-requests: write

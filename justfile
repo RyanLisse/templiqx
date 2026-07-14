@@ -15,8 +15,9 @@ verify-deploy:
     ./scripts/supply-chain-smoke.sh
     ./scripts/check-boundaries.sh
 
-# Complete local release gate. Hosted CI deliberately runs only `verify`.
-verify-all: verify verify-deploy
+# Complete local release gate. Hosted CI deliberately runs only `verify` plus
+# the lightweight docs build; expensive deployment checks stay local-first.
+verify-all: verify docs-build verify-deploy
 
 fresh-clone:
     ./scripts/fresh-clone-verify.sh

@@ -11,6 +11,7 @@ Templiqx is a standalone, provider-neutral AI interaction contract compiler: por
 ```bash
 just verify                              # fmt, clippy, tests, boundaries, CI gates, qlty
 just verify-deploy                       # docker/kind/supply-chain smoke + boundaries
+just verify-all                          # verify + docs build + deployment/supply-chain smoke
 just docs-dev                            # Blume docs site (npm run dev)
 just docs-build                          # static docs build to dist/
 just fresh-clone                         # isolated worktree + empty Cargo cache
@@ -87,8 +88,8 @@ Synthetic multi-step workflow: discover → validate → BLI-61 extraction → B
 
 - **Docker:** `Dockerfile`, `deploy/compose.yml`, `./scripts/docker-smoke.sh`
 - **Kubernetes:** `charts/templiqx/` (lint with `helm lint charts/templiqx -f charts/templiqx/values-mock.yaml`), `./scripts/kind-smoke.sh`
-- **Supply chain:** `./scripts/supply-chain-smoke.sh` (SBOM/digest checks; CI pins Syft/Grype)
-- **CI jobs:** boundaries → qlty + rust + docker + helm-kind + supply-chain (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml))
+- **Supply chain:** `./scripts/supply-chain-smoke.sh` (local SBOM/digest/vulnerability checks; tagged releases use pinned, checksum-verified Grype)
+- **Hosted CI:** one minimal PR job runs `just verify` plus the docs build; Docker, kind, and supply-chain proof stay local-first (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml))
 
 <!-- OPENWIKI:START -->
 
@@ -96,6 +97,6 @@ Synthetic multi-step workflow: discover → validate → BLI-61 extraction → B
 
 This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
 
-The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+The on-demand OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and running OpenWiki when regeneration is needed.
 
 <!-- OPENWIKI:END -->

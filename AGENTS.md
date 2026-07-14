@@ -4,7 +4,7 @@
 
 This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
 
-The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+The on-demand OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and running OpenWiki when regeneration is needed.
 
 <!-- OPENWIKI:END -->
 
@@ -13,7 +13,10 @@ The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do
 - For product or architecture scope, anchor to the Linear project **Basenet CRM3** (`BLI-*` keys) rather than stale repo docs alone.
 - Keep normative specs, ADRs, and plans under `docs/` with navigation via [`docs/README.md`](docs/README.md). Root holds entry points (`AGENTS.md`, `CLAUDE.md`) only.
 - Host-owned concerns (auth, tenant policy, approval, retrieval, secrets, provider SDKs) belong in the Basenet host — implement typed ports here, not host wiring in core crates.
-- Run `just verify` before PRs; run `qlty fmt` and `qlty check --fix --level=low` before commit (CI enforces both).
+- Run `just verify` before every PR; run `just verify-all` for deployment, image,
+  chart, or supply-chain changes. Run `qlty fmt` and
+  `qlty check --fix --level=low` before commit. Hosted CI is intentionally a
+  minimal backstop; expensive verification is local-first.
 - Preserve CRM3 evidence-grounding in conformance scenarios — draft output must stay grounded in source fragments.
 
 ## Learned Workspace Facts
