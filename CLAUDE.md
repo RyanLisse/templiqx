@@ -27,6 +27,8 @@ Scoped tests: `cargo test -p templiqx-local -- service::`. Full suite: `cargo te
 
 CLI: `cargo run -p templiqx-cli -- <command> --root <package-dir> [--json]`. Commands map 1:1 to `TempliqxService` capabilities (`catalog`, `discover`, `inspect`, `put`, `validate`, `compile`, `render`, `execute`, `test`, `diff`, `explain`, `migrate`, …). Run `--help` for the current list. Exit codes: `0` = ok envelope, `2` = product/diagnostic failure, `1` = CLI/IO failure.
 
+Application-use skills are available in `.claude/skills/`: `use-templiqx`, `author-templiqx-contracts`, and `test-templiqx-packages`. They point to the canonical `.agents/skills/` copies shared with Codex.
+
 ## Documentation map
 
 | Need | Location |
@@ -38,6 +40,7 @@ CLI: `cargo run -p templiqx-cli -- <command> --root <package-dir> [--json]`. Com
 | Host integration | [`docs/guides/host-integration.md`](docs/guides/host-integration.md) |
 | CRM3 scenarios | [`examples/crm3/scenarios/`](examples/crm3/scenarios/) |
 | Generated code docs | [`openwiki/quickstart.md`](openwiki/quickstart.md) |
+| Agent skills | [`.agents/skills/`](.agents/skills/) and [`docs/guides/agent-skills.md`](docs/guides/agent-skills.md) |
 
 ## Crate layout
 

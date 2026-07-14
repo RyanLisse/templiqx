@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Templiqx Packages"
+  short_description: "Validate packages and run deterministic evals"
+  default_prompt: "Validate this Templiqx package, run its evals, and report verified fingerprints and diagnostics."

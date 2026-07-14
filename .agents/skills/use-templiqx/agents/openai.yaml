@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Templiqx"
+  short_description: "Operate Templiqx through MCP or CLI"
+  default_prompt: "Use Templiqx to complete this contract, package, evaluation, or document workflow."
