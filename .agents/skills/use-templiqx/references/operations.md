@@ -8,6 +8,7 @@
 | Put contract | `put_contract` | `put` |
 | Validate contract/package | `validate_contract` / `validate_package` | `validate` |
 | Compile | `compile_contract` | `compile` |
+| Render contract messages without a model call | `render_contract` | `render` |
 | Execute | `execute_contract` | `execute` |
 | Migrate DOCX | `migrate_legacy` | `migrate` |
 | Render DOCX | `render_document` | `render-document` |

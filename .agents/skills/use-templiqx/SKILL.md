@@ -17,7 +17,7 @@ Prefer the `templiqx` MCP server when its tools are available. Otherwise run the
 ## Choose a workflow
 
 - Inspect or diagnose: `inspect_contract` -> `explain_contract` -> `validate_contract`.
-- Compile or execute: `validate_contract` -> `compile_contract` -> `execute_contract`.
+- Render, compile, or execute: `validate_contract` -> `render_contract` for deterministic message preview, or `compile_contract` -> `execute_contract` for a runtime call.
 - Migrate and render DOCX: `migrate_legacy` -> inspect the compatibility report -> `render_document` -> `read_artifact`.
 - Evaluate: `list_evals` -> `run_eval`, or use `test_package` for the entire package.
 - Manage artifacts: `list_workspace_artifacts` -> `read_artifact`; delete only with the current expected fingerprint.
