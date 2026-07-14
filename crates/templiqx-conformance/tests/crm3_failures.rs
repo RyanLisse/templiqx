@@ -7,8 +7,8 @@ use std::{
 use templiqx_application::TempliqxService;
 use templiqx_contracts::{RenderRequest, fingerprint};
 use templiqx_local::{
-    FilesystemArtifactWorkspace, FilesystemPackageStore, UnsupportedDocumentRenderer,
-    UnsupportedLegacyAdapter,
+    FilesystemArtifactWorkspace, FilesystemPackageStore, UnsupportedDocumentInspector,
+    UnsupportedDocumentRenderer, UnsupportedLegacyAdapter,
 };
 use templiqx_mock::{
     ReceiptPayloadPolicy, ScenarioManifest, ScriptedRuntime, failure_receipt_fingerprint,
@@ -92,6 +92,7 @@ fn service(
         ScriptedRuntime,
         UnsupportedLegacyAdapter,
         UnsupportedDocumentRenderer,
+        UnsupportedDocumentInspector,
     >,
 > {
     let workspace = tempfile::tempdir()?.keep();
@@ -101,6 +102,7 @@ fn service(
         runtime,
         UnsupportedLegacyAdapter,
         UnsupportedDocumentRenderer,
+        UnsupportedDocumentInspector,
     ))
 }
 
@@ -339,6 +341,7 @@ fn contract_source_mutation_changes_package_fingerprint() -> Result<()> {
         ScriptedRuntime::success(),
         UnsupportedLegacyAdapter,
         UnsupportedDocumentRenderer,
+        UnsupportedDocumentInspector,
     );
     let baseline = service.validate_package(PACKAGE);
     ensure!(
@@ -385,6 +388,7 @@ fn contract_source_mutation_changes_package_fingerprint() -> Result<()> {
         ScriptedRuntime::success(),
         UnsupportedLegacyAdapter,
         UnsupportedDocumentRenderer,
+        UnsupportedDocumentInspector,
     );
     let mutated_validation = mutated_service.validate_package(PACKAGE);
     ensure!(

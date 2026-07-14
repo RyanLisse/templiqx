@@ -526,6 +526,22 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/documents/inspect:
+    post:
+      tags: [Execution]
+      summary: Inspect a document template without mutation
+      operationId: inspectDocument
+      x-templiqx-idempotency: caller-defined
+      x-templiqx-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectDocumentRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OperationEnvelope'
   /operations/v1/artifacts:
     get:
       tags: [Discovery]
@@ -1065,6 +1081,19 @@ components:
           type: string
         workspace:
           type: string
+      additionalProperties: false
+    InspectDocumentRequest:
+      type: object
+      required: [package, dialect, template]
+      properties:
+        package:
+          type: string
+        dialect:
+          type: string
+        template:
+          type: string
+        aliases:
+          $ref: '#/components/schemas/JsonValue'
       additionalProperties: false
     ContractSummary:
       type: object

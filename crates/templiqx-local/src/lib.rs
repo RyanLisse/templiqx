@@ -12,9 +12,10 @@ use templiqx_contracts::{
     PackageManifest, PackageSignature, fingerprint, fingerprint_bytes,
 };
 use templiqx_ports::{
-    ArtifactWorkspace, DocumentRenderRequest, DocumentRenderResult, DocumentRenderer,
-    LegacyImportAdapter, LegacyImportRequest, LegacyImportResult, PackageStore, PortError,
-    RuntimeAdapter, WorkspaceOutputLease,
+    ArtifactWorkspace, DocumentInspectionRequest, DocumentInspectionResult, DocumentInspector,
+    DocumentRenderRequest, DocumentRenderResult, DocumentRenderer, LegacyImportAdapter,
+    LegacyImportRequest, LegacyImportResult, PackageStore, PortError, RuntimeAdapter,
+    WorkspaceOutputLease,
 };
 
 #[derive(Debug, Clone)]
@@ -488,6 +489,7 @@ impl PackageStore for FilesystemPackageStore {
         manifest.evals.sort();
         manifest.migrations.sort();
         manifest.templates.sort();
+        manifest.translations.sort();
         let mut paths = manifest
             .contracts
             .iter()
@@ -497,6 +499,12 @@ impl PackageStore for FilesystemPackageStore {
         paths.extend(manifest.evals.iter().cloned());
         paths.extend(manifest.migrations.iter().cloned());
         paths.extend(manifest.templates.iter().cloned());
+        paths.extend(
+            manifest
+                .translations
+                .iter()
+                .map(|locale| format!("translations/{locale}.yaml")),
+        );
         paths.sort();
         paths.dedup();
         let mut artifacts = std::collections::BTreeMap::new();
@@ -1048,17 +1056,32 @@ impl DocumentRenderer for UnsupportedDocumentRenderer {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct UnsupportedDocumentInspector;
+impl DocumentInspector for UnsupportedDocumentInspector {
+    fn inspect_document(
+        &self,
+        _request: &DocumentInspectionRequest,
+    ) -> Result<DocumentInspectionResult, PortError> {
+        Err(PortError::Unsupported(
+            "document inspector adapter is not installed".into(),
+        ))
+    }
+}
+
 pub type CoreOnlyService = templiqx_application::TempliqxService<
     FilesystemPackageStore,
     FilesystemArtifactWorkspace,
     DeterministicFakeRuntime,
     UnsupportedLegacyAdapter,
     UnsupportedDocumentRenderer,
+    UnsupportedDocumentInspector,
 >;
 pub type LocalService = templiqx_application::TempliqxService<
     FilesystemPackageStore,
     FilesystemArtifactWorkspace,
     DeterministicFakeRuntime,
+    templiqx_docx_v5::DocxV5Adapter,
     templiqx_docx_v5::DocxV5Adapter,
     templiqx_docx_v5::DocxV5Adapter,
 >;
@@ -1071,6 +1094,7 @@ pub fn compose_core(root: impl AsRef<Path>) -> Result<CoreOnlyService, PortError
         DeterministicFakeRuntime,
         UnsupportedLegacyAdapter,
         UnsupportedDocumentRenderer,
+        UnsupportedDocumentInspector,
     ))
 }
 
@@ -1087,6 +1111,7 @@ pub fn compose_with_workspace(
         FilesystemPackageStore::new(root)?,
         FilesystemArtifactWorkspace::new(workspace)?,
         DeterministicFakeRuntime,
+        templiqx_docx_v5::DocxV5Adapter::default(),
         templiqx_docx_v5::DocxV5Adapter::default(),
         templiqx_docx_v5::DocxV5Adapter::default(),
     ))
@@ -1121,6 +1146,7 @@ pub fn create_package(
         "evals",
         "migrations",
         "templates",
+        "translations",
     ] {
         fs::create_dir_all(package.join(directory)).map_err(io_error)?;
     }
@@ -1134,6 +1160,7 @@ pub fn create_package(
         evals: vec![],
         migrations: vec![],
         templates: vec![],
+        translations: vec![],
         provenance: Default::default(),
         signatures: vec![],
         dependencies: Default::default(),

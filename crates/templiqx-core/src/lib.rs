@@ -1135,6 +1135,9 @@ pub fn validate_values(contract: &Contract, request: &RenderRequest) -> Vec<Diag
             }
         }
         for name in values.keys() {
+            if scope == "context" && name.starts_with("_templiqx_") {
+                continue;
+            }
             if !specs.contains_key(name) {
                 out.push(Diagnostic::error(
                     "TQX_VALUE_UNKNOWN",
@@ -1258,7 +1261,7 @@ fn render_nodes(
                     .and_then(Value::as_str)
                     .unwrap_or("");
                 for f in filters {
-                    value = apply_filter(value, f, locale)?;
+                    value = apply_filter(value, f, locale, root)?;
                 }
                 out.push_str(&display_value(&value));
             }
@@ -1383,7 +1386,12 @@ fn boolean_value(value: Value) -> Result<bool, Vec<Diagnostic>> {
         )]
     })
 }
-fn apply_filter(v: Value, f: &Filter, locale: &str) -> Result<Value, Vec<Diagnostic>> {
+fn apply_filter(
+    v: Value,
+    f: &Filter,
+    locale: &str,
+    root: &Value,
+) -> Result<Value, Vec<Diagnostic>> {
     Ok(match f {
         Filter::Trim => Value::String(display_value(&v).trim().to_owned()),
         Filter::Lower => Value::String(display_value(&v).to_lowercase()),
@@ -1391,7 +1399,72 @@ fn apply_filter(v: Value, f: &Filter, locale: &str) -> Result<Value, Vec<Diagnos
         Filter::Json => Value::String(serde_json::to_string(&v).unwrap_or_default()),
         Filter::FormatDate => Value::String(format_date(&v, locale)?),
         Filter::FormatNumber => Value::String(format_number(&v, locale)?),
+        Filter::FormatCurrency => Value::String(format_currency(&v, locale)?),
+        Filter::Translate => Value::String(translate_key(&v, locale, root)?),
     })
+}
+
+fn translate_key(v: &Value, locale: &str, root: &Value) -> Result<String, Vec<Diagnostic>> {
+    let key = match v {
+        Value::String(s) => s.as_str(),
+        _ => {
+            return Err(vec![Diagnostic::error(
+                "TQX_FILTER_INPUT",
+                "translate expects a string translation key",
+                "",
+            )]);
+        }
+    };
+    let bundles = root
+        .get("context")
+        .and_then(|c| c.get("_templiqx_translations"))
+        .and_then(Value::as_object);
+    let Some(bundles) = bundles else {
+        return Err(vec![Diagnostic::error(
+            "TQX_TRANSLATION_MISSING",
+            "no translation bundles were loaded for this package",
+            "",
+        )]);
+    };
+    let fallback = root
+        .get("context")
+        .and_then(|c| c.get("fallback_locale"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    for candidate in [locale, fallback, "en"] {
+        if candidate.is_empty() {
+            continue;
+        }
+        if let Some(bundle) = bundles.get(candidate).and_then(Value::as_object)
+            && let Some(value) = bundle.get(key).and_then(Value::as_str)
+        {
+            return Ok(value.to_owned());
+        }
+    }
+    Err(vec![Diagnostic::error(
+        "TQX_TRANSLATION_KEY",
+        format!("missing translation key '{key}'"),
+        "",
+    )])
+}
+
+fn format_currency(v: &Value, locale: &str) -> Result<String, Vec<Diagnostic>> {
+    let number = v
+        .as_f64()
+        .or_else(|| v.as_i64().map(|n| n as f64))
+        .ok_or_else(|| {
+            vec![Diagnostic::error(
+                "TQX_FILTER_INPUT",
+                "format_currency expects a numeric value",
+                "",
+            )]
+        })?;
+    let formatted = format_number(&Value::from(number), locale)?;
+    let symbol = match locale_family(locale) {
+        "nl" | "de" => "€",
+        _ => "$",
+    };
+    Ok(format!("{symbol}{formatted}"))
 }
 
 /// Locale families sharing a grouping/date convention. Kept intentionally small

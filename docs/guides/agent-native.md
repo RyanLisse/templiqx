@@ -14,7 +14,7 @@ flowchart LR
     Human["Human"] --> CLI["templiqx-cli"]
     Agent["AI agent"] --> MCP["templiqx-mcp (stdio)"]
     Host["Rust host"] --> Svc
-    CLI --> Svc["TempliqxService<br/>CAPABILITY_CATALOG (26 ops)"]
+    CLI --> Svc["TempliqxService<br/>CAPABILITY_CATALOG (27 ops)"]
     MCP --> Svc
     Svc --> Env["OperationEnvelope<br/>ok · diagnostics · fingerprints"]
 ```
@@ -100,7 +100,7 @@ This site is built with [Blume](https://useblume.dev) and exposes AI-friendly su
 
 ## See also
 
-- [Actor-neutral capability map](../architecture/capability-map) — all 26 operations, CLI ↔ MCP ↔ service
+- [Actor-neutral capability map](../architecture/capability-map) — all 27 operations, CLI ↔ MCP ↔ service
 - [Host integration](host-integration) — ownership matrix, ModelGateway consumer contract, deployment artifacts
 - [Contract format](../contracts/v1alpha1) — `templiqx/v1alpha1` grammar
 - [Code docs: workflows](/wiki/workflows) and [architecture](/wiki/architecture) — generated from the source tree

@@ -21,9 +21,10 @@ use serde_json::Value;
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use templiqx_application::{
     CreatePackageRequest, DeleteContractRequest, DeletePackageRequest,
-    DeleteWorkspaceArtifactRequest, ListWorkspaceArtifactsRequest, MigrateLegacyRequest,
-    MigrationResult, ReadArtifactRequest, RenderDocumentRequest, RenderDocumentResult,
-    SignPackageRequest, TempliqxService, UpdatePackageRequest, VerifyPackageTrustRequest,
+    DeleteWorkspaceArtifactRequest, InspectDocumentRequest, InspectDocumentResult,
+    ListWorkspaceArtifactsRequest, MigrateLegacyRequest, MigrationResult, ReadArtifactRequest,
+    RenderDocumentRequest, RenderDocumentResult, SignPackageRequest, TempliqxService,
+    UpdatePackageRequest, VerifyPackageTrustRequest,
 };
 use templiqx_contracts::{
     ArtifactContent, CompiledInteraction, CompiledMessage, Contract, ContractDiff, ContractSummary,
@@ -31,7 +32,8 @@ use templiqx_contracts::{
     PackageTrustReport, RenderRequest, StreamEvent, TestCaseResult, TestReport, WorkspaceArtifact,
 };
 use templiqx_ports::{
-    ArtifactWorkspace, DocumentRenderer, LegacyImportAdapter, PackageStore, RuntimeAdapter,
+    ArtifactWorkspace, DocumentInspector, DocumentRenderer, LegacyImportAdapter, PackageStore,
+    RuntimeAdapter,
 };
 
 /// Stable MCP tool names, exactly matching the application catalog.
@@ -80,6 +82,10 @@ pub trait Operations: Send + Sync + 'static {
         &self,
         request: &RenderDocumentInput,
     ) -> OperationEnvelope<RenderDocumentResult>;
+    fn inspect_document(
+        &self,
+        request: &InspectDocumentInput,
+    ) -> OperationEnvelope<InspectDocumentResult>;
     fn list_workspace_artifacts(
         &self,
         request: &ListWorkspaceArtifactsInput,
@@ -97,13 +103,14 @@ pub trait Operations: Send + Sync + 'static {
     fn explain_contract(&self, package: &str, contract: &str) -> OperationEnvelope<Explanation>;
 }
 
-impl<S, W, R, L, D> Operations for TempliqxService<S, W, R, L, D>
+impl<S, W, R, L, D, I> Operations for TempliqxService<S, W, R, L, D, I>
 where
     S: PackageStore + 'static,
     W: ArtifactWorkspace + 'static,
     R: RuntimeAdapter + 'static,
     L: LegacyImportAdapter + 'static,
     D: DocumentRenderer + 'static,
+    I: DocumentInspector + 'static,
 {
     fn catalog(&self) -> OperationEnvelope<Vec<String>> {
         templiqx_application::catalog()
@@ -215,6 +222,17 @@ where
             data: r.data.clone(),
             output: r.output.clone(),
             workspace: r.workspace.clone(),
+        })
+    }
+    fn inspect_document(
+        &self,
+        r: &InspectDocumentInput,
+    ) -> OperationEnvelope<InspectDocumentResult> {
+        self.inspect_document(&InspectDocumentRequest {
+            package: r.package.clone(),
+            dialect: r.dialect.clone(),
+            template: r.template.clone(),
+            aliases: r.aliases.clone(),
         })
     }
     fn list_workspace_artifacts(
@@ -382,6 +400,16 @@ pub struct RenderDocumentInput {
     pub output: String,
     #[serde(default)]
     pub workspace: Option<String>,
+}
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct InspectDocumentInput {
+    pub package: String,
+    pub dialect: String,
+    /// Portable template path relative to the package root.
+    pub template: String,
+    #[serde(default)]
+    pub aliases: Value,
 }
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -754,6 +782,15 @@ impl TempliqxMcp {
     ) -> Json<StructuredEnvelope> {
         Json(StructuredEnvelope::from_operation(
             self.operations.render_document(&i),
+        ))
+    }
+    #[tool(description = "Inspect a document template without mutation")]
+    fn inspect_document(
+        &self,
+        Parameters(i): Parameters<InspectDocumentInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.inspect_document(&i),
         ))
     }
     #[tool(

@@ -97,6 +97,72 @@ fn generate(root: &Path) -> Result<()> {
         None,
     )?;
 
+    fixture(
+        root,
+        "v5-repeat-marker-detected",
+        &[(
+            "word/document.xml",
+            document(
+                r#"<w:tbl><w:tr><w:tc><w:p><w:r><w:t>${#rows}</w:t></w:r><w:r><w:t>$data.item</w:t></w:r><w:r><w:t>${/rows}</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"#,
+                "",
+            ),
+        )],
+        json!({}),
+        report(
+            json!([
+                finding(
+                    "unsupported",
+                    "word/document.xml",
+                    "v5_repeat",
+                    None,
+                    "repeated table rows are outside the measured POC subset"
+                ),
+                finding(
+                    "migrated",
+                    "word/document.xml",
+                    "v5_reference",
+                    Some("item"),
+                    "supported V5 reference"
+                )
+            ]),
+            1,
+            0,
+            1,
+            0,
+            0,
+        ),
+        None,
+        None,
+    )?;
+    fixture(
+        root,
+        "v5-conditional-marker-detected",
+        &[(
+            "word/document.xml",
+            document(
+                r#"<w:p><w:r><w:t>${?show}</w:t></w:r><w:r><w:t>Visible</w:t></w:r><w:r><w:t>${/show}</w:t></w:r></w:p>"#,
+                "",
+            ),
+        )],
+        json!({}),
+        report(
+            json!([finding(
+                "unsupported",
+                "word/document.xml",
+                "v5_conditional",
+                None,
+                "conditional document regions are outside the measured POC subset"
+            )]),
+            0,
+            0,
+            1,
+            0,
+            0,
+        ),
+        None,
+        None,
+    )?;
+
     let nested_source = document(
         r#"<w:tbl><w:tr><w:tc><w:p><w:r><w:t>$data.case.number</w:t></w:r></w:p><w:tbl><w:tr><w:tc><w:p><w:fldSimple w:instr=" MERGEFIELD case.owner "><w:r><w:t>owner</w:t></w:r></w:fldSimple></w:p></w:tc></w:tr></w:tbl></w:tc></w:tr></w:tbl>"#,
         "",

@@ -3,6 +3,7 @@
 
 use std::collections::BTreeMap;
 
+use serde_json::Value;
 use templiqx_contracts::{RenderRequest, Severity};
 use templiqx_core::{compile, parse_contract};
 
@@ -104,4 +105,81 @@ fn format_number_rejects_non_numeric_input() {
     // the filter runs — defense in depth. Either layer failing is acceptable.
     let err = render("format_number", "en-US", serde_json::json!("abc")).unwrap_err();
     assert!(err.iter().any(|d| d.severity == Severity::Error));
+}
+
+#[test]
+fn format_currency_prefixes_locale_symbol() {
+    assert_eq!(
+        render("format_currency", "nl-NL", serde_json::json!(42.5)).unwrap(),
+        "€42,50"
+    );
+    assert_eq!(
+        render("format_currency", "en-US", serde_json::json!(42.5)).unwrap(),
+        "$42.50"
+    );
+}
+
+fn render_with_context(
+    filter: &str,
+    context: BTreeMap<String, Value>,
+    value: serde_json::Value,
+) -> Result<String, Vec<templiqx_contracts::Diagnostic>> {
+    let field = "key";
+    let source = format!(
+        r#"
+api_version: templiqx/v1alpha1
+id: translate-fixture
+version: 0.1.0
+inputs:
+  key:
+    schema: {{ type: string }}
+context:
+  locale:
+    schema: {{ type: string }}
+messages:
+  - role: user
+    content:
+      - kind: interpolate
+        expression: {{ kind: ref, path: inputs.key }}
+        filters: [{filter}]
+output_schema: {{ type: object }}
+"#
+    );
+    let c = parse_contract(&source, None).expect("valid fixture parses");
+    let mut inputs = BTreeMap::new();
+    inputs.insert(field.to_owned(), value);
+    let request = RenderRequest { inputs, context };
+    compile(&c, &request, &[]).map(|i| i.messages[0].content.clone())
+}
+
+#[test]
+fn translate_resolves_locale_with_fallback() {
+    let mut context = BTreeMap::new();
+    context.insert("locale".into(), serde_json::json!("nl"));
+    context.insert(
+        "_templiqx_translations".into(),
+        serde_json::json!({
+            "en": {"greeting": "Hello"},
+            "nl": {"greeting": "Hallo"}
+        }),
+    );
+    assert_eq!(
+        render_with_context("translate", context, serde_json::json!("greeting")).unwrap(),
+        "Hallo"
+    );
+}
+
+#[test]
+fn translate_missing_key_fails_closed() {
+    let mut context = BTreeMap::new();
+    context.insert("locale".into(), serde_json::json!("en"));
+    context.insert(
+        "_templiqx_translations".into(),
+        serde_json::json!({"en": {"greeting": "Hello"}}),
+    );
+    let err = render_with_context("translate", context, serde_json::json!("missing")).unwrap_err();
+    assert!(
+        err.iter()
+            .any(|d| d.code == "TQX_TRANSLATION_KEY" && d.severity == Severity::Error)
+    );
 }

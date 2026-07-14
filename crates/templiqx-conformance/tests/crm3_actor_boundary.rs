@@ -9,8 +9,8 @@ use templiqx_contracts::{
     Diagnostic, ExecutionReceipt, OperationEnvelope, RenderRequest, Severity,
 };
 use templiqx_local::{
-    FilesystemArtifactWorkspace, FilesystemPackageStore, UnsupportedDocumentRenderer,
-    UnsupportedLegacyAdapter,
+    FilesystemArtifactWorkspace, FilesystemPackageStore, UnsupportedDocumentInspector,
+    UnsupportedDocumentRenderer, UnsupportedLegacyAdapter,
 };
 use templiqx_mock::{ScriptedRuntime, ScriptedScenario};
 use templiqx_ports::RuntimeFailureCode;
@@ -57,6 +57,7 @@ struct HostHarness {
         ScriptedRuntime,
         UnsupportedLegacyAdapter,
         UnsupportedDocumentRenderer,
+        UnsupportedDocumentInspector,
     >,
     runtime: ScriptedRuntime,
     idempotency: BTreeMap<String, OperationEnvelope<ExecutionReceipt>>,
@@ -90,6 +91,7 @@ impl HostHarness {
                 runtime.clone(),
                 UnsupportedLegacyAdapter,
                 UnsupportedDocumentRenderer,
+                UnsupportedDocumentInspector,
             ),
             runtime,
             idempotency: BTreeMap::new(),

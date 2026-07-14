@@ -9,8 +9,9 @@ use std::fs::{self, File};
 use std::io::{Cursor, Read, Write};
 use std::path::{Path, PathBuf};
 use templiqx_ports::{
-    DocumentRenderRequest, DocumentRenderResult, DocumentRenderer, LegacyImportAdapter,
-    LegacyImportRequest, LegacyImportResult, PortError,
+    DocumentInspectionRequest, DocumentInspectionResult, DocumentInspector, DocumentRenderRequest,
+    DocumentRenderResult, DocumentRenderer, LegacyImportAdapter, LegacyImportRequest,
+    LegacyImportResult, PortError,
 };
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, DateTime, ZipArchive, ZipWriter};
@@ -261,6 +262,25 @@ impl DocumentRenderer for DocxV5Adapter {
     }
 }
 
+impl DocumentInspector for DocxV5Adapter {
+    fn inspect_document(
+        &self,
+        request: &DocumentInspectionRequest,
+    ) -> Result<DocumentInspectionResult, PortError> {
+        if !request.dialect.eq_ignore_ascii_case(DIALECT) {
+            return Err(PortError::Unsupported(format!(
+                "expected explicit dialect `{DIALECT}`, got `{}`",
+                request.dialect
+            )));
+        }
+        let report = self.analyze(&request.template, &request.aliases)?;
+        Ok(DocumentInspectionResult {
+            report: serde_json::to_value(report)
+                .map_err(|e| PortError::InvalidData(e.to_string()))?,
+        })
+    }
+}
+
 fn migrated_path(source: &Path) -> PathBuf {
     let stem = source
         .file_stem()
@@ -479,6 +499,24 @@ fn analyze_xml(
         });
     }
     for source in &sources {
+        if source.contains("${#") {
+            findings.push(Finding {
+                category: Category::Unsupported,
+                part: part.into(),
+                construct: "v5_repeat".into(),
+                reference: None,
+                detail: "repeated table rows are outside the measured POC subset".into(),
+            });
+        }
+        if source.contains("${?") {
+            findings.push(Finding {
+                category: Category::Unsupported,
+                part: part.into(),
+                construct: "v5_conditional".into(),
+                reference: None,
+                detail: "conditional document regions are outside the measured POC subset".into(),
+            });
+        }
         for reference in extract_placeholders(source) {
             let mapped = aliases
                 .get(&reference)
@@ -833,7 +871,13 @@ fn extract_placeholders(source: &str) -> Vec<String> {
         rest = &rest[pos + 2..];
         if let Some(end) = rest.find('}') {
             let value = &rest[..end];
-            if !value.starts_with("func.") && !value.starts_with("v2:") && !value.is_empty() {
+            if !value.starts_with("func.")
+                && !value.starts_with("v2:")
+                && !value.starts_with('#')
+                && !value.starts_with('?')
+                && !value.starts_with('/')
+                && !value.is_empty()
+            {
                 result.push(value.into());
             }
             rest = &rest[end + 1..];
@@ -1700,6 +1744,8 @@ mod tests {
         for id in [
             "v1-beanshell-detected",
             "v2-marker-detected",
+            "v5-repeat-marker-detected",
+            "v5-conditional-marker-detected",
             "v5-nested-table",
             "v5-header-footer",
             "v5-alias-collision-missing",

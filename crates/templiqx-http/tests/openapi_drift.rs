@@ -38,8 +38,8 @@ fn registered_operation_routes_and_openapi_paths_do_not_drift() {
     );
     assert_eq!(
         routed.len(),
-        26,
-        "the catalog must expose exactly 26 operations"
+        27,
+        "the catalog must expose exactly 27 operations"
     );
 
     let openapi_operations = documented_operation_ids(&document);

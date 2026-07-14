@@ -9,9 +9,9 @@ use std::{
 };
 use templiqx_application::{
     CreatePackageRequest, DeleteContractRequest, DeletePackageRequest,
-    DeleteWorkspaceArtifactRequest, ListWorkspaceArtifactsRequest, MigrateLegacyRequest,
-    ReadArtifactRequest, RenderDocumentRequest, SignPackageRequest, UpdatePackageRequest,
-    VerifyPackageTrustRequest,
+    DeleteWorkspaceArtifactRequest, InspectDocumentRequest, ListWorkspaceArtifactsRequest,
+    MigrateLegacyRequest, ReadArtifactRequest, RenderDocumentRequest, SignPackageRequest,
+    UpdatePackageRequest, VerifyPackageTrustRequest,
 };
 use templiqx_contracts::{OperationEnvelope, RenderRequest, fingerprint, fingerprint_bytes};
 
@@ -153,6 +153,14 @@ enum Command {
         output: String,
         #[arg(long)]
         workspace: Option<PathBuf>,
+    },
+    InspectDocument {
+        package: String,
+        dialect: String,
+        /// Portable template path relative to the package root.
+        template: String,
+        #[arg(long)]
+        aliases: Option<PathBuf>,
     },
     ListWorkspaceArtifacts {
         package: String,
@@ -386,6 +394,25 @@ fn run() -> Result<bool> {
             output: artifact,
             workspace: workspace_string(workspace)?,
         })),
+        Command::InspectDocument {
+            package,
+            dialect,
+            template,
+            aliases,
+        } => {
+            output!(service.inspect_document(
+                &InspectDocumentRequest {
+                    package,
+                    dialect,
+                    template,
+                    aliases:
+                        aliases.map_or_else(
+                            || Ok(Value::Object(Default::default())),
+                            |p| read_json(&p),
+                        )?,
+                }
+            ))
+        }
         Command::ListWorkspaceArtifacts {
             package,
             workspace,

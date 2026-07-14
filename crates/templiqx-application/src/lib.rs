@@ -11,7 +11,8 @@ use templiqx_contracts::{
     WorkspaceArtifact, fingerprint, fingerprint_bytes,
 };
 use templiqx_ports::{
-    ArtifactWorkspace, DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer,
+    ArtifactWorkspace, DocumentInspectionRequest as AdapterDocumentInspectionRequest,
+    DocumentInspector, DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer,
     LegacyImportAdapter, LegacyImportRequest as AdapterLegacyImportRequest, PackageStore,
     PortError, RuntimeAdapter,
 };
@@ -54,6 +55,24 @@ pub struct RenderDocumentRequest {
 #[serde(deny_unknown_fields)]
 pub struct RenderDocumentResult {
     pub artifact: String,
+    pub report: Value,
+}
+
+/// Actor-neutral request for read-only document-template preflight.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct InspectDocumentRequest {
+    pub package: String,
+    pub dialect: String,
+    /// Portable template path relative to the selected package root.
+    pub template: String,
+    pub aliases: Value,
+}
+
+/// Portable document-inspection result returned identically on every surface.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct InspectDocumentResult {
     pub report: Value,
 }
 
@@ -166,6 +185,7 @@ pub const CAPABILITY_CATALOG: &[&str] = &[
     "execute_contract",
     "migrate_legacy",
     "render_document",
+    "inspect_document",
     "list_workspace_artifacts",
     "read_artifact",
     "delete_workspace_artifact",
@@ -176,29 +196,32 @@ pub const CAPABILITY_CATALOG: &[&str] = &[
     "explain_contract",
 ];
 
-pub struct TempliqxService<S, W, R, L, D> {
+pub struct TempliqxService<S, W, R, L, D, I> {
     store: S,
     workspace: W,
     runtime: R,
     legacy: L,
     documents: D,
+    inspector: I,
 }
 
-impl<S, W, R, L, D> TempliqxService<S, W, R, L, D>
+impl<S, W, R, L, D, I> TempliqxService<S, W, R, L, D, I>
 where
     S: PackageStore,
     W: ArtifactWorkspace,
     R: RuntimeAdapter,
     L: LegacyImportAdapter,
     D: DocumentRenderer,
+    I: DocumentInspector,
 {
-    pub fn new(store: S, workspace: W, runtime: R, legacy: L, documents: D) -> Self {
+    pub fn new(store: S, workspace: W, runtime: R, legacy: L, documents: D, inspector: I) -> Self {
         Self {
             store,
             workspace,
             runtime,
             legacy,
             documents,
+            inspector,
         }
     }
 
@@ -243,6 +266,43 @@ where
             }
         }
         Ok(parsed)
+    }
+
+    fn with_package_translations(
+        &self,
+        package: &str,
+        request: &RenderRequest,
+    ) -> Result<RenderRequest, Vec<Diagnostic>> {
+        let manifest = self
+            .store
+            .manifest(package)
+            .map_err(|error| vec![port_diagnostic(error)])?;
+        if manifest.translations.is_empty() {
+            return Ok(request.clone());
+        }
+        let mut bundles = serde_json::Map::new();
+        for locale in &manifest.translations {
+            let path = format!("translations/{locale}.yaml");
+            let bytes = self.store.artifact_bytes(package, &path).map_err(|error| {
+                let mut diagnostic = port_diagnostic(error);
+                diagnostic.file = Some(format!("{package}/{path}"));
+                vec![diagnostic]
+            })?;
+            let parsed: std::collections::BTreeMap<String, Value> =
+                serde_yaml_ng::from_slice(&bytes).map_err(|error| {
+                    vec![Diagnostic::error(
+                        "TQX_TRANSLATION_INVALID",
+                        error.to_string(),
+                        format!("/translations/{locale}"),
+                    )]
+                })?;
+            bundles.insert(locale.clone(), Value::Object(parsed.into_iter().collect()));
+        }
+        let mut enriched = request.clone();
+        enriched
+            .context
+            .insert("_templiqx_translations".into(), Value::Object(bundles));
+        Ok(enriched)
     }
 
     /// Recursively replace `Include` nodes with the parsed content of the
@@ -668,12 +728,16 @@ where
             ("evals", &manifest.evals),
             ("migrations", &manifest.migrations),
             ("templates", &manifest.templates),
+            ("translations", &manifest.translations),
         ] {
-            inventory.extend(
-                entries
-                    .iter()
-                    .map(|path| (path.clone(), format!("/{section}/{path}"))),
-            );
+            inventory.extend(entries.iter().map(|path| {
+                let artifact = if section == "translations" {
+                    format!("translations/{path}.yaml")
+                } else {
+                    path.clone()
+                };
+                (artifact, format!("/{section}/{path}"))
+            }));
         }
         inventory.sort_by(|left, right| left.0.cmp(&right.0));
         let mut artifact_hashes = std::collections::BTreeMap::new();
@@ -804,6 +868,7 @@ where
         normalized_manifest.evals.sort();
         normalized_manifest.migrations.sort();
         normalized_manifest.templates.sort();
+        normalized_manifest.translations.sort();
         let package_identity =
             serde_json::json!({"manifest": normalized_manifest, "artifacts": artifact_hashes});
         verify_package_signatures(
@@ -833,7 +898,13 @@ where
                 return OperationEnvelope::new("compile_contract", None, diagnostics);
             }
         };
-        match templiqx_core::compile(&value, request, capabilities) {
+        let request = match self.with_package_translations(package, request) {
+            Ok(request) => request,
+            Err(diagnostics) => {
+                return OperationEnvelope::new("compile_contract", None, diagnostics);
+            }
+        };
+        match templiqx_core::compile(&value, &request, capabilities) {
             Ok(compiled) => with_hash(
                 OperationEnvelope::new("compile_contract", Some(compiled.clone()), vec![]),
                 "compiled_interaction",
@@ -1253,6 +1324,36 @@ where
             Some(RenderDocumentResult {
                 artifact,
                 report: rendered.report,
+            }),
+            vec![],
+        )
+    }
+
+    pub fn inspect_document(
+        &self,
+        request: &InspectDocumentRequest,
+    ) -> OperationEnvelope<InspectDocumentResult> {
+        let template = match self
+            .store
+            .resolve_artifact_path(&request.package, &request.template)
+        {
+            Ok(path) => path,
+            Err(error) => return port_failure("inspect_document", error),
+        };
+        let inspected = match self
+            .inspector
+            .inspect_document(&AdapterDocumentInspectionRequest {
+                dialect: request.dialect.clone(),
+                template,
+                aliases: request.aliases.clone(),
+            }) {
+            Ok(result) => result,
+            Err(error) => return port_failure("inspect_document", error),
+        };
+        OperationEnvelope::new(
+            "inspect_document",
+            Some(InspectDocumentResult {
+                report: inspected.report,
             }),
             vec![],
         )

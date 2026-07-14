@@ -22,14 +22,31 @@ DOCX corpus were deferred.
 | Package trust round trip | Canonical identity export, CAS signing, strict verification, tamper/replay/duplicate/unsupported-algorithm tests |
 | OCI distribution trust | Separate tag-gated Cosign signing and pulled-digest verification in `.github/workflows/release.yml` |
 | Expanded DOCX corpus | Deterministic generator plus V1/V2 detection, supported V5 cases, unresolved-data behavior, and hostile ZIP fixtures under `examples/legacy-corpus/` |
-| Agent-native lifecycle gaps | `update_package`, `delete_package`, and `delete_workspace_artifact`, all included in 26-operation behavior parity |
+| Agent-native lifecycle gaps | `update_package`, `delete_package`, and `delete_workspace_artifact`, all included in 27-operation behavior parity |
 | MCP bootstrap gaps | Explicit workspace root/resource and `bootstrap` / `run-eval` prompts |
 | Mock coverage gap | Strict 8-scenario inventory exercised in-process and through the HTTP gateway/deployment smoke paths |
 
 The DOCX corpus is a measured synthetic compatibility surface, not a claim of
-general DOCX support. The `sha256-keyed` package signature is a local/CI
-tamper-evidence contract, not a production public-key identity. OCI digest
-trust remains separately enforced by the release workflow.
+general DOCX support. Repeat/conditional V5 markers are detected and reported
+as unsupported until separate fixture gates justify render support.
+
+## Open after safe document-template wave (2026-07-14)
+
+| Capability | Status | Entry criterion |
+|------------|--------|-----------------|
+| PDF / document conversion | ADR only | [document-conversion ADR](../adr/document-conversion.md) + converter corpus |
+| Compiled-artifact cache | ADR only | [compiled-artifact-cache ADR](../adr/compiled-artifact-cache.md) + material bench bottleneck |
+| Broad legacy import (Handlebars/helpers) | ADR only | [legacy-template-import ADR](../adr/legacy-template-import.md) + safe-subset fixtures |
+| Repeated table rows / conditional DOCX regions | Detect-only fixtures | Fixture-proven bounded data shapes before render claims |
+
+Repository evidence now includes `inspect_document` (27th catalog operation),
+`tools/templiqx-bench` baselines, package translation bundles, and
+`format_currency` / `translate` filters. See
+[2026-07-14 safe document-template plan](2026-07-14-001-feat-safe-document-template-capabilities-plan.md).
+
+The `sha256-keyed` package signature is a local/CI tamper-evidence contract,
+not a production public-key identity. OCI digest trust remains separately
+enforced by the release workflow.
 
 ## Pending external evidence
 

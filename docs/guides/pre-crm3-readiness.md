@@ -5,7 +5,7 @@ Templiqx keeps CRM3-shaped proof work in conformance fixtures and deployment smo
 ## Readiness boundary
 
 The repository-owned target is a releasable standalone compiler, identical
-26-operation Rust/CLI/MCP behavior, and reproducible synthetic conformance.
+27-operation Rust/CLI/MCP behavior, and reproducible synthetic conformance.
 Templiqx does not claim that CRM3 itself is production-ready: a real
 ModelGateway, tenant/auth/retrieval/approval/audit policy, customer-data
 validation, and host deployment acceptance are owned by the Basenet host.
@@ -106,5 +106,17 @@ The release workflow publishes separate CLI, MCP, and explicitly synthetic
 conformance images. Package-manifest `sha256-keyed` trust is only a local/CI
 tamper-evidence contract; OCI distribution trust is a separate Cosign-verified
 immutable digest. See [releasing.md](releasing.md).
+
+## Performance baseline (local)
+
+Record compile/document baselines before designing caches or render optimizations:
+
+```sh
+cargo run -p templiqx-bench
+cargo test -p templiqx-bench
+```
+
+The harness emits `templiqx-bench/v1` JSON with median latencies and functional
+fingerprints. It is tooling-only — not part of package identity or receipts.
 
 Host integration guidance lives in [host-integration.md](host-integration.md).

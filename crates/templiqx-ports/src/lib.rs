@@ -248,3 +248,22 @@ pub trait DocumentRenderer: Send + Sync {
         request: &DocumentRenderRequest,
     ) -> Result<DocumentRenderResult, PortError>;
 }
+
+#[derive(Debug, Clone)]
+pub struct DocumentInspectionRequest {
+    pub dialect: String,
+    pub template: PathBuf,
+    pub aliases: Value,
+}
+
+#[derive(Debug, Clone)]
+pub struct DocumentInspectionResult {
+    pub report: Value,
+}
+
+pub trait DocumentInspector: Send + Sync {
+    fn inspect_document(
+        &self,
+        request: &DocumentInspectionRequest,
+    ) -> Result<DocumentInspectionResult, PortError>;
+}

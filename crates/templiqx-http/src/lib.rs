@@ -31,9 +31,10 @@ use std::{
 };
 use templiqx_application::{
     CreatePackageRequest, DeleteContractRequest, DeletePackageRequest,
-    DeleteWorkspaceArtifactRequest, EvalCase, ListWorkspaceArtifactsRequest, MigrateLegacyRequest,
-    MigrationResult, ReadArtifactRequest, RenderDocumentRequest, RenderDocumentResult,
-    SignPackageRequest, TempliqxService, UpdatePackageRequest, VerifyPackageTrustRequest,
+    DeleteWorkspaceArtifactRequest, EvalCase, InspectDocumentRequest, InspectDocumentResult,
+    ListWorkspaceArtifactsRequest, MigrateLegacyRequest, MigrationResult, ReadArtifactRequest,
+    RenderDocumentRequest, RenderDocumentResult, SignPackageRequest, TempliqxService,
+    UpdatePackageRequest, VerifyPackageTrustRequest,
 };
 use templiqx_contracts::{
     API_VERSION, ArtifactContent, CompiledInteraction, CompiledMessage, Contract, ContractDiff,
@@ -42,7 +43,8 @@ use templiqx_contracts::{
     WorkspaceArtifact,
 };
 use templiqx_ports::{
-    ArtifactWorkspace, DocumentRenderer, LegacyImportAdapter, PackageStore, RuntimeAdapter,
+    ArtifactWorkspace, DocumentInspector, DocumentRenderer, LegacyImportAdapter, PackageStore,
+    RuntimeAdapter,
 };
 use tower::{BoxError, ServiceBuilder, timeout::TimeoutLayer};
 
@@ -129,6 +131,10 @@ pub trait HttpOperations: Send + Sync + 'static {
         &self,
         request: &RenderDocumentRequest,
     ) -> OperationEnvelope<RenderDocumentResult>;
+    fn inspect_document(
+        &self,
+        request: &InspectDocumentRequest,
+    ) -> OperationEnvelope<InspectDocumentResult>;
     fn list_workspace_artifacts(
         &self,
         request: &ListWorkspaceArtifactsRequest,
@@ -140,13 +146,14 @@ pub trait HttpOperations: Send + Sync + 'static {
     ) -> OperationEnvelope<WorkspaceArtifact>;
 }
 
-impl<S, W, R, L, D> HttpOperations for TempliqxService<S, W, R, L, D>
+impl<S, W, R, L, D, I> HttpOperations for TempliqxService<S, W, R, L, D, I>
 where
     S: PackageStore + Send + Sync + 'static,
     W: ArtifactWorkspace + Send + Sync + 'static,
     R: RuntimeAdapter + Send + Sync + 'static,
     L: LegacyImportAdapter + Send + Sync + 'static,
     D: DocumentRenderer + Send + Sync + 'static,
+    I: DocumentInspector + Send + Sync + 'static,
 {
     fn catalog(&self) -> OperationEnvelope<Vec<String>> {
         self.catalog()
@@ -302,6 +309,13 @@ where
         self.render_document(request)
     }
 
+    fn inspect_document(
+        &self,
+        request: &InspectDocumentRequest,
+    ) -> OperationEnvelope<InspectDocumentResult> {
+        self.inspect_document(request)
+    }
+
     fn list_workspace_artifacts(
         &self,
         request: &ListWorkspaceArtifactsRequest,
@@ -412,6 +426,7 @@ pub fn router(service: impl HttpOperations) -> Router {
         )
         .route("/operations/v1/legacy/migrate", post(migrate_legacy))
         .route("/operations/v1/documents/render", post(render_document))
+        .route("/operations/v1/documents/inspect", post(inspect_document))
         .route("/operations/v1/artifacts", get(list_workspace_artifacts))
         .route(
             "/operations/v1/artifacts/{*artifact}",
@@ -788,6 +803,17 @@ async fn render_document(
         Err(error) => return json_rejection("render_document", error),
     };
     envelope_response(state.service.render_document(&body))
+}
+
+async fn inspect_document(
+    State(state): State<HttpState>,
+    body: Result<Json<InspectDocumentRequest>, JsonRejection>,
+) -> Response {
+    let Json(body) = match body {
+        Ok(body) => body,
+        Err(error) => return json_rejection("inspect_document", error),
+    };
+    envelope_response(state.service.inspect_document(&body))
 }
 
 async fn list_workspace_artifacts(

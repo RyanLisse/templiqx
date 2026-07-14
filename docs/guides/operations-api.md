@@ -27,7 +27,7 @@ Compatible additions may add optional response fields or new operations under
 | `GET /operations/v1/health/ready` | Readiness |
 | `GET /operations/v1/openapi.yaml` | Checked-in OpenAPI 3.1 (YAML) |
 | `GET /operations/v1/openapi.json` | Same document (JSON) |
-| `GET /operations/v1/catalog` | Canonical 26-operation catalog |
+| `GET /operations/v1/catalog` | Canonical 27-operation catalog |
 
 ## Raw HTTP usage
 

@@ -138,6 +138,10 @@ pub struct PackageManifest {
     /// Empty is omitted to preserve existing package fingerprints.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub tool_contracts: BTreeMap<String, ToolContractRef>,
+    /// Locale identifiers for manifest-listed translation bundles under
+    /// `translations/<locale>.yaml`. Empty is omitted to preserve fingerprints.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub translations: Vec<String>,
 }
 
 /// Canonical signable package identity. Signatures are always removed from the
@@ -349,6 +353,11 @@ pub enum Filter {
     FormatDate,
     /// Group a numeric value for the render `context.locale`.
     FormatNumber,
+    /// Format a numeric value as a locale-aware currency string.
+    FormatCurrency,
+    /// Resolve a translation key from package translation bundles in
+    /// `context._templiqx_translations`.
+    Translate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

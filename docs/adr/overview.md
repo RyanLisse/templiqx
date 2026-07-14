@@ -18,6 +18,9 @@ explain *why* it is that way.
 | [Tool-contract references](tool-contract-refs) | Accepted (2026-07-12, design only) | Package-level `tool_contracts` table with compile-time `$ref` resolution |
 | [Streaming `RuntimeAdapter` port](streaming-runtime-port) | Implemented (2026-07-12) | `execute_streaming` port method, `StreamEvent` contracts, deterministic mock replay |
 | [ODT compatibility](odt-compatibility) | Accepted (2026-07-13, detect-only) | OpenDocument Text detection and migration scope; no render adapter in this slice |
+| [Document conversion](document-conversion) | Proposed (2026-07-14) | PDF/converter adapters are host-constructed; entry criteria before implementation |
+| [Compiled-artifact cache](compiled-artifact-cache) | Proposed (2026-07-14) | Cache only after benchmark evidence; host/store-backed keys |
+| [Legacy template import](legacy-template-import) | Proposed (2026-07-14) | Safe-subset legacy imports; helpers and dynamic partials unsupported |
 
 ## Conventions
 

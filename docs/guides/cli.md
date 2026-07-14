@@ -23,7 +23,7 @@ cargo run -p templiqx-cli -- --root examples render-document crm3 \
 
 Every successful or product-level failed operation prints an operation envelope. `--json` selects compact JSON; the default is pretty JSON. Exit status is `0` for an `ok` envelope, `2` for a diagnostic failure, and `1` only for CLI/I/O failures before an operation can be invoked.
 
-The default local composition includes the optional safe V5 DOCX adapter for `migrate` and `render-document`. Rust hosts that need a compiler-only dependency graph can call `compose_core`, which returns `TQX_UNSUPPORTED` for those two operations.
+The default local composition includes the optional safe V5 DOCX adapter for `migrate`, `render-document`, and `inspect-document`. Rust hosts that need a compiler-only dependency graph can call `compose_core`, which returns `TQX_UNSUPPORTED` for those document operations.
 
 The document source, template, and output arguments are always portable paths
 relative to the named package beneath `--root`; they are not host filesystem
@@ -35,7 +35,7 @@ the package-relative `canonical_template`, which can be passed directly to
 
 ## Agent workflows
 
-The same 26-operation catalog is exposed over MCP with identical envelopes, so
+The same 27-operation catalog is exposed over MCP with identical envelopes, so
 an agent can drive Templiqx entirely through catalog primitives. The MCP server
 also emits dynamic onboarding `instructions` at initialize (packages root,
 discovered package names, and the canonical tool sequence).

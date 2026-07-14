@@ -8,5 +8,8 @@ components: []
 evals: []
 migrations: []
 templates: []
+translations:
+  - en
+  - nl
 provenance:
   source: templiqx

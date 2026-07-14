@@ -2,7 +2,7 @@
 
 Templiqx has one canonical application service: `TempliqxService`. Rust hosts call it directly; the CLI and MCP server are thin adapters over the same operation methods and `OperationEnvelope` results. A human or an agent therefore receives the same validation, diagnostics, fingerprints, package artifacts, and compare-and-swap behavior.
 
-The rows below are exactly the operations in `templiqx_application::CAPABILITY_CATALOG` (26 operations):
+The rows below are exactly the operations in `templiqx_application::CAPABILITY_CATALOG` (27 operations):
 
 | Canonical operation | Rust application method | CLI command | MCP tool |
 | --- | --- | --- | --- |
@@ -24,6 +24,7 @@ The rows below are exactly the operations in `templiqx_application::CAPABILITY_C
 | `execute_contract` | `TempliqxService::execute_contract` | `templiqx execute <package> <contract>` | `execute_contract` |
 | `migrate_legacy` | `TempliqxService::migrate_legacy` | `templiqx migrate <package> <dialect> <source>` | `migrate_legacy` |
 | `render_document` | `TempliqxService::render_document` | `templiqx render-document <package> <template> <data> <output>` | `render_document` |
+| `inspect_document` | `TempliqxService::inspect_document` | `templiqx inspect-document <package> <dialect> <template>` | `inspect_document` |
 | `list_workspace_artifacts` | `TempliqxService::list_workspace_artifacts` | `templiqx list-workspace-artifacts <package>` | `list_workspace_artifacts` |
 | `read_artifact` | `TempliqxService::read_artifact` | `templiqx read-artifact <package> <path>` | `read_artifact` |
 | `delete_workspace_artifact` | `TempliqxService::delete_workspace_artifact` | `templiqx delete-workspace-artifact <package> <path>` | `delete_workspace_artifact` |
