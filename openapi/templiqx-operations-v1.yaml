@@ -70,9 +70,6 @@ paths:
             application/yaml:
               schema:
                 type: string
-            application/json:
-              schema:
-                type: string
   /operations/v1/openapi.json:
     get:
       tags: [Discovery]

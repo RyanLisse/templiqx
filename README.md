@@ -255,7 +255,7 @@ qlty check --fix --level=low
 just verify
 ```
 
-Use `just verify-deploy` for Docker, Kubernetes, chart, or supply-chain changes. See [`docs/guides/releasing.md`](docs/guides/releasing.md) for releases.
+Use `just verify-all` for Docker, Kubernetes, chart, image, or supply-chain changes. See [`docs/guides/releasing.md`](docs/guides/releasing.md) for releases.
 
 ## Project status
 

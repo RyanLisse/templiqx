@@ -1,8 +1,10 @@
 # Operations HTTP API
 
 The northbound Operations API is a thin HTTP transport over the same
-`TempliqxService` catalog used by Rust, CLI, and MCP. Every route returns an
-`OperationEnvelope`; transport adds request IDs, body limits, and timeouts only.
+`TempliqxService` catalog used by Rust, CLI, and MCP. Every **operation route**
+returns an `OperationEnvelope`; health (`/healthz`, `/operations/v1/health/*`)
+and OpenAPI discovery routes return their own lightweight shapes. Transport adds
+request IDs, body limits, and timeouts only.
 
 See also: [ADR: Operations HTTP API boundary](../architecture/adr-operations-http-api.md)
 and the checked-in contract at [`openapi/templiqx-operations-v1.yaml`](../../openapi/templiqx-operations-v1.yaml).
@@ -53,8 +55,9 @@ let service = /* host-owned TempliqxService composition */;
 serve(router(service), "0.0.0.0:8080".parse().unwrap()).await?;
 ```
 
-`serve` and `serve_from_root` drain in-flight requests on SIGINT/CTRL+C before
-exit. Production hosts may wrap the same router in their own process manager,
+`serve` and `serve_from_root` drain in-flight requests on SIGINT/CTRL+C or
+SIGTERM (Unix) before exit. Production hosts may wrap the same router in their
+own process manager,
 load balancer, and TLS termination.
 
 ## Transport metadata
