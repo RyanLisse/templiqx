@@ -1,22 +1,34 @@
 # Architecture overview
 
-Templiqx is built around a single canonical application service with thin transport adapters around it. The important design choice is that human-facing and agent-facing entrypoints share the same operations, envelopes, diagnostics, and fingerprints.
+Templiqx is organized around a single canonical application service with thin transport and host adapters around it. The important design choice is that human-facing and agent-facing entrypoints share the same operations, envelopes, diagnostics, and fingerprints.
 
 ## Core layering
 
-The repository follows this dependency direction:
+```mermaid
+flowchart TD
+    Contracts["templiqx-contracts
+DTOs, diagnostics, fingerprints"]
+    Ports["templiqx-ports
+host-facing traits"]
+    Core["templiqx-core
+parse / validate / render / compile"]
+    Adapters["adapters/*
+host-owned adapters"]
+    Application["templiqx-application
+actor-neutral capability catalog"]
+    Local["templiqx-local
+filesystem composition + CAS writes"]
+    CLI["templiqx-cli"]
+    MCP["templiqx-mcp"]
 
-```text
-contracts <- ports
-    ^          ^
-    |          |
-   core     adapters
-     \        /
-     application
-          |
-        local composition
-          |
-       CLI / MCP / tools
+    Contracts --> Core
+    Ports --> Core
+    Ports --> Adapters
+    Core --> Application
+    Adapters --> Application
+    Application --> Local
+    Local --> CLI
+    Local --> MCP
 ```
 
 Source evidence:
@@ -76,3 +88,8 @@ Watch for changes that accidentally move policy into core or create a second cod
 - boundary checks in `scripts/check-boundaries.sh`;
 - conformance tests in `crates/templiqx-conformance`;
 - CLI and MCP workspace tests, which verify the surfaces still route through the same service.
+
+## See also
+
+- [Agent-native & AI](/guides/agent-native) — how the shared catalog is exposed to agents over MCP.
+- [POC architecture](/architecture/poc) and [capability map](/architecture/capability-map) — the curated Handbook view of the same layering.

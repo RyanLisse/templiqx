@@ -2,6 +2,39 @@
 
 This repository's product domain is a portable AI interaction contract system with explicit compatibility fixtures. The main business concepts are the contract format, capability requirements, deterministic evaluation inputs/outputs, and the CRM3 conformance package that proves a staged document workflow.
 
+## Contract and fixture model
+
+```mermaid
+erDiagram
+    CONTRACT {
+        string format
+        string identifier
+        string capability_profile
+    }
+    CAPABILITY_PROFILE {
+        string name
+        string capabilities
+    }
+    CRM3_PACKAGE {
+        string package_root
+        string scenario_inventory
+    }
+    SCENARIO {
+        string id
+        string expected_result
+    }
+    LEGACY_FIXTURE {
+        string source_docx
+        string expected_report
+    }
+
+    CAPABILITY_PROFILE ||--o{ CONTRACT : governs
+    CRM3_PACKAGE ||--o{ SCENARIO : contains
+    CRM3_PACKAGE ||--o{ LEGACY_FIXTURE : includes
+    CONTRACT ||--o{ SCENARIO : exercised_by
+    LEGACY_FIXTURE ||--o{ SCENARIO : informs
+```
+
 ## Portable contract format
 
 The canonical contract format is `templiqx/v1alpha1` and is represented as strict YAML. Important properties:
