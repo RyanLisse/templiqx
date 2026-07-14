@@ -18,6 +18,7 @@ The on-demand OpenWiki GitHub Actions workflow refreshes the repository wiki. Do
   `qlty check --fix --level=low` before commit. Hosted CI is intentionally a
   minimal backstop; expensive verification is local-first.
 - Preserve CRM3 evidence-grounding in conformance scenarios — draft output must stay grounded in source fragments.
+- Use the repository skills in `.agents/skills/` when operating the application: `use-templiqx`, `author-templiqx-contracts`, and `test-templiqx-packages`. Claude Code aliases the same canonical files through `.claude/skills/`.
 
 ## Learned Workspace Facts
 

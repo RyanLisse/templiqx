@@ -1,0 +1,4 @@
+interface:
+  display_name: "Author Templiqx Contracts"
+  short_description: "Create and repair Templiqx contracts"
+  default_prompt: "Author or repair a strict templiqx/v1alpha1 contract and validate it."
