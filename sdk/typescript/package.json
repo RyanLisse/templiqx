@@ -1,0 +1,36 @@
+{
+  "name": "@blinqx/templiqx-adapter",
+  "version": "0.1.0",
+  "description": "Thin TypeScript transport adapter for the Templiqx Operations API",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./generated/operations-v1": {
+      "types": "./dist/generated/operations-v1.d.ts",
+      "import": "./dist/generated/operations-v1.js"
+    }
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "generate:check": "node scripts/generate.mjs --check",
+    "typecheck": "tsc --project tsconfig.json",
+    "build": "tsc --project tsconfig.build.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.10.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}
