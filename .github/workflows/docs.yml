@@ -19,7 +19,9 @@ permissions:
 
 concurrency:
   group: docs-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel an in-flight Pages deployment; a later push can supersede it
+  # safely, but cancelling during upload can leave the site mid-deploy.
+  cancel-in-progress: false
 
 jobs:
   deploy:
