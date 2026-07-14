@@ -4,9 +4,8 @@ verify:
     cargo test --workspace --all-features
     ./scripts/check-boundaries.sh
     ./scripts/check-ci-gates.sh
-    # qlty is skippable (SKIP_QLTY) so the fresh-clone reproducibility gate can
-    # omit it — linting is already covered by the dedicated `qlty` CI job, and a
-    # cold-clone qlty re-init blows the fresh-clone time budget. Local runs still lint.
+    # qlty is skippable (SKIP_QLTY) only for constrained cold-clone checks.
+    # Normal local verification and the minimal hosted CI backstop both lint.
     [ -n "${SKIP_QLTY:-}" ] || qlty check --level=low
 
 verify-deploy:
@@ -15,6 +14,9 @@ verify-deploy:
     ./scripts/kind-smoke.sh
     ./scripts/supply-chain-smoke.sh
     ./scripts/check-boundaries.sh
+
+# Complete local release gate. Hosted CI deliberately runs only `verify`.
+verify-all: verify verify-deploy
 
 fresh-clone:
     ./scripts/fresh-clone-verify.sh

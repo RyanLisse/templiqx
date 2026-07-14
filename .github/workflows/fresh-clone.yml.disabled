@@ -1,3 +1,5 @@
+# Disabled as a hosted workflow to avoid cold Docker/kind runner costs.
+# Run `just fresh-clone` locally when intentional cold reproducibility proof is needed.
 name: fresh-clone
 
 # Reproducibility gate: a clean checkout with empty Cargo/Docker caches must
