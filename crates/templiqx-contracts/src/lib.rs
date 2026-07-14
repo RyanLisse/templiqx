@@ -140,6 +140,23 @@ pub struct PackageManifest {
     pub tool_contracts: BTreeMap<String, ToolContractRef>,
 }
 
+/// Canonical signable package identity. Signatures are always removed from the
+/// embedded manifest and artifact paths are sorted by the map representation.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct PackageIdentity {
+    pub manifest: PackageManifest,
+    pub artifacts: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct PackageTrustReport {
+    pub identity_fingerprint: String,
+    pub strict: bool,
+    pub verified_key_ids: Vec<String>,
+}
+
 /// An immutable, content-addressed tool/function schema shared across contracts.
 /// Identity is the `fingerprint`; editing the schema yields a new fingerprint so
 /// pinned references never resolve to silently changed definitions.

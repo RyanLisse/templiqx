@@ -19,7 +19,7 @@ production data before claiming production readiness.
 | Proposal / approval / audit | No ownership | Consumer-contract harness | Owner per ADR-0016 |
 | Retry / workflow | Typed failures | Scripted attempts | ModelGateway / BullMQ per ADR-0006 |
 | Document rendering | Port + V5 adapter | DOCX baseline | Storage, permissions, lifecycle |
-| Kubernetes runtime | OCI runner artifacts | Chart / Job / mock gateway | Host chart or sidecar integration |
+| Kubernetes runtime | Separate CLI/MCP artifacts | Synthetic conformance image, 8 Jobs, mock gateway | Host chart or sidecar integration |
 
 ## ModelGateway consumer contract
 
@@ -32,7 +32,7 @@ Scenarios live under `examples/crm3/scenarios/` with inventory at
 `examples/crm3/scenarios/inventory.json`. Each scenario has a manifest under
 `examples/crm3/scenarios/<id>/manifest.json`.
 
-Key scenarios for adapter parity:
+The complete adapter-parity inventory is:
 
 | Scenario | Purpose |
 |----------|---------|
@@ -40,7 +40,9 @@ Key scenarios for adapter parity:
 | `draft-with-citations` | Grounded drafting with evidence links |
 | `invalid-output-schema` | Schema rejection before downstream steps |
 | `ambiguous-date` | Typed runtime failure (no invented dates) |
+| `contradictory-evidence` | Permanent failure on conflicting evidence |
 | `missing-required-field` | Missing field handling |
+| `missing-notice-date` | Invalid runtime response for an absent notice date |
 | `docx-unresolved-reference` | DOCX merge-field edge case |
 
 ### HTTP conformance runner
@@ -53,9 +55,12 @@ export TEMPLIQX_RUNTIME_SCENARIO=intake-document-01
 templiqx-http-conformance
 ```
 
-Compare receipt fingerprints with golden `scripts/golden/http-conformance.json`
-after normalizing JSON. The mock gateway (`tools/templiqx-mock-gateway`) is the
-reference transport; it must not ship as a production adapter.
+Run every ID from the inventory, not a hand-maintained subset. The runner checks
+the declared status, diagnostic, schema result, output fingerprint, and receipt
+fingerprint. Compare the normalized aggregate receipt with
+`scripts/golden/http-conformance.json`. The mock gateway
+(`tools/templiqx-mock-gateway`) is the reference transport; it must not ship as
+a production adapter.
 
 ### Rust / CLI / MCP parity
 
@@ -92,9 +97,29 @@ When CRM3 host integration is ready:
 |----------|----------|----------|
 | CLI OCI image | `Dockerfile` target `templiqx-cli` | Sidecar or Job runner |
 | MCP OCI image | `Dockerfile` target `templiqx-mcp` | Agent stdio transport |
-| Helm chart | `charts/templiqx/` | Conformance Job + mock gateway proof |
+| Synthetic conformance OCI image | `Dockerfile` target `templiqx-conformance` | Contains mock gateway, HTTP runner, and fixtures; never a product service |
+| Helm chart | `charts/templiqx/` | Inventory-driven 8-Job conformance + mock gateway proof |
 | Compose | `deploy/compose.yml` | Local adapter smoke |
-| Supply chain | `scripts/supply-chain-smoke.sh` | SBOM, Grype, provenance verify |
+| Supply chain / release | `scripts/supply-chain-smoke.sh`, `.github/workflows/release.yml` | SBOM/provenance, immutable digest and Cosign verification |
+
+## Package trust handoff
+
+Before handing a package to a host, export its canonical identity and run strict
+verification:
+
+```sh
+templiqx --root packages export-package-identity crm3
+export TEMPLIQX_PACKAGE_SIGNING_KEY="<local-or-ci-secret>"
+templiqx --root packages sign-package crm3 --key-id ci \
+  --expected-fingerprint "<manifest-fingerprint-from-export>"
+templiqx --root packages verify-package-trust crm3 --strict
+```
+
+The environment key and embedded `sha256-keyed` signature are development/CI
+controls only. Hosts must not treat them as production publisher identity.
+Production delivery separately verifies the OCI image digest and its keyless
+Cosign signature/attestation. Do not put signing keys in package files, command
+arguments, MCP requests, logs, receipts, or operation envelopes.
 
 ## Verification entrypoints
 

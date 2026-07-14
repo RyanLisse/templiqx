@@ -6,6 +6,9 @@ Accepted (2026-07-12). The optional Langfuse adapter this doc describes merged
 into `main` the same day (`adapters/templiqx-runtime-langfuse`, `6da11b2`);
 live-trace verification against a real Langfuse project still needs a host, so
 R10 implementation proof stays host-gated while the seam design is complete.
+Deterministic loopback tests do prove local request mapping, trace-outage
+isolation, response bounds, failure normalization, and credential-safe
+diagnostics without making external calls.
 
 ## What Templiqx core emits today
 
@@ -55,12 +58,19 @@ outside the package graph the conformance suite exercises.
 
 ```rust
 // host-owned composition root, not in this repo's default binaries
-let adapter = TemplarLangfuseAdapter::new(LangfuseConfig {
-    public_key: env("LANGFUSE_PUBLIC_KEY"),
-    secret_key: env("LANGFUSE_SECRET_KEY"),
-    endpoint: env("LANGFUSE_BASE_URL"),
-    model_endpoint: env("MODEL_GATEWAY_URL"),
-});
+let adapter = LangfuseTracedRuntime::new(
+    ModelConfig {
+        base_url: env("MODEL_GATEWAY_URL"),
+        api_key: env("MODEL_GATEWAY_API_KEY"),
+        model: env("MODEL_ID"),
+        timeout,
+    },
+    LangfuseConfig {
+        host: env("LANGFUSE_BASE_URL"),
+        public_key: env("LANGFUSE_PUBLIC_KEY"),
+        secret_key: env("LANGFUSE_SECRET_KEY"),
+    },
+)?;
 let service = TempliqxService::new(storage, adapter, /* ... */);
 ```
 
@@ -82,6 +92,10 @@ correlation-ID plumbing.
   adapter can emit incremental Langfuse spans per `StreamEvent::Delta`
   instead of one span per `Complete`. No core change required for that
   either.
+- Model HTTP responses are capped at 2 MiB. Provider response bodies never
+  enter `RuntimeFailure.detail`; configured credentials are redacted before
+  diagnostics and their fingerprints are created. Numeric retry hints are
+  normalized into `retry_after_ms`.
 
 ## Alternatives considered
 

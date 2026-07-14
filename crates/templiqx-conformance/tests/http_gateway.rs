@@ -9,7 +9,8 @@ use std::{
     time::{Duration, Instant},
 };
 use templiqx_contracts::{CompiledInteraction, CompiledMessage, ExecutionRequest, Role};
-use templiqx_ports::{RuntimeAdapter, RuntimeFailureCode};
+use templiqx_mock::{failure_receipt_fingerprint, load_inventory, success_receipt_fingerprint};
+use templiqx_ports::{PortError, RuntimeAdapter, RuntimeFailureCode};
 use templiqx_runtime_http_mock::HttpMockRuntime;
 
 fn request() -> ExecutionRequest {
@@ -86,6 +87,19 @@ fn gateway() -> Result<(Gateway, String)> {
     anyhow::bail!("mock gateway did not start")
 }
 
+fn raw_status(url: &str, request: &str) -> Result<u16> {
+    let mut stream = TcpStream::connect(url.strip_prefix("http://").context("HTTP URL")?)?;
+    stream.write_all(request.as_bytes())?;
+    let mut response = String::new();
+    std::io::Read::read_to_string(&mut stream, &mut response)?;
+    response
+        .lines()
+        .next()
+        .and_then(|line| line.split_whitespace().nth(1))
+        .and_then(|status| status.parse().ok())
+        .context("HTTP response status")
+}
+
 #[test]
 fn real_gateway_transport_asserts_success_and_runtime_failure() -> Result<()> {
     let (_gateway, url) = gateway()?;
@@ -103,6 +117,127 @@ fn real_gateway_transport_asserts_success_and_runtime_failure() -> Result<()> {
         error
             .to_string()
             .contains(RuntimeFailureCode::InvalidResponse.as_str())
+    );
+    Ok(())
+}
+
+#[test]
+fn every_inventory_scenario_matches_its_expectation_over_real_http() -> Result<()> {
+    let (_gateway, url) = gateway()?;
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/crm3/scenarios");
+    let inventory = load_inventory(root.join("inventory.json"), "crm3")?;
+    ensure!(
+        inventory.scenarios.len() == 8,
+        "CRM3 HTTP matrix must contain exactly eight scenarios"
+    );
+
+    for entry in inventory.scenarios {
+        let runtime = HttpMockRuntime::with_default_timeout(&url, &entry.id)?;
+        match runtime.execute(&request()) {
+            Ok(receipt) => {
+                ensure!(
+                    receipt.output.is_null(),
+                    "{} returned payload bytes",
+                    entry.id
+                );
+                let (status, code, fingerprint) = if receipt.output_schema_valid {
+                    ("success", None, success_receipt_fingerprint(&receipt))
+                } else {
+                    let code = "TQX_OUTPUT_SCHEMA";
+                    (
+                        "failure",
+                        Some(code),
+                        failure_receipt_fingerprint(code, &receipt.output_fingerprint, None),
+                    )
+                };
+                ensure!(
+                    entry.expectation.status == status,
+                    "{} status mismatch",
+                    entry.id
+                );
+                ensure!(
+                    entry.expectation.diagnostic_code.as_deref() == code,
+                    "{} diagnostic mismatch",
+                    entry.id
+                );
+                ensure!(
+                    entry.expectation.output_schema_valid == Some(receipt.output_schema_valid),
+                    "{} schema expectation mismatch",
+                    entry.id
+                );
+                if let Some(expected) = entry.expectation.output_fingerprint.as_deref() {
+                    ensure!(
+                        receipt.output_fingerprint == expected,
+                        "{} output fingerprint mismatch",
+                        entry.id
+                    );
+                }
+                ensure!(
+                    entry.expectation.receipt_fingerprint == fingerprint,
+                    "{} receipt fingerprint mismatch",
+                    entry.id
+                );
+            }
+            Err(PortError::RuntimeFailure { failure, .. }) => {
+                let fingerprint = failure_receipt_fingerprint(
+                    failure.code.as_str(),
+                    &failure.fingerprint,
+                    failure.retry_after_ms,
+                );
+                ensure!(
+                    entry.expectation.status == "failure",
+                    "{} unexpectedly failed",
+                    entry.id
+                );
+                ensure!(
+                    entry.expectation.diagnostic_code.as_deref() == Some(failure.code.as_str()),
+                    "{} failure code mismatch",
+                    entry.id
+                );
+                ensure!(
+                    entry.expectation.output_schema_valid.is_none(),
+                    "{} failure declared schema output",
+                    entry.id
+                );
+                ensure!(
+                    entry.expectation.receipt_fingerprint == fingerprint,
+                    "{} failure receipt fingerprint mismatch",
+                    entry.id
+                );
+            }
+            Err(error) => anyhow::bail!("{} returned non-runtime error: {error}", entry.id),
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn gateway_rejects_unlisted_malformed_and_oversized_requests() -> Result<()> {
+    let (_gateway, url) = gateway()?;
+    ensure!(
+        raw_status(
+            &url,
+            "POST /v1/scenarios/not-in-inventory/execute HTTP/1.1\r\ncontent-length: 2\r\nconnection: close\r\n\r\n{}"
+        )? == 404
+    );
+    ensure!(
+        raw_status(
+            &url,
+            "POST /v1/scenarios/intake-document-01/execute HTTP/1.1\r\ncontent-length: 1\r\nconnection: close\r\n\r\n{"
+        )? == 400
+    );
+    ensure!(
+        raw_status(
+            &url,
+            "POST /v1/scenarios/intake-document-01/execute HTTP/1.1\r\ncontent-length: 1048577\r\nconnection: close\r\n\r\n"
+        )? == 413
+    );
+    ensure!(
+        raw_status(
+            &url,
+            "PUT /v1/scenarios/intake-document-01/execute HTTP/1.1\r\ncontent-length: 0\r\nconnection: close\r\n\r\n"
+        )? == 404
     );
     Ok(())
 }

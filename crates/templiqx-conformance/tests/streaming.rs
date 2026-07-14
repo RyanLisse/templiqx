@@ -172,6 +172,83 @@ fn mid_stream_failure_emits_stable_failed_code() -> Result<()> {
     Ok(())
 }
 
+fn validate_event_order(events: &[StreamEvent]) -> Result<()> {
+    ensure!(!events.is_empty(), "stream must contain a terminal event");
+    let terminals: Vec<_> = events
+        .iter()
+        .enumerate()
+        .filter(|(_, event)| matches!(event, StreamEvent::Complete(_) | StreamEvent::Failed { .. }))
+        .collect();
+    ensure!(
+        terminals.len() == 1,
+        "stream must contain exactly one terminal event"
+    );
+    ensure!(
+        terminals[0].0 == events.len() - 1,
+        "terminal event must be last"
+    );
+    ensure!(
+        events[..events.len() - 1].iter().all(|event| matches!(
+            event,
+            StreamEvent::Delta { .. } | StreamEvent::ToolCallDelta { .. }
+        )),
+        "only delta variants may precede the terminal event"
+    );
+    Ok(())
+}
+
+#[test]
+fn stream_contract_covers_every_variant_and_rejects_invalid_ordering() -> Result<()> {
+    let receipt = ExecutionReceipt {
+        adapter: AdapterDescriptor {
+            id: "provider".into(),
+            version: "1".into(),
+            capabilities: vec![],
+        },
+        request_fingerprint: "request".into(),
+        output_fingerprint: "output".into(),
+        output: serde_json::json!({"ok":true}),
+        output_schema_valid: true,
+    };
+    let valid = vec![
+        StreamEvent::Delta {
+            text: "partial".into(),
+        },
+        StreamEvent::ToolCallDelta {
+            name: "lookup".into(),
+            arguments_fragment: "{}".into(),
+        },
+        StreamEvent::Complete(receipt.clone()),
+    ];
+    validate_event_order(&valid)?;
+    validate_event_order(&[StreamEvent::Failed {
+        code: "TQX_RUNTIME_TIMEOUT".into(),
+        message: "timed out".into(),
+    }])?;
+
+    for invalid in [
+        vec![
+            StreamEvent::Complete(receipt.clone()),
+            StreamEvent::Delta {
+                text: "late".into(),
+            },
+        ],
+        vec![
+            StreamEvent::Complete(receipt.clone()),
+            StreamEvent::Complete(receipt.clone()),
+        ],
+        vec![StreamEvent::Delta {
+            text: "unterminated".into(),
+        }],
+    ] {
+        ensure!(
+            validate_event_order(&invalid).is_err(),
+            "invalid stream ordering was accepted"
+        );
+    }
+    Ok(())
+}
+
 /// U7: when stream=true, envelope carries stream_events; when false, field is empty.
 #[test]
 fn execute_contract_stream_events_only_when_streaming() -> Result<()> {

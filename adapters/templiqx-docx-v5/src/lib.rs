@@ -1685,52 +1685,132 @@ mod tests {
         );
     }
 
+    fn corpus_fixture(id: &str) -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/legacy-corpus/fixtures")
+            .join(id)
+    }
+
+    fn corpus_json(directory: &Path, name: &str) -> Value {
+        serde_json::from_slice(&fs::read(directory.join(name)).unwrap()).unwrap()
+    }
+
     #[test]
-    fn legacy_corpus_v1_and_v2_expectations_match_reports() {
-        let corpus =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/legacy-corpus/fixtures");
-        let v1 = corpus.join("v1-beanshell-detected");
-        let v2 = corpus.join("v2-marker-detected");
-        let v1_expected: Value =
-            serde_json::from_slice(&fs::read(v1.join("expected-report.json")).unwrap()).unwrap();
-        let v2_expected: Value =
-            serde_json::from_slice(&fs::read(v2.join("expected-report.json")).unwrap()).unwrap();
+    fn legacy_corpus_reports_are_exact() {
+        for id in [
+            "v1-beanshell-detected",
+            "v2-marker-detected",
+            "v5-nested-table",
+            "v5-header-footer",
+            "v5-alias-collision-missing",
+        ] {
+            let directory = corpus_fixture(id);
+            let actual = DocxV5Adapter::default()
+                .analyze(
+                    &directory.join("source.docx"),
+                    &corpus_json(&directory, "aliases.json"),
+                )
+                .unwrap();
+            let actual = serde_json::to_value(actual).unwrap();
+            assert_eq!(
+                actual,
+                corpus_json(&directory, "expected-report.json"),
+                "compatibility report drifted for fixture `{id}`"
+            );
+        }
+    }
 
-        let dir = TempDir::new().unwrap();
-        let v1_source = dir.path().join("v1.docx");
-        fixture(
-            &v1_source,
-            r#"<w:document xmlns:w="w"><w:body><w:p><w:r><w:t>BeanShell bsh.eval</w:t></w:r></w:p></w:body></w:document>"#,
-            None,
-        );
-        let v1_report = DocxV5Adapter::default()
-            .analyze(&v1_source, &json!({}))
-            .unwrap();
-        assert!(
-            v1_expected["categories"]
-                .as_array()
+    #[test]
+    fn legacy_corpus_supported_render_parity_and_missing_reference_are_exact() {
+        for id in [
+            "v5-nested-table",
+            "v5-header-footer",
+            "v5-alias-collision-missing",
+        ] {
+            let directory = corpus_fixture(id);
+            let temporary = TempDir::new().unwrap();
+            let source = temporary.path().join("source.docx");
+            fs::copy(directory.join("source.docx"), &source).unwrap();
+            let adapter = DocxV5Adapter::default();
+            let migrated = adapter
+                .migrate(&LegacyImportRequest {
+                    dialect: DIALECT.into(),
+                    source,
+                    aliases: corpus_json(&directory, "aliases.json"),
+                })
                 .unwrap()
-                .iter()
-                .any(|category| category == "unsafe")
-        );
-        assert!(v1_report.unsafe_constructs >= 1);
+                .canonical_template
+                .unwrap();
+            let output = temporary.path().join("rendered.docx");
+            let rendered = adapter
+                .render_document(&DocumentRenderRequest {
+                    template: migrated,
+                    data: corpus_json(&directory, "render-data.json"),
+                    output: output.clone(),
+                })
+                .unwrap();
+            let report: RenderReport = serde_json::from_value(rendered.report).unwrap();
+            let expected_replacements = if id == "v5-header-footer" { 3 } else { 2 };
+            assert_eq!(report.replacements, expected_replacements, "fixture `{id}`");
+            if id == "v5-alias-collision-missing" {
+                assert_eq!(
+                    report.unresolved,
+                    vec![UnresolvedReference {
+                        part: "word/document.xml".into(),
+                        reference: "missing.value".into(),
+                        construct: "mergefield".into(),
+                    }]
+                );
+            } else {
+                assert!(report.unresolved.is_empty(), "fixture `{id}`");
+            }
+            let parity = adapter
+                .compare_normalized(&output, &directory.join("expected-render.docx"))
+                .unwrap();
+            assert!(parity.equal, "fixture `{id}` parity: {parity:#?}");
+        }
+    }
 
-        let v2_source = dir.path().join("v2.docx");
-        fixture(
-            &v2_source,
-            r#"<w:document xmlns:w="w"><w:body><w:p><w:r><w:t>${v2:legacy-marker}</w:t></w:r></w:p></w:body></w:document>"#,
-            None,
-        );
-        let v2_report = DocxV5Adapter::default()
-            .analyze(&v2_source, &json!({}))
-            .unwrap();
+    #[test]
+    fn legacy_corpus_unsafe_migration_and_hostile_archives_fail_closed() {
+        let unsafe_fixture = corpus_fixture("v1-beanshell-detected");
+        let error = DocxV5Adapter::default()
+            .migrate(&LegacyImportRequest {
+                dialect: DIALECT.into(),
+                source: unsafe_fixture.join("source.docx"),
+                aliases: json!({}),
+            })
+            .unwrap_err();
+        assert!(matches!(error, PortError::Unsupported(_)));
+
+        for id in ["invalid-corrupt", "invalid-traversal"] {
+            let directory = corpus_fixture(id);
+            let expected = corpus_json(&directory, "expected-error.json");
+            let error = DocxV5Adapter::default()
+                .analyze(&directory.join("source.docx"), &json!({}))
+                .unwrap_err();
+            assert!(
+                error
+                    .to_string()
+                    .contains(expected["contains"].as_str().unwrap()),
+                "unexpected `{id}` error: {error}"
+            );
+        }
+
+        let oversized = corpus_fixture("invalid-oversized-entry");
+        let expected = corpus_json(&oversized, "expected-error.json");
+        let adapter = DocxV5Adapter::new(Limits {
+            max_entry_bytes: expected["max_entry_bytes"].as_u64().unwrap(),
+            ..Limits::default()
+        });
+        let error = adapter
+            .analyze(&oversized.join("source.docx"), &json!({}))
+            .unwrap_err();
         assert!(
-            v2_expected["categories"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .any(|category| category == "unsupported")
+            error
+                .to_string()
+                .contains(expected["contains"].as_str().unwrap()),
+            "unexpected oversized error: {error}"
         );
-        assert!(v2_report.unsupported >= 1);
     }
 }

@@ -27,17 +27,36 @@ Production deployment should provide real package stores, runtime adapters,
 document adapters and host policy at the edge. The same Templiqx service methods
 must remain the semantic boundary for humans and agents.
 
+The deployable artifacts are intentionally split:
+
+- `templiqx-cli`: minimal standalone compiler product image;
+- `templiqx-mcp`: minimal stdio MCP product image;
+- `templiqx-conformance`: synthetic fixtures, HTTP runner, and mock gateway.
+
+Boundary and image-content checks keep mocks out of the two product images. The
+Compose and Helm/kind paths enumerate all 8 entries from the scenario inventory;
+the chart renders one Job per scenario. The conformance image and chart are test
+artifacts, not a CRM3 production service.
+
 ## Supply chain
 
-CI builds the CLI image with BuildKit provenance and SBOM attestation. Consumers
-verify artifacts with:
+Repository CI checks local SBOM/digest policy with:
 
 ```sh
 ./scripts/supply-chain-smoke.sh
 ```
 
-The smoke script asserts SBOM generation, Grype high/critical gate, and (in CI)
-`artifacts/supply-chain/build-metadata.json` plus `provenance.json` linkage.
+The smoke script asserts SBOM generation, Grype high/critical policy, and (in
+CI) `artifacts/supply-chain/build-metadata.json` plus `provenance.json` linkage.
+The tag-gated release workflow separately builds all three OCI targets for
+linux/amd64 and linux/arm64 with BuildKit SBOM and max-mode provenance, signs
+and verifies the pulled immutable digests with keyless Cosign, pins the
+conformance chart to that verified digest, and packages, checksums, signs, and
+verifies the Helm chart before creating a GitHub Release.
+Until that workflow succeeds for a tag, the repository contains a verified
+release definition rather than a published-release claim. See
+[`../guides/releasing.md`](../guides/releasing.md).
+
 Package manifest signing is documented in
 [`adr-package-trust.md`](adr-package-trust.md). Product-direction seams
 (tool-contract refs, streaming port, observability) are in
@@ -46,4 +65,3 @@ Package manifest signing is documented in
 [`observability.md`](observability.md).
 
 Host integration procedures: [`../guides/host-integration.md`](../guides/host-integration.md).
-

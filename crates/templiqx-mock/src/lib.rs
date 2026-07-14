@@ -31,6 +31,20 @@ pub struct ScenarioInventory {
 pub struct ScenarioInventoryEntry {
     pub id: String,
     pub manifest: String,
+    pub expectation: ScenarioExpectation,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ScenarioExpectation {
+    pub status: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub diagnostic_code: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_schema_valid: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_fingerprint: Option<String>,
+    pub receipt_fingerprint: String,
 }
 
 pub fn load_inventory(
@@ -108,6 +122,36 @@ pub fn load_inventory(
                 message: format!(
                     "inventory id '{}' does not match manifest id '{}'",
                     entry.id, manifest.id
+                ),
+            });
+        }
+        let expected_schema_valid = manifest
+            .steps
+            .iter()
+            .find_map(|step| {
+                (step.kind == ScenarioStepKind::RuntimeSuccess)
+                    .then_some(step.output_schema_valid.unwrap_or(true))
+            })
+            .or_else(|| {
+                manifest.events.as_ref().and_then(|events| {
+                    events.iter().find_map(|event| match event {
+                        ScenarioStreamEvent::Finish {
+                            output_schema_valid,
+                            ..
+                        } => Some(*output_schema_valid),
+                        _ => None,
+                    })
+                })
+            });
+        if entry.expectation.status != manifest.expected_status
+            || entry.expectation.diagnostic_code != manifest.expected_failure
+            || entry.expectation.output_schema_valid != expected_schema_valid
+            || entry.expectation.output_fingerprint != manifest.expected_output_fingerprint
+        {
+            return Err(ScenarioError::Invalid {
+                message: format!(
+                    "inventory expectation for '{}' does not match its manifest",
+                    entry.id
                 ),
             });
         }

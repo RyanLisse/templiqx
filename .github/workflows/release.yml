@@ -1,0 +1,306 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Workspace version to validate in a non-publishing dry run"
+        required: false
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  GRYPE_VERSION: v0.86.1
+
+jobs:
+  prepare:
+    name: Validate source and release version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      namespace: ${{ steps.release.outputs.namespace }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          toolchain: "1.88.0"
+          components: rustfmt, clippy
+      - name: Install boundary-check dependencies
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - name: Resolve and validate release version
+        id: release
+        env:
+          DISPATCH_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          elif [[ -n "$DISPATCH_VERSION" ]]; then
+            version="$DISPATCH_VERSION"
+          else
+            version="$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\([^"]*\)"/\1/p' Cargo.toml)"
+          fi
+          ./scripts/release-validate.sh "$version"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+          echo "namespace=${GITHUB_REPOSITORY_OWNER,,}" >>"$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then
+            echo "prerelease=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >>"$GITHUB_OUTPUT"
+          fi
+      - name: Run repository-owned release gates
+        env:
+          SKIP_QLTY: "1"
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets --all-features -- -D warnings
+          cargo test --workspace --all-features
+          ./scripts/check-boundaries.sh
+          ./scripts/check-ci-gates.sh
+      - name: Reject generated or lockfile drift
+        run: git diff --exit-code && test -z "$(git status --porcelain)"
+
+  build-images:
+    name: Build ${{ matrix.target }} (${{ github.event_name == 'push' && 'publish' || 'dry run' }})
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - templiqx-cli
+          - templiqx-mcp
+          - templiqx-conformance
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Log in to GHCR for a validated tag
+        if: github.event_name == 'push'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build multi-platform image with registry attestations
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          target: ${{ matrix.target }}
+          platforms: linux/amd64,linux/arm64
+          pull: true
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ needs.prepare.outputs.namespace }}/${{ matrix.target }}:${{ needs.prepare.outputs.version }}
+            ${{ needs.prepare.outputs.prerelease == 'false' && format('{0}/{1}/{2}:latest', env.REGISTRY, needs.prepare.outputs.namespace, matrix.target) || '' }}
+          labels: |
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          build-args: |
+            VERSION=${{ needs.prepare.outputs.version }}
+            VCS_REF=${{ github.sha }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=release-${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.target }}
+      - name: Scan the published immutable image for high-severity vulnerabilities
+        if: github.event_name == 'push'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ needs.prepare.outputs.namespace }}/${{ matrix.target }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          version="${GRYPE_VERSION#v}"
+          archive="grype_${version}_linux_amd64.tar.gz"
+          base="https://github.com/anchore/grype/releases/download/${GRYPE_VERSION}"
+          curl -sSfL "$base/$archive" -o "/tmp/$archive"
+          curl -sSfL "$base/grype_${version}_checksums.txt" -o /tmp/grype-checksums.txt
+          grep "  ${archive}$" /tmp/grype-checksums.txt | (cd /tmp && sha256sum -c -)
+          sudo tar -C /usr/local/bin -xzf "/tmp/$archive" grype
+          mkdir -p artifacts/release
+          grype "${IMAGE}@${DIGEST}" --output json >"artifacts/release/${{ matrix.target }}-grype.json"
+          grype "${IMAGE}@${DIGEST}" --fail-on high --output table
+      - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+        if: github.event_name == 'push'
+      - name: Sign and verify the pulled immutable digest
+        if: github.event_name == 'push'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ needs.prepare.outputs.namespace }}/${{ matrix.target }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          CERTIFICATE_IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/tags/${{ github.ref_name }}
+        run: |
+          ./scripts/release-verify-oci.sh "$IMAGE" "$VERSION" "$DIGEST" "$CERTIFICATE_IDENTITY"
+          mkdir -p artifacts/release
+          printf '%s@%s\n' "$IMAGE" "$DIGEST" >"artifacts/release/${{ matrix.target }}.digest"
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        if: github.event_name == 'push'
+        with:
+          name: release-${{ matrix.target }}-digest
+          path: artifacts/release/${{ matrix.target }}.digest
+          if-no-files-found: error
+
+  package-chart:
+    name: Package and checksum conformance chart
+    needs: [prepare, build-images]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        if: github.event_name == 'push'
+        with:
+          name: release-templiqx-conformance-digest
+          path: artifacts/conformance-digest
+      - name: Package chart and verify checksum
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          NAMESPACE: ${{ needs.prepare.outputs.namespace }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/release
+          repository="ghcr.io/${NAMESPACE}/templiqx-conformance"
+          if [[ "$EVENT_NAME" == push ]]; then
+            immutable="$(<artifacts/conformance-digest/templiqx-conformance.digest)"
+            [[ "$immutable" == "$repository@sha256:"* ]] || {
+              printf 'release chart: invalid conformance digest reference %s\n' "$immutable" >&2
+              exit 1
+            }
+            digest="${immutable##*@}"
+          else
+            # A manual workflow is non-publishing. Exercise digest-aware chart
+            # packaging with a well-formed sentinel; tag releases replace it
+            # with the built, registry-resolved, and verified OCI digest above.
+            digest="sha256:$(printf '0%.0s' {1..64})"
+          fi
+          cp -R charts/templiqx "${RUNNER_TEMP}/templiqx-chart"
+          ruby -ryaml -e '
+            path, repository, version, digest = ARGV
+            values = YAML.load_file(path)
+            values.fetch("image")["repository"] = repository
+            values.fetch("image")["tag"] = version
+            values.fetch("image")["digest"] = digest
+            values.fetch("mock")["enabled"] = true
+            values.fetch("mock").fetch("gateway")["enabled"] = true
+            values.fetch("conformance")["scenarios"] = %w[
+              ambiguous-date contradictory-evidence docx-unresolved-reference
+              draft-with-citations intake-document-01 invalid-output-schema
+              missing-notice-date missing-required-field
+            ]
+            File.write(path, YAML.dump(values))
+          ' "${RUNNER_TEMP}/templiqx-chart/values.yaml" \
+            "$repository" "$VERSION" "$digest"
+          helm lint "${RUNNER_TEMP}/templiqx-chart"
+          helm package "${RUNNER_TEMP}/templiqx-chart" \
+            --version "$VERSION" \
+            --app-version "$VERSION" \
+            --destination artifacts/release
+          ./scripts/verify-packaged-chart.sh \
+            "artifacts/release/templiqx-${VERSION}.tgz" \
+            "$repository" "$VERSION" "$digest"
+          cd artifacts/release
+          sha256sum "templiqx-${VERSION}.tgz" >SHA256SUMS
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: release-chart-${{ needs.prepare.outputs.version }}
+          path: artifacts/release/
+          if-no-files-found: error
+
+  publish-release:
+    name: Sign chart and create GitHub Release
+    if: github.event_name == 'push'
+    needs: [prepare, build-images, package-chart]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: release-*
+          path: artifacts/release
+          merge-multiple: true
+      - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+      - name: Verify checksums and sign the chart
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          CERTIFICATE_IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/tags/${{ github.ref_name }}
+        working-directory: artifacts/release
+        run: |
+          set -euo pipefail
+          sha256sum -c SHA256SUMS
+          chart="templiqx-${VERSION}.tgz"
+          cosign sign-blob --yes --bundle "${chart}.sigstore.json" "$chart"
+          cosign verify-blob \
+            --bundle "${chart}.sigstore.json" \
+            --certificate-identity "$CERTIFICATE_IDENTITY" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            "$chart"
+          jq -n \
+            --arg version "$VERSION" \
+            --rawfile cli templiqx-cli.digest \
+            --rawfile mcp templiqx-mcp.digest \
+            --rawfile conformance templiqx-conformance.digest \
+            '{api_version:"templiqx/release/v1",version:$version,images:{cli:($cli|rtrimstr("\n")),mcp:($mcp|rtrimstr("\n")),conformance:($conformance|rtrimstr("\n"))}}' \
+            >release-manifest.json
+          sha256sum \
+            "$chart" \
+            "${chart}.sigstore.json" \
+            SHA256SUMS \
+            ./*.digest \
+            release-manifest.json \
+            >RELEASE-SHA256SUMS
+          sha256sum -c RELEASE-SHA256SUMS
+      - name: Create immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+        run: |
+          prerelease_args=()
+          if [[ "$PRERELEASE" == true ]]; then
+            prerelease_args+=(--prerelease)
+          fi
+          cat >artifacts/release/RELEASE-NOTES.md <<EOF
+          Templiqx ${VERSION} publishes separate CLI, MCP, and synthetic-conformance images.
+          Image references are recorded by immutable digest in release-manifest.json; BuildKit
+          SBOM and max-mode provenance attestations are attached to each OCI index and every
+          digest is signed keylessly with the release workflow identity.
+
+          This release establishes Templiqx-owned compiler and conformance readiness. Real CRM3
+          ModelGateway wiring, tenant/auth/retrieval/approval policy, sanitized customer-data
+          validation, and final opco acceptance remain host-owned and are not claimed here.
+          EOF
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            "${prerelease_args[@]}" \
+            --title "Templiqx ${VERSION}" \
+            --notes-file artifacts/release/RELEASE-NOTES.md \
+            artifacts/release/templiqx-*.tgz \
+            artifacts/release/templiqx-*.sigstore.json \
+            artifacts/release/*.digest \
+            artifacts/release/release-manifest.json \
+            artifacts/release/SHA256SUMS \
+            artifacts/release/RELEASE-SHA256SUMS

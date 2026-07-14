@@ -148,3 +148,40 @@ fn explicit_workspace_matches_rust_artifact_contract() -> Result<()> {
     ensure!(!packages.path().join("crm3/explicit/rendered.docx").exists());
     Ok(())
 }
+
+#[test]
+fn package_lifecycle_commands_preserve_structured_cas_envelopes() -> Result<()> {
+    let packages = tempfile::tempdir()?;
+    let root = packages.path().to_str().context("packages root")?;
+    let created = run_templiqx(&["--root", root, "--json", "create", "demo"])?;
+    let expected = created["fingerprints"]["package"]
+        .as_str()
+        .context("created package fingerprint")?;
+    let updated = run_templiqx(&[
+        "--root",
+        root,
+        "--json",
+        "update-package",
+        "demo",
+        "--version",
+        "0.2.0",
+        "--expected-fingerprint",
+        expected,
+    ])?;
+    ensure!(updated["ok"] == true, "unexpected envelope: {updated}");
+    let expected = updated["fingerprints"]["package"]
+        .as_str()
+        .context("updated package fingerprint")?;
+    let deleted = run_templiqx(&[
+        "--root",
+        root,
+        "--json",
+        "delete-package",
+        "demo",
+        "--expected-fingerprint",
+        expected,
+    ])?;
+    ensure!(deleted["ok"] == true, "unexpected envelope: {deleted}");
+    ensure!(!packages.path().join("demo").exists());
+    Ok(())
+}

@@ -1,0 +1,31 @@
+{
+  "approximated": 0,
+  "dialect": "v5",
+  "findings": [
+    {
+      "category": "migrated",
+      "construct": "v5_reference",
+      "detail": "alias `client.old_name` normalized",
+      "part": "word/document.xml",
+      "reference": "person.name"
+    },
+    {
+      "category": "migrated",
+      "construct": "v5_reference",
+      "detail": "alias `customer.former_name` normalized",
+      "part": "word/document.xml",
+      "reference": "person.name"
+    },
+    {
+      "category": "migrated",
+      "construct": "mergefield",
+      "detail": "ordinary Word MERGEFIELD",
+      "part": "word/document.xml",
+      "reference": "missing.value"
+    }
+  ],
+  "migrated": 3,
+  "unresolved": 0,
+  "unsafe_constructs": 0,
+  "unsupported": 0
+}

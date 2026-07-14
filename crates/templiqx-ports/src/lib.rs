@@ -3,7 +3,8 @@
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 use templiqx_contracts::{
-    AdapterDescriptor, Contract, ExecutionReceipt, ExecutionRequest, PackageManifest, StreamEvent,
+    AdapterDescriptor, Contract, ExecutionReceipt, ExecutionRequest, PackageIdentity,
+    PackageManifest, PackageSignature, StreamEvent,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -79,6 +80,10 @@ pub trait PackageStore: Send + Sync {
     fn contract(&self, package: &str, contract: &str) -> Result<Contract, PortError>;
     fn contract_source(&self, package: &str, contract: &str) -> Result<String, PortError>;
 
+    /// Return the canonical full package identity used for signing. Storage
+    /// implementations must use the same snapshot when applying identity CAS.
+    fn package_identity(&self, package: &str) -> Result<PackageIdentity, PortError>;
+
     /// Read an exact manifest-listed artifact without following symlinks or
     /// allowing the path to escape the package root.
     fn artifact_bytes(&self, package: &str, relative_path: &str) -> Result<Vec<u8>, PortError>;
@@ -105,6 +110,28 @@ pub trait PackageStore: Send + Sync {
 
     fn create_package(&self, name: &str, version: &str) -> Result<PackageManifest, PortError>;
 
+    fn update_package(
+        &self,
+        package: &str,
+        version: Option<&str>,
+        description: Option<&str>,
+        expected_fingerprint: &str,
+    ) -> Result<PackageManifest, PortError>;
+
+    fn delete_package(
+        &self,
+        package: &str,
+        expected_fingerprint: &str,
+    ) -> Result<String, PortError>;
+
+    fn attach_package_signature(
+        &self,
+        package: &str,
+        signature: PackageSignature,
+        expected_fingerprint: &str,
+        expected_identity_fingerprint: &str,
+    ) -> Result<PackageManifest, PortError>;
+
     fn delete_contract(
         &self,
         package: &str,
@@ -113,15 +140,20 @@ pub trait PackageStore: Send + Sync {
     ) -> Result<String, PortError>;
 }
 
+pub trait WorkspaceOutputLease: Send {
+    fn path(&self) -> &Path;
+}
+
 pub trait ArtifactWorkspace: Send + Sync {
-    /// Resolve writable artifact output outside package identity, rejecting
-    /// absolute paths, traversal, backslashes, and symlink escapes.
-    fn resolve_output_path(
+    /// Lock a package workspace and resolve a writable artifact output. The
+    /// caller retains the lease until writing is complete so CAS deletion and
+    /// service-owned writers cannot race.
+    fn lease_output_path(
         &self,
         package: &str,
         relative_path: &str,
         workspace: Option<&str>,
-    ) -> Result<PathBuf, PortError>;
+    ) -> Result<Box<dyn WorkspaceOutputLease>, PortError>;
 
     /// Convert adapter-produced workspace artifact back to its portable path
     /// after verifying it remains confined.
@@ -142,13 +174,23 @@ pub trait ArtifactWorkspace: Send + Sync {
     ) -> Result<Vec<(PathBuf, u64)>, PortError>;
 
     /// Read the bytes of an existing workspace artifact using the same
-    /// confinement rules as [`ArtifactWorkspace::resolve_output_path`].
+    /// confinement rules as [`ArtifactWorkspace::lease_output_path`].
     fn read_artifact(
         &self,
         package: &str,
         relative_path: &str,
         workspace: Option<&str>,
     ) -> Result<Vec<u8>, PortError>;
+
+    /// Delete one existing workspace artifact with byte-fingerprint CAS and
+    /// the same traversal/symlink confinement as reads.
+    fn delete_artifact(
+        &self,
+        package: &str,
+        relative_path: &str,
+        workspace: Option<&str>,
+        expected_fingerprint: &str,
+    ) -> Result<String, PortError>;
 }
 
 pub trait RuntimeAdapter: Send + Sync {

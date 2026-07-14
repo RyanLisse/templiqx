@@ -1,9 +1,16 @@
 {
-  "categories": ["unsafe"],
+  "approximated": 0,
+  "dialect": "v5",
   "findings": [
     {
       "category": "unsafe",
-      "detail_contains": "BeanShell"
+      "construct": "v1_beanshell",
+      "detail": "legacy executable content is never executed",
+      "part": "word/document.xml"
     }
-  ]
+  ],
+  "migrated": 0,
+  "unresolved": 0,
+  "unsafe_constructs": 1,
+  "unsupported": 0
 }

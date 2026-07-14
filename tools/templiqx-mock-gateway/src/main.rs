@@ -16,6 +16,7 @@ use templiqx_mock::{ScenarioManifest, ScriptedRuntime, load_inventory, scenario_
 use templiqx_ports::{PortError, RuntimeAdapter};
 
 const API_VERSION: &str = "templiqx.mock/v1alpha1";
+const MAX_REQUEST_BODY_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -130,6 +131,9 @@ fn handle(stream: &mut TcpStream, root: &Path) -> Result<()> {
                 .and_then(|value| value.trim().parse::<usize>().ok())
         })
         .unwrap_or(0);
+    if content_length > MAX_REQUEST_BODY_BYTES {
+        return respond(stream, 413, &json!({"error": "request body too large"}));
+    }
     while bytes.len() < header_end + content_length {
         let mut chunk = [0_u8; 4096];
         let read = stream.read(&mut chunk)?;
@@ -180,7 +184,19 @@ fn execute(stream: &mut TcpStream, root: &Path, path: &str, body: &str) -> Resul
     if id.is_empty() || id.contains('/') || id.contains('\\') || id == "." || id == ".." {
         return respond(stream, 400, &json!({"error": "invalid scenario id"}));
     }
-    let manifest_path = root.join(id).join("manifest.json");
+    let inventory = load_inventory(root.join("inventory.json"), "crm3")?;
+    let Some(entry) = inventory.scenarios.into_iter().find(|entry| entry.id == id) else {
+        return respond(stream, 404, &json!({"error": "scenario not found"}));
+    };
+    let package_root = root
+        .parent()
+        .and_then(Path::parent)
+        .context("scenario package root")?;
+    let listed_path = package_root.join(entry.manifest);
+    let manifest_path = match listed_path.canonicalize() {
+        Ok(path) if path.starts_with(root) => path,
+        _ => return respond(stream, 404, &json!({"error": "scenario not found"})),
+    };
     let manifest = match ScenarioManifest::load(&manifest_path) {
         Ok(manifest) => manifest,
         Err(_) => return respond(stream, 404, &json!({"error": "scenario not found"})),
@@ -188,7 +204,10 @@ fn execute(stream: &mut TcpStream, root: &Path, path: &str, body: &str) -> Resul
     let request_body: Value = if body.trim().is_empty() {
         json!({})
     } else {
-        serde_json::from_str(body).context("decode request JSON")?
+        match serde_json::from_str(body) {
+            Ok(value) => value,
+            Err(_) => return respond(stream, 400, &json!({"error": "malformed request JSON"})),
+        }
     };
     let output = match manifest.expected_output.as_deref() {
         Some(relative) => Some(read_relative_json(root, &manifest_path, relative)?),
@@ -264,6 +283,7 @@ fn respond<T: Serialize>(stream: &mut TcpStream, status: u16, value: &T) -> Resu
         200 => "OK",
         400 => "Bad Request",
         404 => "Not Found",
+        413 => "Payload Too Large",
         _ => "Internal Server Error",
     };
     write!(

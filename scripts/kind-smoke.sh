@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="${IMAGE:-templiqx:pre-crm3}"
+IMAGE="${CONFORMANCE_IMAGE:-templiqx-conformance:pre-crm3}"
 CLUSTER="${KIND_CLUSTER:-templiqx-smoke}"
 RELEASE="${HELM_RELEASE:-templiqx}"
 NAMESPACE="${NAMESPACE:-templiqx-smoke}"
@@ -55,7 +55,7 @@ printf 'kind smoke: docker_platform=%s\n' "$DOCKER_PLATFORM"
 rm -rf "$ARTIFACT_DIR"
 mkdir -p "$ARTIFACT_DIR"
 
-docker buildx build --load --platform "$DOCKER_PLATFORM" --target templiqx-cli -t "$IMAGE" "$REPO_ROOT"
+docker buildx build --load --platform "$DOCKER_PLATFORM" --target templiqx-conformance -t "$IMAGE" "$REPO_ROOT"
 
 if ! kind get clusters | grep -Fxq "$CLUSTER"; then
   kind create cluster --name "$CLUSTER"
@@ -80,7 +80,14 @@ helm upgrade --install "$RELEASE" "$REPO_ROOT/charts/templiqx" \
 
 kubectl -n "$NAMESPACE" rollout status "deployment/$RELEASE-templiqx-mock-gateway" --timeout=120s
 
-SCENARIOS=(intake-document-01 draft-with-citations invalid-output-schema)
+SCENARIOS=()
+while IFS= read -r scenario; do
+  SCENARIOS+=("$scenario")
+done < <(jq -r '.scenarios[].id' "$REPO_ROOT/examples/crm3/scenarios/inventory.json")
+[[ ${#SCENARIOS[@]} -eq 8 ]] || {
+  printf 'FAIL expected 8 inventory scenarios, got %s\n' "${#SCENARIOS[@]}" >&2
+  exit 1
+}
 for scenario in "${SCENARIOS[@]}"; do
   job_name="${RELEASE}-templiqx-conformance-${scenario//./-}"
   for _ in {1..30}; do
@@ -99,6 +106,9 @@ for scenario in "${SCENARIOS[@]}"; do
     kubectl -n "$NAMESPACE" logs "job/$job_name" --all-containers --tail=200 >&2 || true
     exit "$scenario_wait"
   fi
+  kubectl -n "$NAMESPACE" logs "job/$job_name" | tee "$ARTIFACT_DIR/${scenario}.log"
+  grep -F '"ok":true' "$ARTIFACT_DIR/${scenario}.log" >/dev/null
+  grep -F "\"scenario_id\":\"${scenario}\"" "$ARTIFACT_DIR/${scenario}.log" >/dev/null
   printf 'kind smoke: scenario=%s success=true\n' "$scenario"
 done
 

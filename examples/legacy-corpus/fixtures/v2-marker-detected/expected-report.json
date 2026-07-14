@@ -1,9 +1,16 @@
 {
-  "categories": ["unsupported"],
+  "approximated": 0,
+  "dialect": "v5",
   "findings": [
     {
       "category": "unsupported",
-      "detail_contains": "V2"
+      "construct": "v2",
+      "detail": "V2 is detected but not migrated by this adapter",
+      "part": "word/document.xml"
     }
-  ]
+  ],
+  "migrated": 0,
+  "unresolved": 0,
+  "unsafe_constructs": 0,
+  "unsupported": 1
 }

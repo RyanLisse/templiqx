@@ -69,33 +69,50 @@ flowchart TD
 | `templiqx-application` | Actor-neutral operations + capability catalog |
 | `templiqx-local` | Filesystem composition; path safety + CAS contract writes |
 | `templiqx-cli`, `templiqx-mcp` | Transport surfaces; tool names match catalog exactly |
-| `templiqx-conformance` | CRM3 and failure-semantics tests |
+| `templiqx-conformance` | Synthetic CRM3 scenario, transport, and failure-semantics proof; excluded from product images |
 | `templiqx-mock`, `adapters/templiqx-runtime-http-mock` | Conformance adapters only |
-| `adapters/templiqx-docx-v5` | Narrow DOCX V5 compat for CRM3 fixture — not general DOCX |
+| `adapters/templiqx-docx-v5` | Measured V1/V2 detection and V5 DOCX compatibility over a deterministic synthetic corpus — not general DOCX |
 | `adapters/templiqx-runtime-langfuse` | Host-owned production `RuntimeAdapter`: real chat completion + best-effort Langfuse tracing |
 | `tools/templiqx-mock-gateway`, `tools/templiqx-http-conformance` | Operational readiness tooling |
 
 ## Capability catalog
 
-Every row is a canonical `TempliqxService` operation, exposed identically over the CLI and MCP:
+All 26 canonical `TempliqxService` operations are exposed identically over the CLI and MCP. A catalog-derived conformance test fails when an operation is added without a Rust/CLI/MCP behavior case:
 
 | Operation | CLI | MCP tool |
 |-----------|-----|----------|
+| `catalog` | `templiqx catalog` | `catalog` |
 | `discover_packages` | `templiqx discover` | `discover_packages` |
+| `create_package` | `templiqx create <name>` | `create_package` |
+| `update_package` | `templiqx update-package <package>` | `update_package` |
+| `delete_package` | `templiqx delete-package <package>` | `delete_package` |
+| `export_package_identity` | `templiqx export-package-identity <package>` | `export_package_identity` |
+| `sign_package` | `templiqx sign-package <package>` | `sign_package` |
+| `verify_package_trust` | `templiqx verify-package-trust <package>` | `verify_package_trust` |
 | `inspect_contract` | `templiqx inspect <package> <contract>` | `inspect_contract` |
 | `put_contract` | `templiqx put <package> <contract> <source>` | `put_contract` |
+| `delete_contract` | `templiqx delete <package> <contract>` | `delete_contract` |
 | `validate_contract` | `templiqx validate <package> <contract>` | `validate_contract` |
 | `validate_package` | `templiqx validate <package>` | `validate_package` |
 | `compile_contract` | `templiqx compile <package> <contract>` | `compile_contract` |
 | `render_contract` | `templiqx render <package> <contract>` | `render_contract` |
 | `execute_contract` | `templiqx execute <package> <contract>` | `execute_contract` |
 | `migrate_legacy` | `templiqx migrate <package> <dialect> <source>` | `migrate_legacy` |
+| `render_document` | `templiqx render-document <package> <template> <data> <output>` | `render_document` |
+| `list_workspace_artifacts` | `templiqx list-workspace-artifacts <package>` | `list_workspace_artifacts` |
+| `read_artifact` | `templiqx read-artifact <package> <path>` | `read_artifact` |
+| `delete_workspace_artifact` | `templiqx delete-workspace-artifact <package> <path>` | `delete_workspace_artifact` |
+| `test_package` | `templiqx test <package>` | `test_package` |
+| `list_evals` | `templiqx list-evals <package>` | `list_evals` |
+| `run_eval` | `templiqx run-eval <package> <contract> <fixture-id>` | `run_eval` |
+| `diff_contract` | `templiqx diff <left-package> <left-contract> <right-package> <right-contract>` | `diff_contract` |
+| `explain_contract` | `templiqx explain <package> <contract>` | `explain_contract` |
 
 A host may wrap approval, authorization, or automated policy around any of these — it must not implement a second semantic path to the same artifacts.
 
 ## CRM3 conformance
 
-`examples/crm3` is a standalone, synthetic package proving the BLI-61 → BLI-62 interaction boundary plus explicit DOCX V5 compatibility. It imports no Basenet code and contains no customer data. BLI-62's draft is grounded in BLI-61's schema-validated extraction — the conformance test fails if a fact isn't traceable back to a source fragment.
+`examples/crm3` is a standalone, synthetic package proving the BLI-61 → BLI-62 interaction boundary plus explicit DOCX compatibility. It imports no Basenet code and contains no customer data. BLI-62's draft is grounded in BLI-61's schema-validated extraction — the conformance test fails if a fact isn't traceable back to a source fragment. The inventory-driven HTTP matrix runs all 8 checked-in success and expected-failure scenarios and validates status, diagnostic code, schema validity, output fingerprint, and receipt fingerprint.
 
 ```mermaid
 sequenceDiagram
@@ -120,7 +137,7 @@ sequenceDiagram
     Service-->>Host: ConformanceTraceReceipt (fingerprints only)
 ```
 
-Run it: `cargo test -p templiqx-conformance --test crm3`.
+Run the in-process proof with `cargo test -p templiqx-conformance --test crm3`; the Docker and kind smoke scripts run the 8/8 HTTP matrix through the real mock-gateway transport.
 
 ## Deployment
 
@@ -135,9 +152,11 @@ flowchart LR
     Supply --> SBOM["SBOM + digest (Syft/Grype)"]
 ```
 
-- **Docker:** `Dockerfile`, `deploy/compose.yml`, `./scripts/docker-smoke.sh`
-- **Kubernetes:** `charts/templiqx/` (lint with `helm lint charts/templiqx -f charts/templiqx/values-mock.yaml`), `./scripts/kind-smoke.sh`
-- **Supply chain:** `./scripts/supply-chain-smoke.sh` — SBOM/digest checks; CI pins Syft/Grype
+- **Docker:** separate minimal `templiqx-cli` and `templiqx-mcp` product images plus the explicitly synthetic `templiqx-conformance` image; `deploy/compose.yml` and `./scripts/docker-smoke.sh` exercise the 8/8 matrix and assert mocks are absent from product images.
+- **Kubernetes:** `charts/templiqx/` renders one conformance Job per inventory scenario (lint with `helm lint charts/templiqx -f charts/templiqx/values-mock.yaml`); `./scripts/kind-smoke.sh` retains per-scenario evidence.
+- **Supply chain:** `./scripts/supply-chain-smoke.sh` checks SBOM/digest policy; the tag-gated release workflow builds amd64/arm64 indexes with BuildKit SBOM/provenance, verifies and keylessly signs immutable digests, packages/checksums/signs the chart, and creates a GitHub Release.
+
+These artifacts establish Templiqx-owned standalone compiler, packaging, and synthetic-conformance readiness. Real CRM3 ModelGateway wiring, tenant/auth/retrieval/approval/audit policy, production customer data, and host acceptance remain explicitly host-blocked.
 
 ## Enforced boundaries
 
@@ -155,6 +174,7 @@ Checked in CI and by `just verify` — run `./scripts/check-boundaries.sh` expli
 | Contract format | [`docs/contracts/v1alpha1.md`](docs/contracts/v1alpha1.md) |
 | Architecture / deployment detail | [`docs/architecture/`](docs/architecture/) |
 | Pre-CRM3 readiness | [`docs/guides/pre-crm3-readiness.md`](docs/guides/pre-crm3-readiness.md) |
+| Release procedure | [`docs/guides/releasing.md`](docs/guides/releasing.md) |
 | CRM3 scenarios | [`examples/crm3/scenarios/`](examples/crm3/scenarios/) |
 | Generated code docs | [`openwiki/quickstart.md`](openwiki/quickstart.md) |
 | Agent operating guide | [`CLAUDE.md`](CLAUDE.md) |

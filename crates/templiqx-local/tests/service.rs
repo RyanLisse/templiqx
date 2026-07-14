@@ -1,7 +1,12 @@
+use fs2::FileExt;
 use std::fs;
 use std::path::Path;
-use templiqx_application::RenderDocumentRequest;
+use templiqx_application::{
+    DeletePackageRequest, DeleteWorkspaceArtifactRequest, RenderDocumentRequest,
+    UpdatePackageRequest,
+};
 use templiqx_contracts::RenderRequest;
+use templiqx_ports::ArtifactWorkspace;
 
 const CONTRACT: &str = r#"
 api_version: templiqx/v1alpha1
@@ -91,6 +96,292 @@ fn service_create_compile_test_and_cas() {
         Some(&hash),
     );
     assert!(updated.ok, "{:?}", updated.diagnostics);
+}
+
+#[test]
+fn package_lifecycle_is_cas_safe_and_invalidates_signatures() {
+    let temp = tempfile::tempdir().unwrap();
+    templiqx_local::create_package(temp.path(), "demo", "0.1.0").unwrap();
+    update_manifest(&temp, |manifest| {
+        manifest
+            .signatures
+            .push(templiqx_contracts::PackageSignature {
+                key_id: "test".into(),
+                algorithm: "sha256-keyed".into(),
+                value: "signed".into(),
+            });
+    });
+    let service = templiqx_local::compose(temp.path()).unwrap();
+    let manifest: templiqx_contracts::PackageManifest = serde_yaml_ng::from_str(
+        &fs::read_to_string(temp.path().join("demo/templiqx.yaml")).unwrap(),
+    )
+    .unwrap();
+    let expected = templiqx_contracts::fingerprint(&manifest).unwrap();
+    let stale = service.update_package(&UpdatePackageRequest {
+        package: "demo".into(),
+        version: Some("0.2.0".into()),
+        description: None,
+        expected_fingerprint: "stale".into(),
+    });
+    assert!(!stale.ok);
+    assert_eq!(stale.diagnostics[0].code, "TQX_CAS_CONFLICT");
+
+    let updated = service.update_package(&UpdatePackageRequest {
+        package: "demo".into(),
+        version: Some("0.2.0".into()),
+        description: Some("production candidate".into()),
+        expected_fingerprint: expected,
+    });
+    assert!(updated.ok, "{:?}", updated.diagnostics);
+    let manifest = updated.result.unwrap();
+    assert_eq!(manifest.version, "0.2.0");
+    assert!(manifest.signatures.is_empty());
+    let expected = templiqx_contracts::fingerprint(&manifest).unwrap();
+    let deleted = service.delete_package(&DeletePackageRequest {
+        package: "demo".into(),
+        expected_fingerprint: expected,
+    });
+    assert!(deleted.ok, "{:?}", deleted.diagnostics);
+    assert!(!temp.path().join("demo").exists());
+}
+
+#[test]
+fn package_delete_blocks_untracked_content_and_dependents() {
+    let temp = tempfile::tempdir().unwrap();
+    templiqx_local::create_package(temp.path(), "demo", "0.1.0").unwrap();
+    fs::write(temp.path().join("demo/untracked.txt"), "keep").unwrap();
+    let service = templiqx_local::compose(temp.path()).unwrap();
+    let manifest = service.discover_packages().result.unwrap().remove(0);
+    let expected = templiqx_contracts::fingerprint(&manifest).unwrap();
+    let blocked = service.delete_package(&DeletePackageRequest {
+        package: "demo".into(),
+        expected_fingerprint: expected,
+    });
+    assert!(!blocked.ok);
+    assert!(blocked.diagnostics[0].message.contains("untracked"));
+
+    let dependent_root = tempfile::tempdir().unwrap();
+    templiqx_local::create_package(dependent_root.path(), "dep", "0.1.0").unwrap();
+    templiqx_local::create_package(dependent_root.path(), "app", "0.1.0").unwrap();
+    let app_manifest_path = dependent_root.path().join("app/templiqx.yaml");
+    let mut app_manifest: templiqx_contracts::PackageManifest =
+        serde_yaml_ng::from_str(&fs::read_to_string(&app_manifest_path).unwrap()).unwrap();
+    app_manifest
+        .dependencies
+        .insert("dep".into(), "pinned".into());
+    fs::write(
+        app_manifest_path,
+        serde_yaml_ng::to_string(&app_manifest).unwrap(),
+    )
+    .unwrap();
+    let service = templiqx_local::compose(dependent_root.path()).unwrap();
+    let dep = service
+        .discover_packages()
+        .result
+        .unwrap()
+        .into_iter()
+        .find(|manifest| manifest.package == "dep")
+        .unwrap();
+    let blocked = service.delete_package(&DeletePackageRequest {
+        package: "dep".into(),
+        expected_fingerprint: templiqx_contracts::fingerprint(&dep).unwrap(),
+    });
+    assert!(!blocked.ok);
+    assert!(blocked.diagnostics[0].message.contains("depends on"));
+}
+
+#[test]
+fn workspace_artifact_delete_reuses_confinement_and_byte_cas() {
+    let packages = tempfile::tempdir().unwrap();
+    let workspace = tempfile::tempdir().unwrap();
+    templiqx_local::create_package(packages.path(), "demo", "0.1.0").unwrap();
+    fs::create_dir_all(workspace.path().join("demo/out")).unwrap();
+    fs::write(workspace.path().join("demo/out/result.txt"), "result").unwrap();
+    let service =
+        templiqx_local::compose_with_workspace(packages.path(), workspace.path()).unwrap();
+    let expected = templiqx_contracts::fingerprint_bytes(b"result");
+    let stale = service.delete_workspace_artifact(&DeleteWorkspaceArtifactRequest {
+        package: "demo".into(),
+        path: "out/result.txt".into(),
+        workspace: None,
+        expected_fingerprint: "stale".into(),
+    });
+    assert!(!stale.ok);
+    let deleted = service.delete_workspace_artifact(&DeleteWorkspaceArtifactRequest {
+        package: "demo".into(),
+        path: "out/result.txt".into(),
+        workspace: None,
+        expected_fingerprint: expected,
+    });
+    assert!(deleted.ok, "{:?}", deleted.diagnostics);
+    assert!(!workspace.path().join("demo/out/result.txt").exists());
+    let traversal = service.delete_workspace_artifact(&DeleteWorkspaceArtifactRequest {
+        package: "demo".into(),
+        path: "../outside".into(),
+        workspace: None,
+        expected_fingerprint: "x".into(),
+    });
+    assert!(!traversal.ok);
+    assert_eq!(traversal.diagnostics[0].code, "TQX_PATH_INVALID");
+}
+
+#[test]
+fn workspace_delete_waits_for_service_writer_lease() {
+    let workspace = tempfile::tempdir().unwrap();
+    let adapter = templiqx_local::FilesystemArtifactWorkspace::new(workspace.path()).unwrap();
+    let lease = adapter
+        .lease_output_path("demo", "out/result.txt", None)
+        .unwrap();
+    fs::write(lease.path(), "result").unwrap();
+    let expected = templiqx_contracts::fingerprint_bytes(b"result");
+    let deleting = adapter.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let handle = std::thread::spawn(move || {
+        tx.send(deleting.delete_artifact("demo", "out/result.txt", None, &expected))
+            .unwrap();
+    });
+
+    assert!(matches!(
+        rx.recv_timeout(std::time::Duration::from_millis(100)),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+    ));
+    drop(lease);
+    assert!(
+        rx.recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap()
+            .is_ok()
+    );
+    handle.join().unwrap();
+    assert!(!workspace.path().join("demo/out/result.txt").exists());
+}
+
+#[test]
+fn workspace_read_waits_for_service_writer_lease() {
+    let workspace = tempfile::tempdir().unwrap();
+    let adapter = templiqx_local::FilesystemArtifactWorkspace::new(workspace.path()).unwrap();
+    let lease = adapter
+        .lease_output_path("demo", "out/result.txt", None)
+        .unwrap();
+    fs::write(lease.path(), "partial").unwrap();
+    let reading = adapter.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let handle = std::thread::spawn(move || {
+        tx.send(reading.read_artifact("demo", "out/result.txt", None))
+            .unwrap();
+    });
+
+    assert!(matches!(
+        rx.recv_timeout(std::time::Duration::from_millis(100)),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+    ));
+    fs::write(lease.path(), "complete").unwrap();
+    drop(lease);
+    assert_eq!(
+        rx.recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap()
+            .unwrap(),
+        b"complete"
+    );
+    handle.join().unwrap();
+}
+
+#[test]
+fn workspace_list_waits_for_service_writer_lease() {
+    let workspace = tempfile::tempdir().unwrap();
+    let adapter = templiqx_local::FilesystemArtifactWorkspace::new(workspace.path()).unwrap();
+    let lease = adapter
+        .lease_output_path("demo", "out/result.txt", None)
+        .unwrap();
+    fs::write(lease.path(), "partial").unwrap();
+    let listing = adapter.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let handle = std::thread::spawn(move || {
+        tx.send(listing.list_artifacts("demo", None, Some("out")))
+            .unwrap();
+    });
+
+    assert!(matches!(
+        rx.recv_timeout(std::time::Duration::from_millis(100)),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+    ));
+    fs::write(lease.path(), "complete").unwrap();
+    drop(lease);
+    let artifacts = rx
+        .recv_timeout(std::time::Duration::from_secs(2))
+        .unwrap()
+        .unwrap();
+    assert_eq!(artifacts.len(), 1);
+    assert_eq!(artifacts[0].1, b"complete".len() as u64);
+    handle.join().unwrap();
+}
+
+#[test]
+fn persistent_package_lock_serializes_mutation_delete_and_recreate() {
+    let temp = tempfile::tempdir().unwrap();
+    templiqx_local::create_package(temp.path(), "demo", "0.1.0").unwrap();
+    let lock_path = temp.path().join(".templiqx-package-locks/demo.lock");
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(&lock_path)
+        .unwrap();
+    lock.lock_exclusive().unwrap();
+
+    let root = temp.path().to_path_buf();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let handle = std::thread::spawn(move || {
+        let service = templiqx_local::compose(&root).unwrap();
+        let manifest = service.discover_packages().result.unwrap().remove(0);
+        tx.send(service.update_package(&UpdatePackageRequest {
+            package: "demo".into(),
+            version: Some("0.2.0".into()),
+            description: None,
+            expected_fingerprint: templiqx_contracts::fingerprint(&manifest).unwrap(),
+        }))
+        .unwrap();
+    });
+    assert!(matches!(
+        rx.recv_timeout(std::time::Duration::from_millis(100)),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+    ));
+    FileExt::unlock(&lock).unwrap();
+    assert!(
+        rx.recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap()
+            .ok
+    );
+    handle.join().unwrap();
+
+    let service = templiqx_local::compose(temp.path()).unwrap();
+    let manifest = service.discover_packages().result.unwrap().remove(0);
+    assert!(
+        service
+            .delete_package(&DeletePackageRequest {
+                package: "demo".into(),
+                expected_fingerprint: templiqx_contracts::fingerprint(&manifest).unwrap(),
+            })
+            .ok
+    );
+    assert!(lock_path.exists(), "delete must retain the lock inode");
+
+    lock.lock_exclusive().unwrap();
+    let root = temp.path().to_path_buf();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let handle = std::thread::spawn(move || {
+        tx.send(templiqx_local::create_package(&root, "demo", "0.3.0"))
+            .unwrap();
+    });
+    assert!(matches!(
+        rx.recv_timeout(std::time::Duration::from_millis(100)),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+    ));
+    FileExt::unlock(&lock).unwrap();
+    assert!(
+        rx.recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap()
+            .is_ok()
+    );
+    handle.join().unwrap();
 }
 
 #[test]

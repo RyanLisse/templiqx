@@ -8,8 +8,10 @@ use std::{
     process::ExitCode,
 };
 use templiqx_application::{
-    CreatePackageRequest, DeleteContractRequest, ListWorkspaceArtifactsRequest,
-    MigrateLegacyRequest, ReadArtifactRequest, RenderDocumentRequest,
+    CreatePackageRequest, DeleteContractRequest, DeletePackageRequest,
+    DeleteWorkspaceArtifactRequest, ListWorkspaceArtifactsRequest, MigrateLegacyRequest,
+    ReadArtifactRequest, RenderDocumentRequest, SignPackageRequest, UpdatePackageRequest,
+    VerifyPackageTrustRequest,
 };
 use templiqx_contracts::{OperationEnvelope, RenderRequest, fingerprint, fingerprint_bytes};
 
@@ -38,6 +40,35 @@ enum Command {
         name: String,
         #[arg(long, default_value = "0.1.0")]
         version: String,
+    },
+    UpdatePackage {
+        package: String,
+        #[arg(long)]
+        version: Option<String>,
+        #[arg(long)]
+        description: Option<String>,
+        #[arg(long)]
+        expected_fingerprint: String,
+    },
+    DeletePackage {
+        package: String,
+        #[arg(long)]
+        expected_fingerprint: String,
+    },
+    ExportPackageIdentity {
+        package: String,
+    },
+    SignPackage {
+        package: String,
+        #[arg(long)]
+        key_id: String,
+        #[arg(long)]
+        expected_fingerprint: String,
+    },
+    VerifyPackageTrust {
+        package: String,
+        #[arg(long)]
+        strict: bool,
     },
     Inspect {
         package: String,
@@ -136,6 +167,14 @@ enum Command {
         #[arg(long)]
         workspace: Option<PathBuf>,
     },
+    DeleteWorkspaceArtifact {
+        package: String,
+        path: String,
+        #[arg(long)]
+        workspace: Option<PathBuf>,
+        #[arg(long)]
+        expected_fingerprint: String,
+    },
     ListEvals {
         package: String,
     },
@@ -192,6 +231,39 @@ fn run() -> Result<bool> {
         Command::Discover => output!(service.discover_packages()),
         Command::Create { name, version } => {
             output!(service.create_package(&CreatePackageRequest { name, version }))
+        }
+        Command::UpdatePackage {
+            package,
+            version,
+            description,
+            expected_fingerprint,
+        } => output!(service.update_package(&UpdatePackageRequest {
+            package,
+            version,
+            description,
+            expected_fingerprint,
+        })),
+        Command::DeletePackage {
+            package,
+            expected_fingerprint,
+        } => output!(service.delete_package(&DeletePackageRequest {
+            package,
+            expected_fingerprint,
+        })),
+        Command::ExportPackageIdentity { package } => {
+            output!(service.export_package_identity(&package))
+        }
+        Command::SignPackage {
+            package,
+            key_id,
+            expected_fingerprint,
+        } => output!(service.sign_package(&SignPackageRequest {
+            package,
+            key_id,
+            expected_fingerprint,
+        })),
+        Command::VerifyPackageTrust { package, strict } => {
+            output!(service.verify_package_trust(&VerifyPackageTrustRequest { package, strict }))
         }
         Command::Inspect { package, contract } => {
             output!(service.inspect_contract(&package, &contract))
@@ -334,6 +406,19 @@ fn run() -> Result<bool> {
             path,
             workspace: workspace_string(workspace)?,
         })),
+        Command::DeleteWorkspaceArtifact {
+            package,
+            path,
+            workspace,
+            expected_fingerprint,
+        } => output!(
+            service.delete_workspace_artifact(&DeleteWorkspaceArtifactRequest {
+                package,
+                path,
+                workspace: workspace_string(workspace)?,
+                expected_fingerprint,
+            })
+        ),
         Command::ListEvals { package } => output!(service.list_evals(&package)),
         Command::RunEval {
             package,

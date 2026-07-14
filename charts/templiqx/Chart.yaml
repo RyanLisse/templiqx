@@ -1,6 +1,8 @@
 apiVersion: v2
 name: templiqx
-description: Synthetic Templiqx conformance job chart.
+description: Synthetic-only Templiqx mock conformance jobs; not a production service.
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
+annotations:
+  io.templiqx.artifact.class: synthetic-conformance-only

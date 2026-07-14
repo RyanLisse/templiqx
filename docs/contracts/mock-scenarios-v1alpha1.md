@@ -10,6 +10,14 @@ The checked-in CRM3 corpus is enumerated by
 `examples/crm3/scenarios/inventory.json`; the inventory is the source of truth
 for scenario discovery rather than directory scanning.
 
+Each inventory entry also carries a transport-level `expectation`: logical
+`status`, optional `diagnostic_code`, optional `output_schema_valid`, optional
+`output_fingerprint`, and an exact payload-free `receipt_fingerprint`. Loading
+the inventory fails closed when its status, diagnostic, schema validity, or
+output fingerprint disagrees with the referenced manifest. Receipt
+fingerprints are transport-specific because request fingerprints can differ
+between the in-process service and the HTTP gateway.
+
 ```json
 {
   "api_version": "templiqx.mock/v1alpha1",
@@ -107,3 +115,10 @@ scenario root when the flag is omitted. It exposes `GET /health/live`,
 `POST /v1/scenarios/{id}/execute`. Execution returns typed success or failure
 data, virtual elapsed time, attempts, and fingerprints without returning output
 payloads.
+
+`templiqx-http-conformance` loads the selected id from the same inventory and
+only passes when the actual HTTP outcome matches every declared expectation. A
+schema-invalid runtime receipt is normalized to the logical
+`TQX_OUTPUT_SCHEMA` failure before comparison. Unknown ids and expectation
+drift fail closed. The gateway likewise executes only inventory-listed
+manifests; a directory that merely exists is not addressable.

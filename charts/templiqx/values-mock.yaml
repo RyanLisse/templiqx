@@ -6,11 +6,16 @@ mock:
 
 conformance:
   scenarios:
-    - intake-document-01
+    - ambiguous-date
+    - contradictory-evidence
+    - docx-unresolved-reference
     - draft-with-citations
+    - intake-document-01
     - invalid-output-schema
+    - missing-notice-date
+    - missing-required-field
 
 image:
-  repository: templiqx
+  repository: templiqx-conformance
   tag: pre-crm3
   pullPolicy: IfNotPresent
