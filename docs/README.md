@@ -8,9 +8,6 @@ Published docs site: [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/
 - [POC architecture](architecture/poc.md)
 - [Actor-neutral capability map](architecture/capability-map.md)
 - [Deployment boundary](architecture/deployment.md)
-- [ADR: Package trust v1](architecture/adr-package-trust.md)
-- [ADR: Tool-contract references](architecture/adr-tool-contract-refs.md)
-- [ADR: Streaming RuntimeAdapter port](architecture/adr-streaming-runtime-port.md)
 - [Observability seam](architecture/observability.md)
 - [Contract format](contracts/v1alpha1.md)
 - [Mock scenario format](contracts/mock-scenarios-v1alpha1.md)
@@ -18,6 +15,18 @@ Published docs site: [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/
 - [Pre-CRM3 readiness](guides/pre-crm3-readiness.md)
 - [Host integration handoff](guides/host-integration.md)
 - [Release procedure and artifact verification](guides/releasing.md)
+
+Decisions (ADR):
+
+- [Architecture decisions overview](adr/overview.md)
+- [ADR: Package trust v1](adr/package-trust.md)
+- [ADR: Tool-contract references](adr/tool-contract-refs.md)
+- [ADR: Streaming RuntimeAdapter port](adr/streaming-runtime-port.md)
+- [ADR: ODT compatibility](adr/odt-compatibility.md)
+
+Agent skills:
+
+- [Agent skills overview](skills/overview.md) — download and use the repo skills over MCP/CLI
 - [Requirements](brainstorms/2026-07-11-templiqx-ai-native-template-engine-poc-requirements.md)
 - [Implementation plan](plans/2026-07-11-templiqx-poc-implementation-plan.md)
 - [Agent-native architecture audit (2026-07-12)](audits/2026-07-12-agent-native-architecture-review.md)

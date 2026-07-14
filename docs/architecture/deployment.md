@@ -58,10 +58,10 @@ release definition rather than a published-release claim. See
 [`../guides/releasing.md`](../guides/releasing.md).
 
 Package manifest signing is documented in
-[`adr-package-trust.md`](adr-package-trust.md). Product-direction seams
+[`package-trust`](../adr/package-trust). Product-direction seams
 (tool-contract refs, streaming port, observability) are in
-[`adr-tool-contract-refs.md`](adr-tool-contract-refs.md),
-[`adr-streaming-runtime-port.md`](adr-streaming-runtime-port.md), and
+[`tool-contract-refs`](../adr/tool-contract-refs),
+[`streaming-runtime-port`](../adr/streaming-runtime-port), and
 [`observability.md`](observability.md).
 
 Host integration procedures: [`../guides/host-integration.md`](../guides/host-integration.md).

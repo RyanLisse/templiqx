@@ -49,7 +49,7 @@ definitions without changing how the current POC compiles or executes.
    instead of the inlined JSON Schema. Compilation resolves the `$ref` against
    the package's `tool_contracts` table and fails closed
    (`TQX_TOOL_CONTRACT_REF_UNRESOLVED`) if the name or fingerprint doesn't
-   match — the same fail-closed posture package signing (`adr-package-trust.md`)
+   match — the same fail-closed posture package signing (`package-trust.md`)
    already uses for unverifiable input.
 
 3. **Immutability via fingerprint, not a version number.**
