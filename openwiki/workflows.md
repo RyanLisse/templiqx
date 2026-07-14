@@ -2,6 +2,21 @@
 
 Templiqx workflows are intentionally thin wrappers over the same canonical application service. The CLI, MCP server, and conformance harness all exercise the same core operations.
 
+## Primary operation flow
+
+```mermaid
+flowchart LR
+    User["Human or agent"] --> CLI["CLI / MCP tool"]
+    CLI --> Service["TempliqxService"]
+    Service --> Core["templiqx-core"]
+    Service --> Ports["templiqx-ports"]
+    Service --> Local["templiqx-local"]
+    Local --> Runtime["Runtime adapter"]
+    Local --> Docx["DOCX V5 adapter"]
+    Service --> Envelope["Operation envelope
+OK or diagnostic failure"]
+```
+
 ## CLI workflow
 
 The CLI lives in `crates/templiqx-cli/src/main.rs` and exposes commands for the canonical capability catalog:
@@ -66,3 +81,8 @@ The `justfile` exposes `verify` and `verify-deploy` recipes that chain the norma
 ## When changing workflows
 
 Prefer adding or adjusting tests before changing command plumbing. The high-risk areas are path handling, transport mapping, and any workflow that could diverge between the CLI and MCP surfaces.
+
+## See also
+
+- [Agent-native & AI](/guides/agent-native) — connecting an agent over MCP, deterministic contracts, evals, and observability.
+- [Actor-neutral capability map](/architecture/capability-map) — the full CLI ↔ MCP ↔ service operation table.

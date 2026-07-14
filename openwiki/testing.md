@@ -1,60 +1,53 @@
 # Testing and verification
 
-This repository relies on layered tests and smoke checks rather than a single monolithic suite. The tests are organized around the same semantic boundary as the architecture: contract logic, local composition, transport surfaces, CRM3 conformance, and deployment readiness.
+This repository uses a layered verification model: fast unit and workspace tests, boundary enforcement, conformance tests, and deployment/supply-chain smoke checks.
 
-## Main verification commands
+## Main commands
 
-The root `justfile` defines two useful commands:
+- `just verify` — the normal local gate for formatting, linting, tests, and boundary checks.
+- `just verify-deploy` — adds Docker, kind, and supply-chain smoke checks.
+- `just verify-all` — the broad local gate that includes docs and deployment validation.
+- `cargo test -p templiqx-conformance --test crm3` — the CRM3 end-to-end proof.
+- `./scripts/check-boundaries.sh` — dependency and composition guardrail.
 
-- `just verify` — format, clippy, workspace tests, and boundary checks.
-- `just verify-deploy` — Docker smoke, kind smoke, supply-chain smoke, and boundary checks.
+## What each layer protects
 
-These are the first commands to run when changing anything that affects core logic, adapter boundaries, or deployment assumptions.
+### Workspace tests
 
-## Important test areas
+The Rust workspace tests cover service behavior, local composition, CLI behavior, MCP routing, and adapter compatibility. Good examples to inspect when changing behavior are:
 
-### Core and local service tests
+- `crates/templiqx-application/tests/*.rs`
+- `crates/templiqx-local/tests/*.rs`
+- `crates/templiqx-cli/tests/*.rs`
+- `crates/templiqx-conformance/tests/*.rs`
 
-- `crates/templiqx-local/tests/service.rs` validates local composition behavior.
-- `crates/templiqx-conformance/tests/crm3.rs` exercises the end-to-end CRM3 trace.
-- `crates/templiqx-conformance/tests/crm3_actor_boundary.rs` and `crm3_failures.rs` focus on approval/boundary and failure behavior.
-- `crates/templiqx-conformance/tests/http_gateway.rs` covers the HTTP gateway/conformance edge.
+These tests are the fastest way to detect semantic drift.
 
-These tests are the best signal for whether a change preserved the intended host/core split.
+### Boundary enforcement
 
-### CLI and MCP workspace tests
+`scripts/check-boundaries.sh` is the repo-specific policy gate. It ensures that portable crates stay free of provider SDKs and host vocabulary, and that default composition does not pull in mock runtime or gateway packages.
 
-- `crates/templiqx-cli/tests/workspace.rs`
-- `crates/templiqx-mcp/tests/workspace.rs`
+If you change Cargo dependencies, adapter wiring, or product image composition, run this script directly instead of relying only on `cargo test`.
 
-These verify that both surfaces use the same canonical service model and workspace behavior.
+### CRM3 conformance
 
-### Adapter and readiness checks
+`crates/templiqx-conformance/tests/crm3.rs` is the highest-signal product test. It asserts that the CRM3 package can be discovered, validated, executed, migrated, and rendered as a grounded workflow. It also checks evidence traceability so the draft cannot invent facts that are not sourced from the inputs.
 
-- `adapters/templiqx-runtime-http-mock/src/tests.rs`
+### Deployment and release smoke
+
+The repository includes smoke checks for Docker, kind, and supply chain validation:
+
 - `scripts/docker-smoke.sh`
 - `scripts/kind-smoke.sh`
 - `scripts/supply-chain-smoke.sh`
-- `scripts/check-boundaries.sh`
 
-These are especially important when modifying deployment, packaging, or adapter code.
+These matter when changing image composition, Helm charts, deployment manifests, or release scripts.
 
-## What the tests protect
+## Change guidance
 
-The test suite is not just checking happy paths. It protects several repository-specific invariants:
+When editing behavior, start with the smallest focused test that exercises the changed path, then expand to the broader gate:
 
-- contract fingerprints remain deterministic;
-- package manifests are explicit inventories;
-- port boundaries reject unsafe paths and symlink escapes;
-- CLI and MCP remain thin transport layers over the same catalog;
-- CRM3 evidence remains grounded in the source fragment and does not drift;
-- DOCX V5 compatibility stays within the documented subset.
-
-## When changing code
-
-A good rule of thumb:
-
-- contract/core changes should trigger workspace tests and conformance tests;
-- CLI/MCP changes should trigger workspace tests for both surfaces;
-- filesystem/path changes should trigger local service tests and boundary checks;
-- deployment/readiness changes should trigger the smoke scripts in addition to workspace tests.
+1. add or update unit/workspace tests;
+2. run the relevant package tests;
+3. run `./scripts/check-boundaries.sh` if dependencies or adapters changed;
+4. run the conformance and smoke checks relevant to the area you touched.
