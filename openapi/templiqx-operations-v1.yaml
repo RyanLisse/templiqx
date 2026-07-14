@@ -1,0 +1,766 @@
+openapi: 3.1.0
+info:
+  title: Templiqx Operations API
+  version: 1.0.0-alpha.1
+  summary: Versioned northbound HTTP contract for Templiqx operations.
+  description: >-
+    Representative v1 Operations API contract. The API is a thin transport over
+    TempliqxService and returns OperationEnvelope responses. Hosts own auth,
+    authorization, tenant policy, provider secrets, model routing, retries, and
+    rate limiting. Templiqx owns diagnostics, fingerprints, path confinement,
+    runtime capability checks, and CAS enforcement. WASM and the mock gateway are
+    out of scope for production transport.
+servers:
+  - url: http://localhost:8080
+    description: Local development transport
+  - url: https://{host}
+    description: Host-owned deployment
+    variables:
+      host:
+        default: templiqx.example.invalid
+tags:
+  - name: Health
+  - name: Discovery
+  - name: Contracts
+  - name: Execution
+  - name: Mutation
+paths:
+  /operations/v1/health/live:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      operationId: getOperationsV1Liveness
+      x-templiqx-idempotency: safe
+      responses:
+        '200':
+          description: Transport process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+  /operations/v1/health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      operationId: getOperationsV1Readiness
+      x-templiqx-idempotency: safe
+      responses:
+        '200':
+          description: Transport is ready to serve operations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Transport is alive but not ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+  /operations/v1/openapi.yaml:
+    get:
+      tags: [Discovery]
+      summary: Return the checked-in OpenAPI document served by the transport
+      operationId: getOperationsV1OpenApi
+      x-templiqx-idempotency: safe
+      responses:
+        '200':
+          description: OpenAPI 3.1 document.
+          content:
+            application/yaml:
+              schema:
+                type: string
+  /operations/v1/catalog:
+    get:
+      tags: [Discovery]
+      summary: List canonical operation names
+      operationId: catalog
+      x-templiqx-idempotency: safe
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Operation catalog envelope.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogEnvelope'
+  /operations/v1/packages:
+    get:
+      tags: [Discovery]
+      summary: Discover package manifests
+      operationId: discoverPackages
+      x-templiqx-idempotency: safe
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Package discovery envelope.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageListEnvelope'
+  /operations/v1/packages/{package}/contracts/{contract}:
+    get:
+      tags: [Contracts]
+      summary: Inspect one contract
+      operationId: inspectContract
+      x-templiqx-idempotency: safe
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+      responses:
+        '200':
+          description: Contract inspection envelope. Product failures are represented by ok=false diagnostics.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractEnvelope'
+  /operations/v1/packages/{package}/contracts/{contract}/validate:
+    post:
+      tags: [Contracts]
+      summary: Validate one contract
+      operationId: validateContract
+      x-templiqx-idempotency: idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+      responses:
+        '200':
+          description: Validation result envelope.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryEnvelope'
+  /operations/v1/packages/{package}/contracts/{contract}/compile:
+    post:
+      tags: [Contracts]
+      summary: Compile one contract with inputs, context, and target capabilities
+      operationId: compileContract
+      x-templiqx-idempotency: idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompileRequest'
+      responses:
+        '200':
+          description: Compiled interaction envelope.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompiledInteractionEnvelope'
+  /operations/v1/packages/{package}/contracts/{contract}/execute:
+    post:
+      tags: [Execution]
+      summary: Execute one contract through the configured RuntimeAdapter
+      operationId: executeContract
+      x-templiqx-idempotency: caller-defined
+      x-templiqx-idempotent: false
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/ContractId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteRequest'
+      responses:
+        '200':
+          description: Execution receipt envelope. Runtime/schema failures use ok=false diagnostics inside the envelope.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionReceiptEnvelope'
+        '408':
+          $ref: '#/components/responses/TransportFailure'
+        '413':
+          $ref: '#/components/responses/TransportFailure'
+  /operations/v1/packages/{package}:
+    patch:
+      tags: [Mutation]
+      summary: Update package metadata with CAS protection
+      operationId: updateOperationsV1Package
+      x-templiqx-idempotency: cas-idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/PackageName'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePackageRequest'
+      responses:
+        '200':
+          description: Updated package manifest envelope.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            ETag:
+              description: New package fingerprint.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageEnvelope'
+        '409':
+          $ref: '#/components/responses/TransportFailure'
+components:
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: Caller-provided correlation ID. The transport echoes or generates one.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      required: false
+      description: Host-owned tenant correlation metadata. Templiqx does not authorize tenants.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    PackageName:
+      name: package
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]+$'
+    ContractId:
+      name: contract
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_.-]+$'
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Current content fingerprint required for CAS mutation.
+      schema:
+        type: string
+        pattern: '^sha256:[A-Fa-f0-9]+$|^[A-Fa-f0-9]{64}$'
+  headers:
+    RequestId:
+      description: Effective correlation ID for logs and downstream diagnostics.
+      schema:
+        type: string
+  responses:
+    TransportFailure:
+      description: Transport-level failure before a product OperationEnvelope can be returned.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TransportError'
+  schemas:
+    JsonValue:
+      description: Arbitrary JSON value owned by Templiqx contract schemas or runtime output.
+    HealthStatus:
+      type: object
+      required: [status, api_version]
+      properties:
+        status:
+          type: string
+          enum: [ok, ready, not_ready]
+        api_version:
+          type: string
+        request_id:
+          type: string
+      additionalProperties: false
+    TransportError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          examples: [TQX_TRANSPORT_TIMEOUT]
+        message:
+          type: string
+        request_id:
+          type: string
+      additionalProperties: false
+    OperationEnvelopeBase:
+      type: object
+      required: [api_version, operation, ok, diagnostics, fingerprints]
+      properties:
+        api_version:
+          type: string
+          const: templiqx/v1alpha1
+        operation:
+          type: string
+        ok:
+          type: boolean
+        diagnostics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagnostic'
+        fingerprints:
+          type: object
+          additionalProperties:
+            type: string
+        stream_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/StreamEvent'
+      additionalProperties: true
+    Diagnostic:
+      type: object
+      required: [code, severity, message]
+      properties:
+        code:
+          type: string
+        severity:
+          type: string
+          enum: [error, warning, info]
+        message:
+          type: string
+        file:
+          type: string
+        json_pointer:
+          type: string
+        span:
+          $ref: '#/components/schemas/SourceSpan'
+        help:
+          type: string
+      additionalProperties: false
+    SourceSpan:
+      type: object
+      required: [line, column, end_line, end_column]
+      properties:
+        line:
+          type: integer
+          minimum: 0
+        column:
+          type: integer
+          minimum: 0
+        end_line:
+          type: integer
+          minimum: 0
+        end_column:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+    CatalogEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              type: array
+              items:
+                type: string
+    StringListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              type: array
+              items:
+                type: string
+    JsonValueEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/JsonValue'
+    PackageListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              type: array
+              items:
+                $ref: '#/components/schemas/PackageManifest'
+    PackageEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/PackageManifest'
+    ContractEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/Contract'
+    SummaryEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/ContractSummary'
+    CompiledInteractionEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/CompiledInteraction'
+    ExecutionReceiptEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/ExecutionReceipt'
+    PackageManifest:
+      type: object
+      required: [api_version, package, version]
+      properties:
+        api_version:
+          type: string
+        package:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        contracts:
+          type: array
+          items:
+            type: string
+        components:
+          type: array
+          items:
+            type: string
+        evals:
+          type: array
+          items:
+            type: string
+        migrations:
+          type: array
+          items:
+            type: string
+        templates:
+          type: array
+          items:
+            type: string
+        provenance:
+          type: object
+          additionalProperties:
+            type: string
+        signatures:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageSignature'
+      additionalProperties: false
+    PackageSignature:
+      type: object
+      required: [key_id, algorithm, value]
+      properties:
+        key_id:
+          type: string
+        algorithm:
+          type: string
+        value:
+          type: string
+      additionalProperties: false
+    Contract:
+      type: object
+      required: [api_version, id, version, messages, output_schema]
+      properties:
+        api_version:
+          type: string
+        id:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        inputs:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FieldSpec'
+        context:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FieldSpec'
+        capabilities:
+          type: array
+          items:
+            type: string
+        messages:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        output_schema:
+          $ref: '#/components/schemas/JsonValue'
+        runtime_policy:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JsonValue'
+        extensions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JsonValue'
+        components:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JsonValue'
+        provenance:
+          type: object
+          additionalProperties:
+            type: string
+        evals:
+          type: array
+          items:
+            $ref: '#/components/schemas/JsonValue'
+      additionalProperties: false
+    FieldSpec:
+      type: object
+      required: [schema]
+      properties:
+        schema:
+          $ref: '#/components/schemas/JsonValue'
+        required:
+          type: boolean
+        description:
+          type: string
+      additionalProperties: false
+    CapabilityProfileRequest:
+      type: object
+      properties:
+        capabilities:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    CompileRequest:
+      type: object
+      properties:
+        render:
+          $ref: '#/components/schemas/RenderRequest'
+        capabilities:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    ExecuteRequest:
+      type: object
+      properties:
+        render:
+          $ref: '#/components/schemas/RenderRequest'
+        capabilities:
+          type: array
+          items:
+            type: string
+        fixture_output:
+          $ref: '#/components/schemas/JsonValue'
+        stream:
+          type: boolean
+          default: false
+      additionalProperties: false
+    RenderRequest:
+      type: object
+      properties:
+        inputs:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JsonValue'
+        context:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JsonValue'
+      additionalProperties: false
+    UpdatePackageRequest:
+      type: object
+      properties:
+        version:
+          type: string
+        description:
+          type: string
+      minProperties: 1
+      additionalProperties: false
+    ContractSummary:
+      type: object
+      required: [package, id, version, fingerprint]
+      properties:
+        package:
+          type: string
+        id:
+          type: string
+        version:
+          type: string
+        fingerprint:
+          type: string
+        summary:
+          type: string
+        inputs:
+          type: array
+          items:
+            type: string
+        context:
+          type: array
+          items:
+            type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        component_count:
+          type: integer
+          minimum: 0
+        components:
+          type: array
+          items:
+            type: string
+        unresolved_references:
+          type: array
+          items:
+            type: string
+        fix_hints:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    CompiledInteraction:
+      type: object
+      required: [contract_id, messages, output_schema, required_capabilities]
+      properties:
+        contract_id:
+          type: string
+        messages:
+          type: array
+          items:
+            type: object
+            required: [role, content]
+            properties:
+              role:
+                type: string
+              content:
+                type: string
+            additionalProperties: false
+        output_schema:
+          $ref: '#/components/schemas/JsonValue'
+        required_capabilities:
+          type: array
+          items:
+            type: string
+        runtime_policy:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JsonValue'
+      additionalProperties: true
+    ExecutionReceipt:
+      type: object
+      required: [adapter, request_fingerprint, output_fingerprint, output, output_schema_valid]
+      properties:
+        adapter:
+          $ref: '#/components/schemas/AdapterDescriptor'
+        request_fingerprint:
+          type: string
+        output_fingerprint:
+          type: string
+        output:
+          $ref: '#/components/schemas/JsonValue'
+        output_schema_valid:
+          type: boolean
+      additionalProperties: false
+    AdapterDescriptor:
+      type: object
+      required: [id, version, capabilities]
+      properties:
+        id:
+          type: string
+        version:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+    StreamEvent:
+      oneOf:
+        - type: object
+          required: [kind, text]
+          properties:
+            kind:
+              const: Delta
+            text:
+              type: string
+          additionalProperties: false
+        - type: object
+          required: [kind, name, arguments_fragment]
+          properties:
+            kind:
+              const: ToolCallDelta
+            name:
+              type: string
+            arguments_fragment:
+              type: string
+          additionalProperties: false
+        - type: object
+          required: [kind, code, message]
+          properties:
+            kind:
+              const: Failed
+            code:
+              type: string
+            message:
+              type: string
+          additionalProperties: false
+        - type: object
+          required: [kind, receipt]
+          properties:
+            kind:
+              const: Complete
+            receipt:
+              $ref: '#/components/schemas/ExecutionReceipt'
+          additionalProperties: false

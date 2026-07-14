@@ -5,6 +5,7 @@ members = [
   "crates/templiqx-core",
   "crates/templiqx-application",
   "crates/templiqx-local",
+  "crates/templiqx-http",
   "crates/templiqx-mock",
   "crates/templiqx-cli",
   "crates/templiqx-mcp",
@@ -42,6 +43,9 @@ semver = "1.0.28"
 sha2 = "0.11.0"
 tempfile = "3.27.0"
 thiserror = "2.0.18"
+tower = { version = "0.5.2", features = ["timeout", "util"] }
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "net", "signal"] }
+axum = { version = "0.8.7", features = ["tokio", "http1", "json"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

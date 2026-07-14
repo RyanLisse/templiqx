@@ -3,6 +3,7 @@ verify:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
     cargo test --workspace --all-features
     ./scripts/check-boundaries.sh
+    npm run openapi:validate
     ./scripts/check-ci-gates.sh
     # qlty is skippable (SKIP_QLTY) only for constrained cold-clone checks.
     # Normal local verification and the minimal hosted CI backstop both lint.
@@ -27,3 +28,6 @@ docs-dev:
 
 docs-build:
     npm run build
+
+openapi-validate:
+    npm run openapi:validate
