@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://ryanlisse.github.io/templiqx/"><img src="https://img.shields.io/badge/docs-live-brightgreen" alt="Documentation"></a>
   <a href="https://github.com/RyanLisse/templiqx/actions/workflows/ci.yml"><img src="https://github.com/RyanLisse/templiqx/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/edition-2024-blue" alt="Rust edition 2024">
   <img src="https://img.shields.io/badge/unsafe__code-forbid-critical" alt="unsafe_code forbid">
