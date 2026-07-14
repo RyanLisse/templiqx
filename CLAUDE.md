@@ -40,7 +40,7 @@ Application-use skills are available in `.claude/skills/`: `use-templiqx`, `auth
 | Host integration | [`docs/guides/host-integration.md`](docs/guides/host-integration.md) |
 | CRM3 scenarios | [`examples/crm3/scenarios/`](examples/crm3/scenarios/) |
 | Generated code docs | [`openwiki/quickstart.md`](openwiki/quickstart.md) |
-| Agent skills | [`.agents/skills/`](.agents/skills/) and [`docs/guides/agent-skills.md`](docs/guides/agent-skills.md) |
+| Agent skills | [`.agents/skills/`](.agents/skills/) and [`docs/skills/`](docs/skills/) |
 
 ## Crate layout
 

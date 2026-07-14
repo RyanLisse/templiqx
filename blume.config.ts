@@ -29,7 +29,7 @@ export default defineConfig({
   navigation: {
     tabs: [
       { label: "Handbook", path: "/", icon: "book-open" },
-      { label: "Code docs", path: "/wiki", icon: "code" },
+      { label: "Code docs", path: "/wiki/quickstart", icon: "code" },
     ],
   },
 
