@@ -203,3 +203,38 @@ async fn cas_conflicts_return_conflict_status_and_diagnostics() {
         .expect("response");
     assert_eq!(missing_if_match.status(), StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn rejects_encoded_artifact_path_traversal_for_reads_and_deletes() {
+    let root = tempfile::tempdir().expect("temp root");
+    let app = templiqx_http::router_from_root(root.path()).expect("compose router");
+    let uri = "/operations/v1/artifacts/..%2f..%2f..%2fetc%2fpasswd?package=demo";
+
+    for (method, headers, operation) in [
+        (Method::GET, &[][..], "read_artifact"),
+        (
+            Method::DELETE,
+            &[("if-match", "sha256:deadbeef")][..],
+            "delete_workspace_artifact",
+        ),
+    ] {
+        let (status, _headers, body) =
+            request_json(app.clone(), method.clone(), uri, None, headers).await;
+        eprintln!("{method} {uri} -> {status} {body}");
+        assert!(
+            !status.is_success(),
+            "{method} traversal request must be rejected, got {status}: {body}"
+        );
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(body["operation"], operation);
+        assert_eq!(body["ok"], false);
+        assert!(
+            body["diagnostics"]
+                .as_array()
+                .expect("diagnostics")
+                .iter()
+                .any(|diagnostic| diagnostic["code"] == "TQX_PATH_INVALID"),
+            "{method} traversal response must expose the path-safety diagnostic: {body}"
+        );
+    }
+}
