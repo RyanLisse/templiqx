@@ -10,6 +10,8 @@ only the explicitly listed constructs are tested.
 |------------|----------------|-------------------|-------|
 | `v1-beanshell-detected` | V1 BeanShell | `unsafe` | Detection only; no execution |
 | `v2-marker-detected` | V2 `${v2:...}` | `unsupported` | Report-only migration |
+| `v5-repeat-marker-detected` | V5 `${#...}` / `${/...}` | `unsupported` | Repeat markers detected; not rendered in this slice |
+| `v5-conditional-marker-detected` | V5 `${?...}` / `${/...}` | `unsupported` | Conditional regions detected; not rendered in this slice |
 | `v5-nested-table` | V5 nested table | `migrated` | Placeholder plus merge field in a nested table |
 | `v5-header-footer` | V5 story parts | `migrated` | Body, header, and footer rendering |
 | `v5-alias-collision-missing` | V5 aliases | `migrated` | Two aliases converge; missing merge data stays unresolved |

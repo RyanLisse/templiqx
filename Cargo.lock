@@ -1711,6 +1711,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "templiqx-bench"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "templiqx-application",
+ "templiqx-contracts",
+ "templiqx-docx-v5",
+ "templiqx-local",
+ "templiqx-ports",
+]
+
+[[package]]
 name = "templiqx-cli"
 version = "0.1.0"
 dependencies = [

@@ -39,8 +39,8 @@ fn registered_operation_routes_and_openapi_paths_do_not_drift() {
     );
     assert_eq!(
         routed.len(),
-        26,
-        "the catalog must expose exactly 26 operations"
+        27,
+        "the catalog must expose exactly 27 operations"
     );
 
     let openapi_operations = documented_operation_ids(&document);
@@ -130,7 +130,7 @@ fn json_request_dto_fields_and_openapi_schemas_do_not_drift() {
         checked += 1;
     }
 
-    assert_eq!(checked, 12, "every JSON request-body DTO must be checked");
+    assert_eq!(checked, 13, "every JSON request-body DTO must be checked");
 }
 
 fn documented_operation_ids(document: &Value) -> BTreeSet<String> {

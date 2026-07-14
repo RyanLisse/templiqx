@@ -14,9 +14,9 @@ use std::{
 };
 use templiqx_application::{
     CreatePackageRequest, DeleteContractRequest, DeletePackageRequest,
-    DeleteWorkspaceArtifactRequest, ListWorkspaceArtifactsRequest, MigrateLegacyRequest,
-    ReadArtifactRequest, RenderDocumentRequest, SignPackageRequest, UpdatePackageRequest,
-    VerifyPackageTrustRequest,
+    DeleteWorkspaceArtifactRequest, InspectDocumentRequest, ListWorkspaceArtifactsRequest,
+    MigrateLegacyRequest, ReadArtifactRequest, RenderDocumentRequest, SignPackageRequest,
+    UpdatePackageRequest, VerifyPackageTrustRequest,
 };
 use templiqx_conformance::{
     ConformanceTraceReceipt, DocumentEvidence, InteractionEvidence, TRACE_API_VERSION,
@@ -444,6 +444,7 @@ const BEHAVIOR_PARITY_CASES: &[&str] = &[
     "execute_contract",
     "migrate_legacy",
     "render_document",
+    "inspect_document",
     "list_workspace_artifacts",
     "read_artifact",
     "delete_workspace_artifact",
@@ -1094,6 +1095,31 @@ async fn rust_cli_and_in_memory_mcp_have_crm3_capability_parity() -> Result<()> 
     .await?;
     assert_equal_envelopes(&rust_migrate, &cli_migrate, &mcp_migrate)?;
 
+    let rust_inspect = rust_service.inspect_document(&InspectDocumentRequest {
+        package: PACKAGE.into(),
+        dialect: "v5".into(),
+        template: shared_source_relative.clone(),
+        aliases: aliases.clone(),
+    });
+    let cli_inspect = cli_envelope(
+        &examples,
+        &[
+            "inspect-document",
+            PACKAGE,
+            "v5",
+            &shared_source_relative,
+            "--aliases",
+            aliases_path.to_str().context("aliases")?,
+        ],
+    )?;
+    let mcp_inspect = mcp_call(
+        &client,
+        "inspect_document",
+        json!({"package": PACKAGE, "dialect": "v5", "template": shared_source_relative, "aliases": aliases}),
+    )
+    .await?;
+    assert_equal_envelopes(&rust_inspect, &cli_inspect, &mcp_inspect)?;
+
     let rust_migration = rust_migrate.result.context("Rust migration result")?;
     let rust_template_relative = rust_migration
         .canonical_template
@@ -1182,10 +1208,17 @@ fn application_document_boundary_rejects_unconfined_paths_before_adapter_use() -
         let envelope = service.migrate_legacy(&MigrateLegacyRequest {
             package: PACKAGE.into(),
             dialect: "v5".into(),
-            source: unsafe_source,
+            source: unsafe_source.clone(),
             aliases: aliases.clone(),
         });
         assert_path_rejected(&envelope)?;
+        let inspect = service.inspect_document(&InspectDocumentRequest {
+            package: PACKAGE.into(),
+            dialect: "v5".into(),
+            template: unsafe_source,
+            aliases: aliases.clone(),
+        });
+        assert_path_rejected(&inspect)?;
         ensure!(
             !canonical.exists(),
             "rejected migration created a canonical artifact"

@@ -19,6 +19,9 @@ production data before claiming production readiness.
 | Proposal / approval / audit | No ownership | Consumer-contract harness | Owner per ADR-0016 |
 | Retry / workflow | Typed failures | Scripted attempts | ModelGateway / BullMQ per ADR-0006 |
 | Document rendering | Port + V5 adapter | DOCX baseline | Storage, permissions, lifecycle |
+| Document preflight (`inspect_document`) | Port + V5 adapter | Legacy corpus inspect fixtures | Host template storage only |
+| PDF / conversion | ADR entry criteria only | Not in repo | Host-constructed converter adapter |
+| Translation bundle policy | Package artifacts + filters | Demo `translations/` | Tenant locale selection |
 | Kubernetes runtime | Separate CLI/MCP artifacts | Synthetic conformance image, 8 Jobs, mock gateway | Host chart or sidecar integration |
 
 ## ModelGateway consumer contract

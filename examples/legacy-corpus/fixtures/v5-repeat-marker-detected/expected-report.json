@@ -1,0 +1,23 @@
+{
+  "approximated": 0,
+  "dialect": "v5",
+  "findings": [
+    {
+      "category": "unsupported",
+      "construct": "v5_repeat",
+      "detail": "repeated table rows are outside the measured POC subset",
+      "part": "word/document.xml"
+    },
+    {
+      "category": "migrated",
+      "construct": "v5_reference",
+      "detail": "supported V5 reference",
+      "part": "word/document.xml",
+      "reference": "item"
+    }
+  ],
+  "migrated": 1,
+  "unresolved": 0,
+  "unsafe_constructs": 0,
+  "unsupported": 1
+}

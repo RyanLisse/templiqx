@@ -290,6 +290,12 @@ async fn every_catalog_operation_has_a_reachable_http_route() {
             "render_document",
         ),
         (
+            Method::POST,
+            "/operations/v1/documents/inspect",
+            r#"{"package":"demo","dialect":"v5","template":"template.docx","aliases":{}}"#,
+            "inspect_document",
+        ),
+        (
             Method::GET,
             "/operations/v1/artifacts?package=demo",
             "",
@@ -309,7 +315,7 @@ async fn every_catalog_operation_has_a_reachable_http_route() {
         ),
     ];
 
-    assert_eq!(cases.len(), 26);
+    assert_eq!(cases.len(), 27);
     for (method, uri, request_body, operation) in cases {
         let root = tempfile::tempdir().expect("temp root");
         let response = templiqx_http::router_from_root(root.path())

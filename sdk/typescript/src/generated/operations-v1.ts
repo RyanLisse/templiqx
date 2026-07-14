@@ -399,6 +399,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/operations/v1/documents/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inspect a document template without mutation */
+        post: operations["inspectDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/operations/v1/artifacts": {
         parameters: {
             query?: never;
@@ -507,6 +524,9 @@ export interface components {
         };
         ExecutionReceiptEnvelope: components["schemas"]["OperationEnvelopeBase"] & {
             result?: components["schemas"]["ExecutionReceipt"];
+        };
+        InspectDocumentEnvelope: components["schemas"]["OperationEnvelopeBase"] & {
+            result?: components["schemas"]["InspectDocumentResult"];
         };
         PackageManifest: {
             api_version: string;
@@ -625,6 +645,16 @@ export interface components {
             output: string;
             workspace?: string;
         };
+        InspectDocumentRequest: {
+            package: string;
+            dialect: string;
+            template: string;
+            /** @default {} */
+            aliases: components["schemas"]["JsonValue"];
+        };
+        InspectDocumentResult: {
+            report: components["schemas"]["JsonValue"];
+        };
         ContractSummary: {
             package: string;
             id: string;
@@ -693,6 +723,15 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["JsonValueEnvelope"];
+            };
+        };
+        /** @description inspect_document operation envelope. */
+        InspectDocumentEnvelope: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["InspectDocumentEnvelope"];
             };
         };
         /** @description Transport-level failure before a product OperationEnvelope can be returned. */
@@ -1346,6 +1385,22 @@ export interface operations {
             200: components["responses"]["OperationEnvelope"];
         };
     };
+    inspectDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspectDocumentRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["InspectDocumentEnvelope"];
+        };
+    };
     listWorkspaceArtifacts: {
         parameters: {
             query: {
@@ -1405,5 +1460,5 @@ export interface operations {
 
 /** Codegen metadata used by the compatibility self-check. */
 export const GENERATED_OPENAPI_VERSION = "1.0.0-alpha.1";
-export const GENERATED_OPENAPI_DIGEST = "sha256:8963a3db683b42f37b7e729ee0b74c296a1e1d70c7446b43f075032e7455b669";
+export const GENERATED_OPENAPI_DIGEST = "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914";
 export const GENERATED_SDK_VERSION = "0.1.0";

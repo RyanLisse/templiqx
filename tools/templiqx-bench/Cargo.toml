@@ -1,0 +1,27 @@
+[package]
+name = "templiqx-bench"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Deterministic local benchmark harness for Templiqx compile and document paths"
+publish = false
+
+[[bin]]
+name = "templiqx-bench"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+templiqx-application = { path = "../../crates/templiqx-application" }
+templiqx-contracts = { path = "../../crates/templiqx-contracts" }
+templiqx-docx-v5 = { path = "../../adapters/templiqx-docx-v5" }
+templiqx-local = { path = "../../crates/templiqx-local" }
+templiqx-ports = { path = "../../crates/templiqx-ports" }
+tempfile.workspace = true
+
+[dev-dependencies]
+
+[lints]
+workspace = true

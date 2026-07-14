@@ -1,0 +1,16 @@
+{
+  "approximated": 0,
+  "dialect": "v5",
+  "findings": [
+    {
+      "category": "unsupported",
+      "construct": "v5_conditional",
+      "detail": "conditional document regions are outside the measured POC subset",
+      "part": "word/document.xml"
+    }
+  ],
+  "migrated": 0,
+  "unresolved": 0,
+  "unsafe_constructs": 0,
+  "unsupported": 1
+}

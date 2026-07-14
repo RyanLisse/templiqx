@@ -18,6 +18,7 @@ members = [
   "tools/templiqx-mock-gateway",
   "tools/templiqx-http-conformance",
   "tools/templiqx-legacy-docx-fixtures",
+  "tools/templiqx-bench",
 ]
 resolver = "2"
 

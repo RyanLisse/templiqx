@@ -144,6 +144,7 @@ export interface TempliqxClient {
   ): Result<"explainContract">;
   migrateLegacy(body: OperationBody<"migrateLegacy">, options?: CallOptions): Result<"migrateLegacy">;
   renderDocument(body: OperationBody<"renderDocument">, options?: CallOptions): Result<"renderDocument">;
+  inspectDocument(body: OperationBody<"inspectDocument">, options?: CallOptions): Result<"inspectDocument">;
   listWorkspaceArtifacts(
     query: OperationParameters<"listWorkspaceArtifacts", "query">,
     options?: CallOptions,
@@ -389,6 +390,8 @@ export function createTempliqxClient(config: CreateTempliqxClientOptions): Templ
       dispatch<"migrateLegacy">({ method: "POST", path: "/operations/v1/legacy/migrate", body, options }),
     renderDocument: (body, options) =>
       dispatch<"renderDocument">({ method: "POST", path: "/operations/v1/documents/render", body, options }),
+    inspectDocument: (body, options) =>
+      dispatch<"inspectDocument">({ method: "POST", path: "/operations/v1/documents/inspect", body, options }),
     listWorkspaceArtifacts: (query, options) =>
       dispatch<"listWorkspaceArtifacts">({
         method: "GET",

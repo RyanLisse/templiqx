@@ -523,6 +523,22 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/documents/inspect:
+    post:
+      tags: [Execution]
+      summary: Inspect a document template without mutation
+      operationId: inspectDocument
+      x-templiqx-idempotency: caller-defined
+      x-templiqx-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectDocumentRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDocumentEnvelope'
   /operations/v1/artifacts:
     get:
       tags: [Discovery]
@@ -647,6 +663,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/JsonValueEnvelope'
+    InspectDocumentEnvelope:
+      description: inspect_document operation envelope.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectDocumentEnvelope'
     TransportFailure:
       description: Transport-level failure before a product OperationEnvelope can be returned.
       headers:
@@ -813,6 +835,13 @@ components:
           properties:
             result:
               $ref: '#/components/schemas/ExecutionReceipt'
+    InspectDocumentEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/InspectDocumentResult'
     PackageManifest:
       type: object
       required: [api_version, package, version]
@@ -1062,6 +1091,27 @@ components:
           type: string
         workspace:
           type: string
+      additionalProperties: false
+    InspectDocumentRequest:
+      type: object
+      required: [package, dialect, template]
+      properties:
+        package:
+          type: string
+        dialect:
+          type: string
+        template:
+          type: string
+        aliases:
+          $ref: '#/components/schemas/JsonValue'
+          default: {}
+      additionalProperties: false
+    InspectDocumentResult:
+      type: object
+      required: [report]
+      properties:
+        report:
+          $ref: '#/components/schemas/JsonValue'
       additionalProperties: false
     ContractSummary:
       type: object
