@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Templiqx.Adapter.Tests/Templiqx.Adapter.Tests.csproj" />
+  <Project Path="Templiqx.Adapter/Templiqx.Adapter.csproj" />
+</Solution>
