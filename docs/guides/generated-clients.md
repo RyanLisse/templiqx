@@ -17,7 +17,8 @@ the OpenAPI digest, engine compatibility, contract format, and SDK versions.
 | TypeScript | Pilot SDK in `sdk/typescript/` | Generated DTOs with a hand-written transport-only façade and live conformance test. |
 | .NET | Pilot SDK in `sdk/dotnet/` | Generated DTOs (openapi-generator models-only) with a hand-written `HttpClient` façade. |
 | Python | Pilot SDK in `sdk/python/` | Generated Pydantic v2 DTOs with a hand-written synchronous `httpx` façade. |
-| Go / Rust | Later | Add when a concrete consumer appears. |
+| Go | Pilot SDK in `sdk/go/` | Generated DTOs (oapi-codegen types-only) with a hand-written `net/http` façade. |
+| Rust | Later | Add when a concrete consumer appears. |
 | C++ | Consumer-driven only | No speculative generator work. |
 
 ## Repository policy
