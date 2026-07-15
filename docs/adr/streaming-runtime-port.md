@@ -1,4 +1,6 @@
-# ADR: Streaming `RuntimeAdapter` port extension
+---
+title: "ADR: Streaming `RuntimeAdapter` port extension"
+---
 
 ## Status
 

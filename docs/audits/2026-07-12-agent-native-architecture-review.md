@@ -1,4 +1,6 @@
-# Agent-Native Architecture Audit — Templiqx
+---
+title: Agent-Native Architecture Audit — Templiqx
+---
 
 **Date:** 2026-07-12  
 **Scope:** Rust workspace — CLI (`templiqx-cli`), MCP server (`templiqx-mcp`), capability catalog, application layer, conformance tests  

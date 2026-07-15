@@ -3,7 +3,6 @@ title: Architecture decisions
 description: Index of Templiqx Architecture Decision Records (ADRs) — one record per significant, hard-to-reverse design choice, with its status and rationale.
 ---
 
-# Architecture decisions
 
 Architecture Decision Records (ADRs) capture the significant, hard-to-reverse design
 choices behind Templiqx: what was decided, why, the alternatives weighed, and the

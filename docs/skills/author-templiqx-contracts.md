@@ -3,7 +3,6 @@ title: author-templiqx-contracts
 description: Create, repair, and validate strict templiqx/v1alpha1 contracts through Templiqx operations — typed inputs, bounded content nodes, deterministic expressions, capability profiles.
 ---
 
-# author-templiqx-contracts
 
 Create, edit, explain, and repair strict `templiqx/v1alpha1` YAML contracts and
 package-local partials. Use this skill for prompt contracts with typed inputs and

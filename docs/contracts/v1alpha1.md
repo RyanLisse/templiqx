@@ -1,4 +1,6 @@
-# Portable contract format `templiqx/v1alpha1`
+---
+title: "Portable contract format `templiqx/v1alpha1`"
+---
 
 The canonical source is strict, human-readable YAML. Unknown fields and unknown enum values fail parsing. `examples/packages/demo/contracts/greeting.yaml` is the executable reference example.
 

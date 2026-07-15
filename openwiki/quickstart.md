@@ -1,4 +1,6 @@
-# Templiqx OpenWiki quickstart
+---
+title: Templiqx OpenWiki quickstart
+---
 
 Templiqx is a standalone, provider-neutral AI interaction contract compiler. The repository packages a portable contract format, a canonical application service, local filesystem composition, an MCP surface, a CLI, deterministic mock/runtime adapters, and a CRM3 conformance package that ties those pieces together.
 

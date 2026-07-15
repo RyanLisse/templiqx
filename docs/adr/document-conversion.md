@@ -1,4 +1,6 @@
-# ADR: Document conversion (PDF and host-owned converters)
+---
+title: "ADR: Document conversion (PDF and host-owned converters)"
+---
 
 ## Status
 

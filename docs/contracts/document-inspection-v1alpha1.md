@@ -1,4 +1,6 @@
-# Document inspection v1alpha1
+---
+title: Document inspection v1alpha1
+---
 
 Read-only, non-mutating preflight for package-confined document templates.
 

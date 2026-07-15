@@ -1,4 +1,6 @@
-# Actor-neutral capability map
+---
+title: Actor-neutral capability map
+---
 
 Templiqx has one canonical application service: `TempliqxService`. Rust hosts call it directly; the CLI and MCP server are thin adapters over the same operation methods and `OperationEnvelope` results. A human or an agent therefore receives the same validation, diagnostics, fingerprints, package artifacts, and compare-and-swap behavior.
 

@@ -3,7 +3,6 @@ title: test-templiqx-packages
 description: Validate Templiqx packages, run deterministic eval fixtures, compare fingerprints, and report diagnostics through MCP or the CLI.
 ---
 
-# test-templiqx-packages
 
 Validate Templiqx packages and contracts, discover and run deterministic eval
 fixtures, compare fingerprints, inspect diagnostics, and verify rendered workspace

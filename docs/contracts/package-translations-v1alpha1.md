@@ -1,4 +1,6 @@
-# Package translation bundles v1alpha1
+---
+title: Package translation bundles v1alpha1
+---
 
 Static, manifest-listed translation artifacts for deterministic i18n in
 contracts.

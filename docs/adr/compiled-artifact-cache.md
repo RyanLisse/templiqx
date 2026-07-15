@@ -1,4 +1,6 @@
-# ADR: Compiled-artifact cache
+---
+title: "ADR: Compiled-artifact cache"
+---
 
 ## Status
 

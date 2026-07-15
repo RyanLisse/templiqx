@@ -1,4 +1,6 @@
-# ADR: Legacy template import (safe subset)
+---
+title: "ADR: Legacy template import (safe subset)"
+---
 
 ## Status
 

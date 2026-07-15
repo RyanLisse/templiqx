@@ -1,4 +1,6 @@
-# Deployment boundary
+---
+title: Deployment boundary
+---
 
 Templiqx deploys as a portable contract compiler plus host-owned adapters. The
 core crates stay provider-neutral and do not embed CRM3, Basenet, auth,

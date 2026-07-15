@@ -1,4 +1,6 @@
-# Generated client policy
+---
+title: Generated client policy
+---
 
 Templiqx publishes one OpenAPI 3.1 contract
 ([`openapi/templiqx-operations-v1.yaml`](../../openapi/templiqx-operations-v1.yaml)).

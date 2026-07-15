@@ -1,4 +1,6 @@
-# Host integration guide
+---
+title: Host integration guide
+---
 
 This guide extracts the ownership matrix and handoff procedures from the pre-CRM3
 readiness specification so Basenet CRM3 and other opco hosts can integrate without

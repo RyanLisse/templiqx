@@ -1,4 +1,6 @@
-# ADR: Tool-contract references
+---
+title: "ADR: Tool-contract references"
+---
 
 ## Status
 

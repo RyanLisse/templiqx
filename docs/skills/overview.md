@@ -3,7 +3,6 @@ title: Agent skills
 description: Download and use the three Templiqx repository skills so Codex and Claude Code operate, author, and test packages smartly over MCP or the CLI.
 ---
 
-# Agent skills
 
 Templiqx ships three repository-local **skills** — self-contained instruction
 bundles that teach an agent to drive Templiqx through its MCP tools or CLI, using

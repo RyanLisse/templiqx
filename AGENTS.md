@@ -18,6 +18,7 @@ The on-demand OpenWiki GitHub Actions workflow refreshes the repository wiki. Do
   `qlty check --fix --level=low` before commit. Hosted CI is intentionally a
   minimal backstop; expensive verification is local-first.
 - Preserve CRM3 evidence-grounding in conformance scenarios — draft output must stay grounded in source fragments.
+- For multi-use-case delivery (matter docs, email drafts, similar artifacts), use typed AI contracts for extract/draft and bounded document adapters (DOCX V5, optional HTML) — not general web templating or a Jinja/Handlebars replacement.
 - Use the repository skills in `.agents/skills/` when operating the application: `use-templiqx`, `author-templiqx-contracts`, and `test-templiqx-packages`. Claude Code aliases the same canonical files through `.claude/skills/`.
 
 ## Learned Workspace Facts
@@ -29,4 +30,4 @@ The on-demand OpenWiki GitHub Actions workflow refreshes the repository wiki. Do
 - **Mocks are conformance-only:** `templiqx-mock`, `templiqx-runtime-http-mock`, and `templiqx-mock-gateway` must not appear in the default CLI/MCP/application graph.
 - **CRM3 proof:** synthetic fixture at `examples/crm3`; scenarios under `examples/crm3/scenarios/**`; tests in `templiqx-conformance`.
 - **Deployment:** Docker (`Dockerfile`, `deploy/compose.yml`), Helm (`charts/templiqx/`), smoke scripts (`scripts/docker-smoke.sh`, `scripts/kind-smoke.sh`, `scripts/supply-chain-smoke.sh`).
-- **Docs site:** Blume (`just docs-dev`, `just docs-build` → `dist/`); GitHub Pages deploy via `.github/workflows/docs.yml`; handbook from `docs/`, auto-refreshed code docs from `openwiki/` at `/wiki`.
+- **Docs site:** Blume (`just docs-dev`, `just docs-build` → `dist/`); GitHub Pages deploy via `.github/workflows/docs.yml`; handbook from `docs/`, auto-refreshed OpenWiki code docs at `/wiki` via `docs/wiki` symlink. Blume renders `title` frontmatter as the page `<h1>` — do not duplicate with `#` headings; Mermaid and callouts require `.mdx`; quote YAML titles that contain colons.

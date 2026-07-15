@@ -1,4 +1,6 @@
-# ADR: ODT (OpenDocument Text) compatibility
+---
+title: "ADR: ODT (OpenDocument Text) compatibility"
+---
 
 ## Status
 

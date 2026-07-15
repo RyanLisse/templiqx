@@ -3,7 +3,6 @@ title: use-templiqx
 description: Operate Templiqx packages, contracts, migration, rendering, and artifacts over MCP or the CLI — the same canonical operations, either surface.
 ---
 
-# use-templiqx
 
 Operate the Templiqx application: discover packages, inspect or compile contracts,
 execute interactions, migrate legacy DOCX templates, render documents, and manage

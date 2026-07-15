@@ -1,4 +1,6 @@
-# ADR: Operations HTTP API boundary
+---
+title: "ADR: Operations HTTP API boundary"
+---
 
 ## Status
 Accepted (2026-07-14).

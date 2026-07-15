@@ -1,4 +1,6 @@
-# ADR: Package trust v1
+---
+title: "ADR: Package trust v1"
+---
 
 ## Status
 

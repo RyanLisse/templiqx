@@ -1,4 +1,6 @@
-# Releasing Templiqx
+---
+title: Releasing Templiqx
+---
 
 Templiqx releases three deliberately separate OCI artifacts and one Helm chart:
 

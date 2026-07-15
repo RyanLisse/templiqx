@@ -1,4 +1,6 @@
-# Testing and verification
+---
+title: Testing and verification
+---
 
 This repository uses a layered verification model: fast unit and workspace tests, boundary enforcement, conformance tests, and deployment/supply-chain smoke checks.
 

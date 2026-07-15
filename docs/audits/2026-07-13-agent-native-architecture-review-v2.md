@@ -1,4 +1,6 @@
-# Agent-Native Architecture Re-Audit (v2) — Templiqx
+---
+title: Agent-Native Architecture Re-Audit (v2) — Templiqx
+---
 
 **Date:** 2026-07-13
 **Scope:** current production-readiness branch; application service, CLI, MCP,

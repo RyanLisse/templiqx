@@ -1,4 +1,6 @@
-# Observability seam
+---
+title: Observability seam
+---
 
 ## Status
 

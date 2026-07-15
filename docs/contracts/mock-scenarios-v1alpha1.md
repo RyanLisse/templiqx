@@ -1,4 +1,6 @@
-# Mock scenario format `templiqx.mock/v1alpha1`
+---
+title: "Mock scenario format `templiqx.mock/v1alpha1`"
+---
 
 `templiqx.mock/v1alpha1` is a conformance-only scenario DTO parsed by
 `templiqx-mock`. It is not a production workflow, auth, retrieval or model

@@ -1,4 +1,6 @@
-# Operations HTTP API
+---
+title: Operations HTTP API
+---
 
 The northbound Operations API is a thin HTTP transport over the same
 `TempliqxService` catalog used by Rust, CLI, and MCP. Every **operation route**
