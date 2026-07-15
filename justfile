@@ -5,6 +5,7 @@ verify:
     ./scripts/check-boundaries.sh
     npm run openapi:validate
     just compat-check
+    just bump-check
     ./scripts/check-ci-gates.sh
     # qlty is skippable (SKIP_QLTY) only for constrained cold-clone checks.
     # Normal local verification and the minimal hosted CI backstop both lint.
@@ -35,6 +36,12 @@ openapi-validate:
 
 compat-check:
     npm run openapi:compat
+
+bump-check:
+    npm run openapi:bump-check
+
+bump-engine *args:
+    node scripts/bump-engine-version.mjs {{args}}
 
 openapi-typescript-proof:
     npm run openapi:typescript-proof

@@ -12,6 +12,9 @@ SDK generators read the matrix and emit checked-in compatibility markers next
 to their generated DTOs. SDK compatibility modules consume those markers; they
 do not declare engine or contract versions independently.
 
+Use the [versioning and coordinated bump workflow](versioning.md) whenever the
+engine version or normative Operations OpenAPI document changes.
+
 ## Drift enforcement
 
 Run the compatibility gate from the repository root:
