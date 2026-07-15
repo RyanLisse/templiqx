@@ -1,4 +1,5 @@
 [workspace]
+exclude = ["sdk/rust"]
 members = [
   "crates/templiqx-contracts",
   "crates/templiqx-ports",
