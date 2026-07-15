@@ -21,7 +21,8 @@ class Compatibility:
 
 
 compatibility = Compatibility(
-    engine_version="TODO-phase-6",
+    # Wired to the real engine version by the phase-6 compatibility matrix.
+    engine_version="0.0.0-unset",
     ops_api_version=GENERATED_OPENAPI_VERSION,
     openapi_digest=GENERATED_OPENAPI_DIGEST,
     contract_format="templiqx/v1alpha1",

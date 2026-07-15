@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sdk_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-repo_root="$(CDPATH= cd -- "$sdk_root/../.." && pwd)"
+sdk_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
+repo_root="$(CDPATH='' cd -- "$sdk_root/../.." && pwd)"
 spec="$repo_root/openapi/templiqx-operations-v1.yaml"
 models="$sdk_root/Templiqx.Adapter/Generated/OperationsV1.cs"
 metadata="$sdk_root/Templiqx.Adapter/Generated/GeneratedMeta.cs"
