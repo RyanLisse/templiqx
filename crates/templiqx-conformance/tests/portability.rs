@@ -2,6 +2,7 @@ use anyhow::{Result, ensure};
 use templiqx_contracts::{OperationEnvelope, RenderRequest};
 
 const PACKAGE: &str = "synthetic-opco";
+const CROSS_OPCO_PACKAGES: &[&str] = &["basenet-legal", "finly-advice", "simplicate-workflow"];
 const EXTRACTION: &str = "hr-record-extraction";
 const VALIDATION: &str = "hr-record-validation";
 const CAPABILITIES: &[&str] = &["structured_output"];
@@ -11,6 +12,12 @@ fn packages_root() -> std::path::PathBuf {
         .join("../../examples/packages")
         .canonicalize()
         .expect("examples/packages root")
+}
+
+/// Cross-opco reference packages share the same package-driven conformance
+/// surface exercised in `cross_opco_packages.rs`.
+fn cross_opco_packages_root() -> std::path::PathBuf {
+    packages_root()
 }
 
 fn result<T>(envelope: OperationEnvelope<T>) -> Result<T> {
@@ -128,5 +135,22 @@ fn synthetic_opco_validate_compile_execute_are_deterministic() -> Result<()> {
         validation_receipt.output_schema_valid,
         "validation output must satisfy schema"
     );
+    Ok(())
+}
+
+#[test]
+fn cross_opco_packages_are_discoverable_from_shared_root() -> Result<()> {
+    let workspace = tempfile::tempdir()?;
+    let service =
+        templiqx_local::compose_with_workspace(cross_opco_packages_root(), workspace.path())?;
+    let discovered = result(service.discover_packages())?;
+    for package in CROSS_OPCO_PACKAGES {
+        ensure!(
+            discovered
+                .iter()
+                .any(|manifest| manifest.package == *package),
+            "expected {package} in discover_packages"
+        );
+    }
     Ok(())
 }

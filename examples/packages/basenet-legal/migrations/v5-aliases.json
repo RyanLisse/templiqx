@@ -1,0 +1,6 @@
+{
+  "legacy_client_name": "client.name",
+  "legacy_party_name": "parties[].name",
+  "legacy_claim_amount": "claims[].amount",
+  "legacy_outstanding_total": "financials.outstanding_total"
+}

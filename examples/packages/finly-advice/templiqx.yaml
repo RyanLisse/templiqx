@@ -1,0 +1,20 @@
+api_version: templiqx/v1alpha1
+package: finly-advice
+version: 0.1.0
+description: Synthetic regulated-advice reference package shaped like Finly/Finteqx; contains no production client data or host credentials.
+contracts:
+  - advice-fact-extraction
+  - advice-memo-drafting
+components: []
+evals:
+  - evals/advice-extraction-request.json
+  - evals/advice-extraction-output.json
+  - evals/advice-memo-request.json
+  - evals/advice-memo-output.json
+migrations: []
+templates: []
+provenance:
+  owner: templiqx
+  domain: regulated-advice
+  pilot: finly-finteqx-shaped
+  classification: synthetic

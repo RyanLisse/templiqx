@@ -1,0 +1,44 @@
+{
+  "risk_profile": "neutral",
+  "investment_horizon_years": 10,
+  "liquidity_need": "medium",
+  "product_recommendation": "diversified equity fund (SYN-FUND-42)",
+  "suitability": {
+    "suitable": true,
+    "rationale": "horizon exceeds five years and liquidity need is not high"
+  },
+  "evidence": [
+    {
+      "field": "risk_profile",
+      "document_id": "SYN-ADVICE-DOC-0001",
+      "fragment_id": "intake-1",
+      "start_offset": 16,
+      "end_offset": 38,
+      "quote_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "field": "investment_horizon_years",
+      "document_id": "SYN-ADVICE-DOC-0001",
+      "fragment_id": "intake-1",
+      "start_offset": 62,
+      "end_offset": 71,
+      "quote_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "field": "liquidity_need",
+      "document_id": "SYN-ADVICE-DOC-0001",
+      "fragment_id": "intake-1",
+      "start_offset": 91,
+      "end_offset": 97,
+      "quote_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "field": "product_recommendation",
+      "document_id": "SYN-ADVICE-DOC-0001",
+      "fragment_id": "intake-1",
+      "start_offset": 122,
+      "end_offset": 163,
+      "quote_sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ]
+}

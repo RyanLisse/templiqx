@@ -1,0 +1,22 @@
+{
+  "title": "Regulated advice memo",
+  "summary": "Neutral-risk client with a 10-year horizon and medium liquidity need is advised a diversified equity fund; suitability confirmed.",
+  "email_subject": "Your regulated investment advice summary",
+  "email_body": "Dear Demo Family Trust, we recommend diversified equity fund (SYN-FUND-42) based on your neutral risk profile and 10-year horizon.",
+  "merge_data": {
+    "client": {
+      "name": "Demo Family Trust",
+      "reference": "SYN-CLIENT-8842"
+    },
+    "advice": {
+      "risk_profile": "neutral",
+      "horizon_years": 10,
+      "liquidity_need": "medium",
+      "product": "diversified equity fund (SYN-FUND-42)"
+    },
+    "suitability": {
+      "suitable": true,
+      "rationale": "horizon exceeds five years and liquidity need is not high"
+    }
+  }
+}

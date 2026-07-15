@@ -1,0 +1,136 @@
+api_version: templiqx/v1alpha1
+id: legal-matter-extraction
+version: 0.1.0
+description: Extract parties, claims, and financials from synthetic Dutch legal matter text with evidence grounding.
+inputs:
+  document_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Stable synthetic source document identifier used by every evidence link.
+  fragment_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Stable fragment identifier whose text is supplied in document_text.
+  document_text:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Synthetic Dutch legal matter text to inspect.
+context:
+  matter_reference:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Host-owned opaque matter reference.
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Extraheer uitsluitend expliciete partijen, vorderingen en financiële bedragen. Geef bewijsverwijzingen, verzin niets."
+  - role: user
+    content:
+      - kind: text
+        value: "Zaak: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.matter_reference }
+        filters: [trim]
+      - kind: text
+        value: "\nDocument:\n"
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.document_text }
+        filters: [trim]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [parties, claims, financials, evidence]
+  properties:
+    parties:
+      type: array
+      minItems: 2
+      items:
+        type: object
+        additionalProperties: false
+        required: [name, role]
+        properties:
+          name: { type: string, minLength: 1 }
+          role: { type: string, minLength: 1 }
+    claims:
+      type: array
+      minItems: 3
+      items:
+        type: object
+        additionalProperties: false
+        required: [id, description, amount_eur]
+        properties:
+          id: { type: string, minLength: 1 }
+          description: { type: string, minLength: 1 }
+          amount_eur: { type: number, minimum: 0 }
+    financials:
+      type: object
+      additionalProperties: false
+      required: [outstanding_total, currency]
+      properties:
+        outstanding_total: { type: number, minimum: 0 }
+        currency: { type: string, enum: [EUR] }
+    evidence:
+      type: array
+      minItems: 6
+      items:
+        type: object
+        additionalProperties: false
+        required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
+        properties:
+          field: { type: string, minLength: 1 }
+          document_id: { type: string, minLength: 1 }
+          fragment_id: { type: string, minLength: 1 }
+          start_offset: { type: integer, minimum: 0 }
+          end_offset: { type: integer, minimum: 1 }
+          quote_sha256: { type: string, minLength: 64, maxLength: 64 }
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  domain: legal/basenet
+  classification: synthetic
+evals:
+  - id: synthetic-legal-matter
+    inputs:
+      document_id: SYN-LEGAL-DOC-0001
+      fragment_id: matter-body-1
+      document_text: "Partijen zijn Voorbeeld A B.V. (eiser) en Demo Transport N.V. (verweerder). Eiser vordert terugbetaling van EUR 45.750,00 wegens tekortkoming in levering. Claim 1: schade door verlate levering op 12 maart 2026. Claim 2: onterechte factuurpost van EUR 3.200,00. Claim 3: rente over openstaand bedrag van EUR 42.550,00. Het openstaande bedrag bedraagt EUR 45.750,00 exclusief rente."
+    context:
+      matter_reference: SYN-LEGAL-2026-0017
+      _templiqx_authorized_merge:
+        scope_id: SYN-LEGAL-SCOPE-001
+        policy_decision_id: SYN-POLICY-DEC-001
+        policy_version: "1.0.0"
+        evidence_provenance_id: SYN-EVID-PROV-001
+        issued_at: "2026-07-15T10:00:00Z"
+        expires_at: "2099-12-31T23:59:59Z"
+        fingerprint: a14d0cba0844767fcf43bb6e4af8b03e8373c0faaa3ce7a39deda4265e9d19e7
+    fake_output:
+      parties:
+        - { name: "Voorbeeld A B.V.", role: eiser }
+        - { name: "Demo Transport N.V.", role: verweerder }
+      claims:
+        - { id: claim-1, description: "schade door verlate levering op 12 maart 2026", amount_eur: 0 }
+        - { id: claim-2, description: onterechte factuurpost, amount_eur: 3200 }
+        - { id: claim-3, description: "rente over openstaand bedrag", amount_eur: 42550 }
+      financials:
+        outstanding_total: 45750
+        currency: EUR
+      evidence:
+        - { field: "parties[0].name", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 14, end_offset: 29, quote_sha256: a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456 }
+        - { field: "parties[1].name", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 42, end_offset: 61, quote_sha256: af7819cb59d72c4865699b1784c643d07c94251cda8e91b26ddc8e1f3743f5c8 }
+        - { field: "claims[0].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 130, end_offset: 175, quote_sha256: b75db1c6de0d19bab191e38f0fb7f28c5a01612ac7eacb628f7dd98aac52bdc5 }
+        - { field: "claims[1].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 177, end_offset: 224, quote_sha256: 4520d61c576b45c2fdaf7351002217dcee1f93eefa11615451c008750c5e842f }
+        - { field: "claims[2].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 226, end_offset: 272, quote_sha256: c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d }
+        - { field: financials.outstanding_total, document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 298, end_offset: 308, quote_sha256: d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e }

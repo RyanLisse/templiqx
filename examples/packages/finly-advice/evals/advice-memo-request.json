@@ -1,0 +1,62 @@
+{
+  "inputs": {
+    "extracted_facts": {
+      "risk_profile": "neutral",
+      "investment_horizon_years": 10,
+      "liquidity_need": "medium",
+      "product_recommendation": "diversified equity fund (SYN-FUND-42)",
+      "suitability": {
+        "suitable": true,
+        "rationale": "horizon exceeds five years and liquidity need is not high"
+      },
+      "evidence": [
+        {
+          "field": "risk_profile",
+          "document_id": "SYN-ADVICE-DOC-0001",
+          "fragment_id": "intake-1",
+          "start_offset": 16,
+          "end_offset": 38,
+          "quote_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        {
+          "field": "investment_horizon_years",
+          "document_id": "SYN-ADVICE-DOC-0001",
+          "fragment_id": "intake-1",
+          "start_offset": 62,
+          "end_offset": 71,
+          "quote_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        {
+          "field": "liquidity_need",
+          "document_id": "SYN-ADVICE-DOC-0001",
+          "fragment_id": "intake-1",
+          "start_offset": 91,
+          "end_offset": 97,
+          "quote_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+        },
+        {
+          "field": "product_recommendation",
+          "document_id": "SYN-ADVICE-DOC-0001",
+          "fragment_id": "intake-1",
+          "start_offset": 122,
+          "end_offset": 163,
+          "quote_sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ]
+    }
+  },
+  "context": {
+    "client_name": "Demo Family Trust",
+    "client_reference": "SYN-CLIENT-8842",
+    "advisor_name": "A. Adviseur",
+    "_templiqx_authorized_merge": {
+      "scope_id": "SYN-ADVICE-SCOPE-001",
+      "policy_decision_id": "SYN-POLICY-DEC-002",
+      "policy_version": "1.0.0",
+      "evidence_provenance_id": "SYN-EVID-PROV-002",
+      "issued_at": "2026-07-15T10:00:00Z",
+      "expires_at": "2099-12-31T23:59:59Z",
+      "fingerprint": "c131fd10e09408ccff43dea7faa3310a0fed62a499611bf47a802f129bfbf1be"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+api_version: templiqx/v1alpha1
+package: simplicate-workflow
+version: 0.1.0
+description: Synthetic project-invoicing reference package shaped like Simplicate; contains no production project data or host credentials.
+contracts:
+  - project-hours-extraction
+  - invoice-drafting
+components: []
+evals:
+  - evals/hours-extraction-request.json
+  - evals/hours-extraction-output.json
+  - evals/invoice-draft-request.json
+  - evals/invoice-draft-output.json
+migrations: []
+templates: []
+provenance:
+  owner: templiqx
+  domain: project-invoicing
+  pilot: simplicate-shaped
+  classification: synthetic

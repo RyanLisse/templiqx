@@ -1,0 +1,119 @@
+api_version: templiqx/v1alpha1
+id: project-hours-extraction
+version: 0.1.0
+description: Extract project, hours, and rates from synthetic timesheet text with evidence grounding.
+inputs:
+  document_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Stable synthetic source document identifier used by every evidence link.
+  fragment_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Stable fragment identifier whose text is supplied in timesheet_text.
+  timesheet_text:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Synthetic project timesheet note text.
+context:
+  project_reference:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Host-owned opaque project reference.
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Extract only explicit project name, billable hours, and hourly rates. Provide evidence links; do not invent values."
+  - role: user
+    content:
+      - kind: text
+        value: "Project reference: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.project_reference }
+        filters: [trim]
+      - kind: text
+        value: "\nTimesheet:\n"
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.timesheet_text }
+        filters: [trim]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [project, hours, rate_eur, evidence]
+  properties:
+    project:
+      type: object
+      additionalProperties: false
+      required: [name, reference]
+      properties:
+        name: { type: string, minLength: 1 }
+        reference: { type: string, minLength: 1 }
+    hours:
+      type: object
+      additionalProperties: false
+      required: [billable, period]
+      properties:
+        billable: { type: number, minimum: 0 }
+        period: { type: string, minLength: 1 }
+    rate_eur:
+      type: number
+      minimum: 0
+    evidence:
+      type: array
+      minItems: 3
+      items:
+        type: object
+        additionalProperties: false
+        required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
+        properties:
+          field: { type: string, minLength: 1 }
+          document_id: { type: string, minLength: 1 }
+          fragment_id: { type: string, minLength: 1 }
+          start_offset: { type: integer, minimum: 0 }
+          end_offset: { type: integer, minimum: 1 }
+          quote_sha256: { type: string, minLength: 64, maxLength: 64 }
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  domain: project-invoicing
+  classification: synthetic
+evals:
+  - id: synthetic-project-hours
+    inputs:
+      document_id: SYN-TIME-DOC-0001
+      fragment_id: timesheet-1
+      timesheet_text: "Project: Website Redesign (SYN-PROJ-2201). Period: March 2026. Billable hours: 32.5. Hourly rate: EUR 125.00."
+    context:
+      project_reference: SYN-PROJ-2201
+      _templiqx_authorized_merge:
+        scope_id: SYN-PROJECT-SCOPE-001
+        policy_decision_id: SYN-POLICY-DEC-003
+        policy_version: "1.0.0"
+        evidence_provenance_id: SYN-EVID-PROV-003
+        issued_at: "2026-07-15T10:00:00Z"
+        expires_at: "2099-12-31T23:59:59Z"
+        fingerprint: c11a6d6ebd4f346daea043713886628f8780c4631ccf5d445a1b85dd682fb426
+    fake_output:
+      project:
+        name: Website Redesign
+        reference: SYN-PROJ-2201
+      hours:
+        billable: 32.5
+        period: March 2026
+      rate_eur: 125
+      evidence:
+        - { field: project.name, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 9, end_offset: 25, quote_sha256: aaaaaaaa11111111111111111111111111111111111111111111111111111111 }
+        - { field: hours.billable, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 73, end_offset: 77, quote_sha256: bbbbbbbb22222222222222222222222222222222222222222222222222222222 }
+        - { field: rate_eur, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 93, end_offset: 104, quote_sha256: cccccccc33333333333333333333333333333333333333333333333333333333 }

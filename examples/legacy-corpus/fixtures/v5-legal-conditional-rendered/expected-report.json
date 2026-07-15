@@ -1,0 +1,24 @@
+{
+  "approximated": 0,
+  "dialect": "v5",
+  "findings": [
+    {
+      "category": "migrated",
+      "construct": "v5_conditional",
+      "detail": "bounded whole-paragraph conditional",
+      "part": "word/document.xml",
+      "reference": "include_notice"
+    },
+    {
+      "category": "migrated",
+      "construct": "v5_reference",
+      "detail": "supported V5 reference",
+      "part": "word/document.xml",
+      "reference": "notice_text"
+    }
+  ],
+  "migrated": 2,
+  "unresolved": 0,
+  "unsafe_constructs": 0,
+  "unsupported": 0
+}

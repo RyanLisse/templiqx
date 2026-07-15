@@ -1,0 +1,242 @@
+api_version: templiqx/v1alpha1
+id: legal-document-drafting
+version: 0.1.0
+description: Draft a typed Dutch legal summary and merge_data from schema-valid extracted matter facts.
+inputs:
+  extracted_facts:
+    schema:
+      type: object
+      additionalProperties: false
+      required: [parties, claims, financials, evidence]
+      properties:
+        parties:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, role]
+            properties:
+              name: { type: string }
+              role: { type: string }
+        claims:
+          type: array
+          minItems: 3
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, description, amount_eur]
+            properties:
+              id: { type: string }
+              description: { type: string }
+              amount_eur: { type: number }
+        financials:
+          type: object
+          additionalProperties: false
+          required: [outstanding_total, currency]
+          properties:
+            outstanding_total: { type: number }
+            currency: { type: string }
+        evidence:
+          type: array
+          minItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
+            properties:
+              field: { type: string }
+              document_id: { type: string }
+              fragment_id: { type: string }
+              start_offset: { type: integer, minimum: 0 }
+              end_offset: { type: integer, minimum: 1 }
+              quote_sha256: { type: string, minLength: 64, maxLength: 64 }
+    required: true
+    description: Output accepted from the legal-matter-extraction contract after schema validation.
+context:
+  client_name:
+    schema: { type: string, minLength: 1 }
+    required: true
+    description: Synthetic client display name.
+  matter_reference:
+    schema: { type: string, minLength: 1 }
+    required: true
+    description: Host-owned opaque matter reference.
+  department_name:
+    schema: { type: string, minLength: 1 }
+    required: true
+    description: Synthetic department branding label for document headers.
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Maak een zakelijke Nederlandse conceptbrief. Gebruik alleen de gevalideerde feiten."
+  - role: user
+    content:
+      - kind: text
+        value: "Cliënt: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.client_name }
+        filters: [trim]
+      - kind: text
+        value: "\nZaak: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.matter_reference }
+        filters: [trim]
+      - kind: text
+        value: "\nAfdeling: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.department_name }
+        filters: [trim]
+      - kind: text
+        value: "\nGevalideerde feiten: "
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.extracted_facts }
+        filters: [json]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [title, summary, merge_data]
+  properties:
+    title: { type: string, minLength: 1 }
+    summary: { type: string, minLength: 1 }
+    merge_data:
+      type: object
+      additionalProperties: false
+      required: [client, parties, claims, financials, department, optional_clauses, attachment_slot, signature_slot]
+      properties:
+        client:
+          type: object
+          additionalProperties: false
+          required: [name]
+          properties: { name: { type: string } }
+        parties:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, role]
+            properties:
+              name: { type: string }
+              role: { type: string }
+        claims:
+          type: array
+          minItems: 3
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, description, amount_eur]
+            properties:
+              id: { type: string }
+              description: { type: string }
+              amount_eur: { type: number }
+        financials:
+          type: object
+          additionalProperties: false
+          required: [outstanding_total, currency, formatted_total]
+          properties:
+            outstanding_total: { type: number }
+            currency: { type: string }
+            formatted_total: { type: string }
+        department:
+          type: object
+          additionalProperties: false
+          required: [name, logo_slot]
+          properties:
+            name: { type: string }
+            logo_slot: { type: string }
+        optional_clauses:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, text, included]
+            properties:
+              id: { type: string }
+              text: { type: string }
+              included: { type: boolean }
+        attachment_slot:
+          type: object
+          additionalProperties: false
+          required: [label, reference]
+          properties:
+            label: { type: string }
+            reference: { type: string }
+        signature_slot:
+          type: object
+          additionalProperties: false
+          required: [role, placeholder]
+          properties:
+            role: { type: string }
+            placeholder: { type: string }
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  domain: legal/basenet
+  classification: synthetic
+evals:
+  - id: synthetic-legal-draft
+    inputs:
+      extracted_facts:
+        parties:
+          - { name: "Voorbeeld A B.V.", role: eiser }
+          - { name: "Demo Transport N.V.", role: verweerder }
+        claims:
+          - { id: claim-1, description: "schade door verlate levering op 12 maart 2026", amount_eur: 0 }
+          - { id: claim-2, description: onterechte factuurpost, amount_eur: 3200 }
+          - { id: claim-3, description: "rente over openstaand bedrag", amount_eur: 42550 }
+        financials:
+          outstanding_total: 45750
+          currency: EUR
+        evidence:
+          - { field: "parties[0].name", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 14, end_offset: 29, quote_sha256: a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456 }
+          - { field: "parties[1].name", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 42, end_offset: 61, quote_sha256: af7819cb59d72c4865699b1784c643d07c94251cda8e91b26ddc8e1f3743f5c8 }
+          - { field: "claims[0].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 130, end_offset: 175, quote_sha256: b75db1c6de0d19bab191e38f0fb7f28c5a01612ac7eacb628f7dd98aac52bdc5 }
+          - { field: "claims[1].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 177, end_offset: 224, quote_sha256: 4520d61c576b45c2fdaf7351002217dcee1f93eefa11615451c008750c5e842f }
+          - { field: "claims[2].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 226, end_offset: 272, quote_sha256: c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d }
+          - { field: financials.outstanding_total, document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 298, end_offset: 308, quote_sha256: d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e }
+    context:
+      client_name: "Voorbeeld A B.V."
+      matter_reference: SYN-LEGAL-2026-0017
+      department_name: Basenet Legal Corporate
+      _templiqx_authorized_merge:
+        scope_id: SYN-LEGAL-SCOPE-001
+        policy_decision_id: SYN-POLICY-DEC-001
+        policy_version: "1.0.0"
+        evidence_provenance_id: SYN-EVID-PROV-001
+        issued_at: "2026-07-15T10:00:00Z"
+        expires_at: "2099-12-31T23:59:59Z"
+        fingerprint: a14d0cba0844767fcf43bb6e4af8b03e8373c0faaa3ce7a39deda4265e9d19e7
+    fake_output:
+      title: Concept sommatiebrief
+      summary: "Eiser Voorbeeld A B.V. vordert van verweerder Demo Transport N.V. terugbetaling van EUR 45.750,00 op basis van drie geformuleerde vorderingen."
+      merge_data:
+        client: { name: "Voorbeeld A B.V." }
+        parties:
+          - { name: "Voorbeeld A B.V.", role: eiser }
+          - { name: "Demo Transport N.V.", role: verweerder }
+        claims:
+          - { id: claim-1, description: "schade door verlate levering op 12 maart 2026", amount_eur: 0 }
+          - { id: claim-2, description: onterechte factuurpost, amount_eur: 3200 }
+          - { id: claim-3, description: "rente over openstaand bedrag", amount_eur: 42550 }
+        financials:
+          outstanding_total: 45750
+          currency: EUR
+          formatted_total: "EUR 45.750,00"
+        department:
+          name: Basenet Legal Corporate
+          logo_slot: department-logo-slot
+        optional_clauses:
+          - { id: clause-interest, text: "Rente wordt berekend conform wettelijke rente.", included: true }
+          - { id: clause-costs, text: "Buitengerechtelijke incassokosten worden voorbehouden.", included: false }
+        attachment_slot:
+          label: Bijlage leveringsbonnen
+          reference: SYN-ATT-0001
+        signature_slot:
+          role: behandelaar
+          placeholder: "{{signature.behandelaar}}"

@@ -498,24 +498,7 @@ fn analyze_xml(
             detail: "V2 is detected but not migrated by this adapter".into(),
         });
     }
-    if sources.iter().any(|source| source.contains("${#")) {
-        findings.push(Finding {
-            category: Category::Unsupported,
-            part: part.into(),
-            construct: "v5_repeat".into(),
-            reference: None,
-            detail: "repeated table rows are outside the measured POC subset".into(),
-        });
-    }
-    if sources.iter().any(|source| source.contains("${?")) {
-        findings.push(Finding {
-            category: Category::Unsupported,
-            part: part.into(),
-            construct: "v5_conditional".into(),
-            reference: None,
-            detail: "conditional document regions are outside the measured POC subset".into(),
-        });
-    }
+    analyze_composition_markers(xml, part, findings)?;
     for source in &sources {
         for reference in extract_placeholders(source) {
             let mapped = aliases
@@ -658,7 +641,7 @@ fn migrate_split_aliases(
             rewrite_instruction_attribute(start, aliases)?;
         }
     }
-    let mut paragraph_depth = 0;
+    let mut paragraph_depth: u32 = 0;
     let mut in_text = false;
     let mut text_indices = Vec::new();
     let mut in_complex_field = false;
@@ -991,6 +974,430 @@ fn replace_references(
     (output, count)
 }
 
+fn is_truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(v) => *v,
+        Value::String(v) => !v.is_empty(),
+        Value::Number(v) => v.as_f64().is_some_and(|n| n != 0.0),
+        Value::Array(v) => !v.is_empty(),
+        Value::Object(_) => true,
+    }
+}
+
+fn region_marker_name<'a>(text: &'a str, prefix: &'a str) -> Option<&'a str> {
+    let rest = text.strip_prefix(prefix)?;
+    let end = rest.find('}')?;
+    let name = &rest[..end];
+    if name.is_empty()
+        || !name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))
+    {
+        return None;
+    }
+    Some(name)
+}
+
+fn has_nested_region_markers(text: &str) -> bool {
+    let mut rest = text;
+    let mut depth: u32 = 0;
+    while let Some(pos) = rest.find("${") {
+        rest = &rest[pos + 2..];
+        let Some(end) = rest.find('}') else {
+            break;
+        };
+        let marker = &rest[..end];
+        if let Some(name) = marker.strip_prefix('#') {
+            depth += 1;
+            if depth > 1 {
+                return true;
+            }
+            let _ = name;
+        } else if marker.starts_with('?') {
+            depth += 1;
+            if depth > 1 {
+                return true;
+            }
+        } else if let Some(name) = marker.strip_prefix('/') {
+            depth = depth.saturating_sub(1);
+            let _ = name;
+        }
+        rest = &rest[end + 1..];
+    }
+    depth != 0
+}
+
+fn bounded_repeat_name(paragraphs: &[String]) -> Option<String> {
+    if paragraphs.len() < 2 {
+        return None;
+    }
+    let first = paragraphs.first()?.trim();
+    let last = paragraphs.last()?.trim();
+    let open = region_marker_name(first, "${#")?;
+    let close = region_marker_name(last, "${/")?;
+    if open != close {
+        return None;
+    }
+    let middle = paragraphs
+        .iter()
+        .skip(1)
+        .take(paragraphs.len().saturating_sub(2))
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join("");
+    if middle.contains("${#") || middle.contains("${?") || middle.contains("${/") {
+        return None;
+    }
+    if has_nested_region_markers(&format!("{first}{middle}{last}")) {
+        return None;
+    }
+    Some(open.into())
+}
+
+fn bounded_conditional_name(text: &str) -> Option<String> {
+    let trimmed = text.trim();
+    let open = region_marker_name(trimmed, "${?")?;
+    let close_marker = format!("${{{}}}", "/".to_owned() + open);
+    if !trimmed.ends_with(&close_marker) || !trimmed.contains("$data.") {
+        return None;
+    }
+    if has_nested_region_markers(trimmed) {
+        return None;
+    }
+    let open_marker = format!("${{{}}}", "?".to_owned() + open);
+    let after_open = trimmed.strip_prefix(&open_marker)?;
+    if after_open.trim() == close_marker {
+        return None;
+    }
+    Some(open.into())
+}
+
+fn paragraph_texts_in_span(events: &[Event<'static>], start: usize, end: usize) -> Vec<String> {
+    let mut paragraphs = Vec::new();
+    let mut paragraph_depth: u32 = 0;
+    let mut in_text = false;
+    let mut current = String::new();
+    for (offset, event) in events[start..=end].iter().enumerate() {
+        let idx = start + offset;
+        match event {
+            Event::Start(start) if local_name(start.name().as_ref()) == b"p" => {
+                paragraph_depth += 1;
+                if paragraph_depth == 1 {
+                    current.clear();
+                }
+            }
+            Event::End(end) if local_name(end.name().as_ref()) == b"p" => {
+                if paragraph_depth == 1 {
+                    paragraphs.push(std::mem::take(&mut current));
+                }
+                paragraph_depth = paragraph_depth.saturating_sub(1);
+            }
+            Event::Start(start) if local_name(start.name().as_ref()) == b"t" => in_text = true,
+            Event::End(end) if local_name(end.name().as_ref()) == b"t" => in_text = false,
+            Event::Text(_) if paragraph_depth > 0 && in_text => {
+                if let Some(text) = text_value(&events[idx]) {
+                    current.push_str(&text);
+                }
+            }
+            _ => {}
+        }
+    }
+    paragraphs
+}
+
+fn paragraph_text(events: &[Event<'static>], start: usize, end: usize) -> String {
+    paragraph_texts_in_span(events, start, end)
+        .into_iter()
+        .next()
+        .unwrap_or_default()
+}
+
+fn find_element_end(events: &[Event<'static>], start: usize, tag: &[u8]) -> Option<usize> {
+    let mut depth: u32 = 0;
+    for (idx, event) in events.iter().enumerate().skip(start) {
+        match event {
+            Event::Start(start) if local_name(start.name().as_ref()) == tag => depth += 1,
+            Event::End(end) if local_name(end.name().as_ref()) == tag => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(idx);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn analyze_composition_markers(
+    xml: &[u8],
+    part: &str,
+    findings: &mut Vec<Finding>,
+) -> Result<(), PortError> {
+    let mut reader = Reader::from_reader(xml);
+    reader.config_mut().trim_text(false);
+    let mut events = Vec::new();
+    loop {
+        match reader.read_event().map_err(AdapterError::from)? {
+            Event::Eof => break,
+            event => events.push(event.into_owned()),
+        }
+    }
+    let mut bounded_repeats = BTreeSet::new();
+    let mut bounded_conditionals = BTreeSet::new();
+    let mut saw_repeat_marker = false;
+    let mut saw_conditional_marker = false;
+    let mut table_depth: u32 = 0;
+    let mut row_depth: u32 = 0;
+    let mut row_start = None;
+    for idx in 0..events.len() {
+        match &events[idx] {
+            Event::Start(start) if local_name(start.name().as_ref()) == b"tbl" => table_depth += 1,
+            Event::End(end) if local_name(end.name().as_ref()) == b"tbl" => {
+                table_depth = table_depth.saturating_sub(1);
+            }
+            Event::Start(start)
+                if local_name(start.name().as_ref()) == b"tr" && table_depth > 0 =>
+            {
+                row_depth += 1;
+                if row_depth == 1 {
+                    row_start = Some(idx);
+                }
+            }
+            Event::End(end) if local_name(end.name().as_ref()) == b"tr" && table_depth > 0 => {
+                if row_depth == 1
+                    && let Some(start) = row_start.take()
+                {
+                    let paragraphs = paragraph_texts_in_span(&events, start, idx);
+                    let joined = paragraphs.join("");
+                    if joined.contains("${#") {
+                        saw_repeat_marker = true;
+                    }
+                    if let Some(name) = bounded_repeat_name(&paragraphs) {
+                        bounded_repeats.insert(name);
+                    }
+                }
+                row_depth = row_depth.saturating_sub(1);
+            }
+            Event::Start(start) if local_name(start.name().as_ref()) == b"p" => {
+                if let Some(end) = find_element_end(&events, idx, b"p") {
+                    let text = paragraph_text(&events, idx, end);
+                    if text.contains("${?") {
+                        saw_conditional_marker = true;
+                    }
+                    if let Some(name) = bounded_conditional_name(&text) {
+                        bounded_conditionals.insert(name);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    let repeat_names_empty = bounded_repeats.is_empty();
+    for name in bounded_repeats {
+        findings.push(Finding {
+            category: Category::Migrated,
+            part: part.into(),
+            construct: "v5_repeat".into(),
+            reference: Some(name),
+            detail: "bounded whole-table-row repeat".into(),
+        });
+    }
+    let conditional_names_empty = bounded_conditionals.is_empty();
+    for name in bounded_conditionals {
+        findings.push(Finding {
+            category: Category::Migrated,
+            part: part.into(),
+            construct: "v5_conditional".into(),
+            reference: Some(name),
+            detail: "bounded whole-paragraph conditional".into(),
+        });
+    }
+    if saw_repeat_marker && repeat_names_empty {
+        findings.push(Finding {
+            category: Category::Unsupported,
+            part: part.into(),
+            construct: "v5_repeat".into(),
+            reference: None,
+            detail: "repeated table rows are outside the measured POC subset".into(),
+        });
+    }
+    if saw_conditional_marker && conditional_names_empty {
+        findings.push(Finding {
+            category: Category::Unsupported,
+            part: part.into(),
+            construct: "v5_conditional".into(),
+            reference: None,
+            detail: "conditional document regions are outside the measured POC subset".into(),
+        });
+    }
+    Ok(())
+}
+
+fn strip_marker_text(text: &str, marker: &str) -> String {
+    text.replace(marker, "")
+}
+
+fn strip_markers_in_paragraph(
+    events: &mut [Event<'static>],
+    start: usize,
+    end: usize,
+    markers: &[&str],
+) {
+    let mut in_text = false;
+    let mut text_indices = Vec::new();
+    for (offset, event) in events[start..=end].iter().enumerate() {
+        let idx = start + offset;
+        match event {
+            Event::Start(start) if local_name(start.name().as_ref()) == b"t" => in_text = true,
+            Event::End(end) if local_name(end.name().as_ref()) == b"t" => in_text = false,
+            Event::Text(_) if in_text => text_indices.push(idx),
+            _ => {}
+        }
+    }
+    if text_indices.is_empty() {
+        return;
+    }
+    let joined: String = text_indices
+        .iter()
+        .filter_map(|index| text_value(&events[*index]))
+        .collect();
+    let joined_original = joined.clone();
+    let mut stripped = joined;
+    for marker in markers {
+        stripped = strip_marker_text(&stripped, marker);
+    }
+    if stripped != joined_original {
+        set_text(&mut events[text_indices[0]], &stripped);
+        for index in &text_indices[1..] {
+            set_text(&mut events[*index], "");
+        }
+    }
+}
+
+fn strip_repeat_markers(events: &mut [Event<'static>], start: usize, end: usize, name: &str) {
+    let open = format!("${{{}}}", "#".to_owned() + name);
+    let close = format!("${{{}}}", "/".to_owned() + name);
+    let mut index = start;
+    while index <= end {
+        if let Event::Start(start) = &events[index]
+            && local_name(start.name().as_ref()) == b"p"
+            && let Some(paragraph_end) = find_element_end(events, index, b"p")
+        {
+            strip_markers_in_paragraph(events, index, paragraph_end, &[&open, &close]);
+            index = paragraph_end + 1;
+            continue;
+        }
+        index += 1;
+    }
+}
+
+struct RepeatRowSpan {
+    start: usize,
+    end: usize,
+    name: String,
+}
+
+fn find_repeat_template_row(events: &[Event<'static>], from: usize) -> Option<RepeatRowSpan> {
+    let mut table_depth: u32 = 0;
+    let mut row_depth: u32 = 0;
+    let mut row_start = None;
+    for index in from..events.len() {
+        match &events[index] {
+            Event::Start(start) if local_name(start.name().as_ref()) == b"tbl" => table_depth += 1,
+            Event::End(end) if local_name(end.name().as_ref()) == b"tbl" => {
+                table_depth = table_depth.saturating_sub(1);
+            }
+            Event::Start(start)
+                if local_name(start.name().as_ref()) == b"tr" && table_depth > 0 =>
+            {
+                row_depth += 1;
+                if row_depth == 1 {
+                    row_start = Some(index);
+                }
+            }
+            Event::End(end) if local_name(end.name().as_ref()) == b"tr" && table_depth > 0 => {
+                if row_depth == 1
+                    && let Some(start) = row_start
+                    && let Some(name) =
+                        bounded_repeat_name(&paragraph_texts_in_span(events, start, index))
+                {
+                    return Some(RepeatRowSpan {
+                        start,
+                        end: index,
+                        name,
+                    });
+                }
+                row_depth = row_depth.saturating_sub(1);
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn render_table_row_repeats(
+    events: &mut Vec<Event<'static>>,
+    data: &Value,
+    part: &str,
+    unresolved: &mut BTreeSet<UnresolvedReference>,
+    replacements: &mut usize,
+) {
+    let mut index = 0;
+    while index < events.len() {
+        if let Some(row) = find_repeat_template_row(events, index) {
+            let items = resolve(data, &row.name)
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            let template = events[row.start..=row.end].to_vec();
+            let mut rendered_rows = Vec::new();
+            for item in &items {
+                let mut row_events = template.clone();
+                let row_end = row_events.len().saturating_sub(1);
+                strip_repeat_markers(&mut row_events, 0, row_end, &row.name);
+                render_fields(&mut row_events, item, part, unresolved, replacements);
+                render_paragraph_placeholders(
+                    &mut row_events,
+                    item,
+                    part,
+                    unresolved,
+                    replacements,
+                );
+                rendered_rows.extend(row_events);
+            }
+            events.splice(row.start..=row.end, rendered_rows);
+            index = row.start;
+        } else {
+            index += 1;
+        }
+    }
+}
+
+fn render_paragraph_conditionals(events: &mut Vec<Event<'static>>, data: &Value) {
+    let mut index = 0;
+    while index < events.len() {
+        if let Event::Start(start) = &events[index]
+            && local_name(start.name().as_ref()) == b"p"
+            && let Some(end) = find_element_end(events, index, b"p")
+            && let Some(name) = bounded_conditional_name(&paragraph_text(events, index, end))
+        {
+            let include = resolve(data, &name).is_some_and(is_truthy);
+            if include {
+                let open = format!("${{{}}}", "?".to_owned() + &name);
+                let close = format!("${{{}}}", "/".to_owned() + &name);
+                strip_markers_in_paragraph(events, index, end, &[&open, &close]);
+                index = end + 1;
+            } else {
+                events.drain(index..=end);
+            }
+            continue;
+        }
+        index += 1;
+    }
+}
+
 fn render_xml(
     xml: &[u8],
     data: &Value,
@@ -1008,6 +1415,8 @@ fn render_xml(
     let mut unresolved = BTreeSet::new();
     let mut replacements = 0;
     render_fields(&mut events, data, part, &mut unresolved, &mut replacements);
+    render_table_row_repeats(&mut events, data, part, &mut unresolved, &mut replacements);
+    render_paragraph_conditionals(&mut events, data);
     render_paragraph_placeholders(&mut events, data, part, &mut unresolved, &mut replacements);
     let mut writer = Writer::new(Cursor::new(Vec::new()));
     for event in events {
@@ -1219,7 +1628,7 @@ fn render_paragraph_placeholders(
     unresolved: &mut BTreeSet<UnresolvedReference>,
     replacements: &mut usize,
 ) {
-    let mut paragraph_depth = 0;
+    let mut paragraph_depth: u32 = 0;
     let mut in_text = false;
     let mut text_indices = Vec::new();
     for idx in 0..events.len() {
@@ -1746,6 +2155,8 @@ mod tests {
             "v2-marker-detected",
             "v5-repeat-marker-detected",
             "v5-conditional-marker-detected",
+            "v5-legal-repeat-rendered",
+            "v5-legal-conditional-rendered",
             "v5-nested-table",
             "v5-header-footer",
             "v5-alias-collision-missing",
@@ -1769,6 +2180,8 @@ mod tests {
     #[test]
     fn legacy_corpus_supported_render_parity_and_missing_reference_are_exact() {
         for id in [
+            "v5-legal-repeat-rendered",
+            "v5-legal-conditional-rendered",
             "v5-nested-table",
             "v5-header-footer",
             "v5-alias-collision-missing",
@@ -1796,7 +2209,12 @@ mod tests {
                 })
                 .unwrap();
             let report: RenderReport = serde_json::from_value(rendered.report).unwrap();
-            let expected_replacements = if id == "v5-header-footer" { 3 } else { 2 };
+            let expected_replacements = match id {
+                "v5-legal-repeat-rendered" => 6,
+                "v5-legal-conditional-rendered" => 1,
+                "v5-header-footer" => 3,
+                _ => 2,
+            };
             assert_eq!(report.replacements, expected_replacements, "fixture `{id}`");
             if id == "v5-alias-collision-missing" {
                 assert_eq!(

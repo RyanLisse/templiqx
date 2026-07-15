@@ -267,3 +267,38 @@ pub trait DocumentInspector: Send + Sync {
         request: &DocumentInspectionRequest,
     ) -> Result<DocumentInspectionResult, PortError>;
 }
+
+/// Host-owned request to convert an already-rendered source artifact (for
+/// example DOCX) into another format such as PDF. The portable core never
+/// selects or spawns converters; hosts construct an optional
+/// [`DocumentConverter`] explicitly.
+#[derive(Debug, Clone)]
+pub struct DocumentConversionRequest {
+    pub source_artifact: PathBuf,
+    pub source_fingerprint: String,
+    pub output: PathBuf,
+    pub output_identity: String,
+}
+
+/// Payload-free conversion result carrying renderer identity and artifact
+/// metadata. Document bytes remain in the host workspace.
+#[derive(Debug, Clone)]
+pub struct DocumentConversionResult {
+    pub artifact: PathBuf,
+    pub renderer_id: String,
+    pub renderer_version: String,
+    pub environment_id: String,
+    pub artifact_fingerprint: String,
+    pub artifact_bytes: u64,
+    pub output_hash: String,
+    pub report: Value,
+}
+
+/// Optional host-owned document converter. Not part of default
+/// `templiqx-local` composition.
+pub trait DocumentConverter: Send + Sync {
+    fn convert_document(
+        &self,
+        request: &DocumentConversionRequest,
+    ) -> Result<DocumentConversionResult, PortError>;
+}

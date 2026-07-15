@@ -1,0 +1,33 @@
+{
+  "client": { "name": "Voorbeeld A B.V." },
+  "parties": [
+    { "name": "Voorbeeld A B.V.", "role": "eiser" },
+    { "name": "Demo Transport N.V.", "role": "verweerder" }
+  ],
+  "claims": [
+    { "id": "claim-1", "description": "schade door verlate levering op 12 maart 2026", "amount_eur": 0 },
+    { "id": "claim-2", "description": "onterechte factuurpost", "amount_eur": 3200 },
+    { "id": "claim-3", "description": "rente over openstaand bedrag", "amount_eur": 42550 }
+  ],
+  "financials": {
+    "outstanding_total": 45750,
+    "currency": "EUR",
+    "formatted_total": "EUR 45.750,00"
+  },
+  "department": {
+    "name": "Basenet Legal Corporate",
+    "logo_slot": "department-logo-slot"
+  },
+  "optional_clauses": [
+    { "id": "clause-interest", "text": "Rente wordt berekend conform wettelijke rente.", "included": true },
+    { "id": "clause-costs", "text": "Buitengerechtelijke incassokosten worden voorbehouden.", "included": false }
+  ],
+  "attachment_slot": {
+    "label": "Bijlage leveringsbonnen",
+    "reference": "SYN-ATT-0001"
+  },
+  "signature_slot": {
+    "role": "behandelaar",
+    "placeholder": "{{signature.behandelaar}}"
+  }
+}

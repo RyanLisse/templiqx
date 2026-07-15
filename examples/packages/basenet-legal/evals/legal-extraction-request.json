@@ -1,0 +1,19 @@
+{
+  "inputs": {
+    "document_id": "SYN-LEGAL-DOC-0001",
+    "fragment_id": "matter-body-1",
+    "document_text": "Partijen zijn Voorbeeld A B.V. (eiser) en Demo Transport N.V. (verweerder). Eiser vordert terugbetaling van EUR 45.750,00 wegens tekortkoming in levering. Claim 1: schade door verlate levering op 12 maart 2026. Claim 2: onterechte factuurpost van EUR 3.200,00. Claim 3: rente over openstaand bedrag van EUR 42.550,00. Het openstaande bedrag bedraagt EUR 45.750,00 exclusief rente."
+  },
+  "context": {
+    "matter_reference": "SYN-LEGAL-2026-0017",
+    "_templiqx_authorized_merge": {
+      "scope_id": "SYN-LEGAL-SCOPE-001",
+      "policy_decision_id": "SYN-POLICY-DEC-001",
+      "policy_version": "1.0.0",
+      "evidence_provenance_id": "SYN-EVID-PROV-001",
+      "issued_at": "2026-07-15T10:00:00Z",
+      "expires_at": "2099-12-31T23:59:59Z",
+      "fingerprint": "a14d0cba0844767fcf43bb6e4af8b03e8373c0faaa3ce7a39deda4265e9d19e7"
+    }
+  }
+}

@@ -1,20 +1,27 @@
 //! Actor-neutral atomic Templiqx capabilities used by Rust, CLI and MCP.
 
+mod authorized_context;
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::Path;
 use templiqx_contracts::{
-    ArtifactContent, ContentEncoding, Contract, ContractDiff, ContractSummary, Diagnostic,
-    ExecutionRequest, Explanation, OperationEnvelope, PackageIdentity, PackageManifest,
-    PackageSignature, PackageTrustReport, RenderRequest, Severity, TestCaseResult, TestReport,
-    WorkspaceArtifact, fingerprint, fingerprint_bytes,
+    AUTHORIZED_MERGE_CONTEXT_KEY, ArtifactContent, ContentEncoding, Contract, ContractDiff,
+    ContractSummary, Diagnostic, ExecutionRequest, Explanation, OperationEnvelope, PackageIdentity,
+    PackageManifest, PackageSignature, PackageTrustReport, RenderRequest, Severity, TestCaseResult,
+    TestReport, WorkspaceArtifact, fingerprint, fingerprint_bytes,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentInspectionRequest as AdapterDocumentInspectionRequest,
     DocumentInspector, DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer,
     LegacyImportAdapter, LegacyImportRequest as AdapterLegacyImportRequest, PackageStore,
     PortError, RuntimeAdapter,
+};
+
+pub use authorized_context::{
+    binding_fingerprint, package_requires_authorized_context, synthetic_authorized_context,
+    validate_authorized_context, with_synthetic_authorized_context,
 };
 
 /// Actor-neutral request for migrating one package-confined legacy artifact.
@@ -909,6 +916,13 @@ where
                 return OperationEnvelope::new("compile_contract", None, diagnostics);
             }
         };
+        let manifest = match self.store.manifest(package) {
+            Ok(manifest) => manifest,
+            Err(error) => return port_failure("compile_contract", error),
+        };
+        if let Err(diagnostics) = validate_authorized_context(&manifest, &request) {
+            return OperationEnvelope::new("compile_contract", None, diagnostics);
+        }
         match templiqx_core::compile(&value, &request, capabilities) {
             Ok(compiled) => with_hash(
                 OperationEnvelope::new("compile_contract", Some(compiled.clone()), vec![]),
@@ -1291,6 +1305,21 @@ where
         &self,
         request: &RenderDocumentRequest,
     ) -> OperationEnvelope<RenderDocumentResult> {
+        if let Ok(manifest) = self.store.manifest(&request.package)
+            && package_requires_authorized_context(&manifest)
+        {
+            let mut context = std::collections::BTreeMap::new();
+            if let Some(auth) = request.data.get(AUTHORIZED_MERGE_CONTEXT_KEY) {
+                context.insert(AUTHORIZED_MERGE_CONTEXT_KEY.into(), auth.clone());
+            }
+            let render_request = RenderRequest {
+                inputs: std::collections::BTreeMap::new(),
+                context,
+            };
+            if let Err(diagnostics) = validate_authorized_context(&manifest, &render_request) {
+                return OperationEnvelope::new("render_document", None, diagnostics);
+            }
+        }
         let template = match self
             .store
             .resolve_artifact_path(&request.package, &request.template)

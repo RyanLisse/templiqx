@@ -23,10 +23,30 @@ one canonical field; missing render data; V1 BeanShell detection; and V2 marker
 detection. Corrupt, oversized, and path-traversing ZIPs are rejected before XML
 processing. V1 code is inspected as text and is never executed.
 
+## Bounded repeat and conditional fixtures
+
+Single-level, same-part constructs are promoted only from measured corpus
+fixtures. Nested, cross-part, split-region, and binary-image shapes remain
+detect-only.
+
+| Fixture ID | Construct | Status |
+|------------|-----------|--------|
+| `v5-legal-repeat-rendered` | `${#...}` / `${/...}` table-row repeat | render-supported |
+| `v5-legal-conditional-rendered` | `${?...}` / `${/...}` paragraph conditional | render-supported |
+| `v5-repeat-marker-detected` | repeat markers | detect-only |
+| `v5-conditional-marker-detected` | conditional markers | detect-only |
+
+Each render-supported fixture ships `source.docx`, `render-data.json`,
+`expected-report.json`, and `expected-render.docx` under
+`examples/legacy-corpus/fixtures/<id>/`. Conformance tests in
+`crates/templiqx-conformance/tests/legal_docx.rs` assert normalized OOXML parity.
+
 Regenerate and verify the byte-stable fixtures with:
 
 ```sh
 cargo run -p templiqx-legacy-docx-fixtures
 cargo test -p templiqx-legacy-docx-fixtures
 cargo test -p templiqx-docx-v5 legacy_corpus
+cargo test -p templiqx-conformance legal_docx
+cargo test -p templiqx-conformance reference_package_claims
 ```

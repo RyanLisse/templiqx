@@ -1,0 +1,122 @@
+api_version: templiqx/v1alpha1
+id: advice-fact-extraction
+version: 0.1.0
+description: Extract regulated advice facts and suitability evidence from synthetic client intake text.
+inputs:
+  document_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Stable synthetic source document identifier used by every evidence link.
+  fragment_id:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Stable fragment identifier whose text is supplied in intake_text.
+  intake_text:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Synthetic regulated-advice intake note text.
+context:
+  client_reference:
+    schema:
+      type: string
+      minLength: 1
+    required: true
+    description: Host-owned opaque client reference.
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Extract only explicit regulated advice facts and suitability indicators. Provide evidence links; do not invent values."
+  - role: user
+    content:
+      - kind: text
+        value: "Client reference: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.client_reference }
+        filters: [trim]
+      - kind: text
+        value: "\nIntake note:\n"
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.intake_text }
+        filters: [trim]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [risk_profile, investment_horizon_years, liquidity_need, product_recommendation, suitability, evidence]
+  properties:
+    risk_profile:
+      type: string
+      enum: [defensive, neutral, offensive]
+    investment_horizon_years:
+      type: integer
+      minimum: 1
+    liquidity_need:
+      type: string
+      enum: [low, medium, high]
+    product_recommendation:
+      type: string
+      minLength: 1
+    suitability:
+      type: object
+      additionalProperties: false
+      required: [suitable, rationale]
+      properties:
+        suitable: { type: boolean }
+        rationale: { type: string, minLength: 1 }
+    evidence:
+      type: array
+      minItems: 4
+      items:
+        type: object
+        additionalProperties: false
+        required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
+        properties:
+          field: { type: string, minLength: 1 }
+          document_id: { type: string, minLength: 1 }
+          fragment_id: { type: string, minLength: 1 }
+          start_offset: { type: integer, minimum: 0 }
+          end_offset: { type: integer, minimum: 1 }
+          quote_sha256: { type: string, minLength: 64, maxLength: 64 }
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  domain: regulated-advice
+  classification: synthetic
+evals:
+  - id: synthetic-advice-facts
+    inputs:
+      document_id: SYN-ADVICE-DOC-0001
+      fragment_id: intake-1
+      intake_text: "Client profile: neutral risk tolerance. Investment horizon is 10 years. Liquidity need is medium. Recommended product: diversified equity fund (SYN-FUND-42). Suitability check: suitable because horizon exceeds five years and liquidity need is not high."
+    context:
+      client_reference: SYN-CLIENT-8842
+      _templiqx_authorized_merge:
+        scope_id: SYN-ADVICE-SCOPE-001
+        policy_decision_id: SYN-POLICY-DEC-002
+        policy_version: "1.0.0"
+        evidence_provenance_id: SYN-EVID-PROV-002
+        issued_at: "2026-07-15T10:00:00Z"
+        expires_at: "2099-12-31T23:59:59Z"
+        fingerprint: c131fd10e09408ccff43dea7faa3310a0fed62a499611bf47a802f129bfbf1be
+    fake_output:
+      risk_profile: neutral
+      investment_horizon_years: 10
+      liquidity_need: medium
+      product_recommendation: "diversified equity fund (SYN-FUND-42)"
+      suitability:
+        suitable: true
+        rationale: "horizon exceeds five years and liquidity need is not high"
+      evidence:
+        - { field: risk_profile, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 16, end_offset: 38, quote_sha256: "1111111111111111111111111111111111111111111111111111111111111111" }
+        - { field: investment_horizon_years, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 62, end_offset: 71, quote_sha256: "2222222222222222222222222222222222222222222222222222222222222222" }
+        - { field: liquidity_need, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 91, end_offset: 97, quote_sha256: "3333333333333333333333333333333333333333333333333333333333333333" }
+        - { field: product_recommendation, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 122, end_offset: 163, quote_sha256: "4444444444444444444444444444444444444444444444444444444444444444" }

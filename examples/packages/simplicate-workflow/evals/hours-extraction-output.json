@@ -1,0 +1,37 @@
+{
+  "project": {
+    "name": "Website Redesign",
+    "reference": "SYN-PROJ-2201"
+  },
+  "hours": {
+    "billable": 32.5,
+    "period": "March 2026"
+  },
+  "rate_eur": 125,
+  "evidence": [
+    {
+      "field": "project.name",
+      "document_id": "SYN-TIME-DOC-0001",
+      "fragment_id": "timesheet-1",
+      "start_offset": 9,
+      "end_offset": 25,
+      "quote_sha256": "aaaaaaaa11111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "field": "hours.billable",
+      "document_id": "SYN-TIME-DOC-0001",
+      "fragment_id": "timesheet-1",
+      "start_offset": 73,
+      "end_offset": 77,
+      "quote_sha256": "bbbbbbbb22222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "field": "rate_eur",
+      "document_id": "SYN-TIME-DOC-0001",
+      "fragment_id": "timesheet-1",
+      "start_offset": 93,
+      "end_offset": 104,
+      "quote_sha256": "cccccccc33333333333333333333333333333333333333333333333333333333"
+    }
+  ]
+}
