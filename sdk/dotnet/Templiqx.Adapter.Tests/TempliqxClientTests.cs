@@ -79,6 +79,9 @@ public sealed class TempliqxClientTests
     {
         Compat.AssertCompatibility();
         Assert.StartsWith("sha256:", Compat.Current.OpenApiDigest, StringComparison.Ordinal);
+        Assert.Equal("0.1", Compat.Current.EngineApiVersion);
+        Assert.Equal("0.1.0", Compat.Current.EngineVersion);
+        Assert.Equal("templiqx/v1alpha1", Compat.Current.ContractFormat);
     }
 
     private sealed class StubHttpMessageHandler(

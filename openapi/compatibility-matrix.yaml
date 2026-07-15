@@ -1,0 +1,18 @@
+opsApiVersion: 1.0.0-alpha.1
+openApiDigest: "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914"
+contractFormat: "templiqx/v1alpha1"
+engineApiVersion: "0.1"
+engineVersion: "0.1.0"
+sdks:
+  - language: typescript
+    package: "@blinqx/templiqx-adapter"
+    supportedEngineRange: ">=0.1.0,<0.2.0"
+    sdkVersion: "0.1.0"
+  - language: dotnet
+    package: "Templiqx.Adapter"
+    supportedEngineRange: ">=0.1.0,<0.2.0"
+    sdkVersion: "0.1.0"
+  - language: python
+    package: "templiqx-adapter"
+    supportedEngineRange: ">=0.1.0,<0.2.0"
+    sdkVersion: "0.1.0"

@@ -7,6 +7,9 @@ Templiqx publishes one OpenAPI 3.1 contract
 Language SDKs are generated from that document; they must not re-implement
 Templiqx validation, diagnostics, fingerprints, CAS, or runtime policy.
 
+The [SDK compatibility matrix](compatibility.md) is the canonical record for
+the OpenAPI digest, engine compatibility, contract format, and SDK versions.
+
 ## First-wave languages
 
 | Language | Status in repo | Notes |

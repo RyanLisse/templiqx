@@ -16,6 +16,7 @@ Published docs site: [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/
 - [CLI](guides/cli.md)
 - [Operations HTTP API](guides/operations-api.md)
 - [Generated client policy](guides/generated-clients.md)
+- [SDK compatibility matrix](guides/compatibility.md)
 - [Pre-CRM3 readiness](guides/pre-crm3-readiness.md)
 - [Host integration handoff](guides/host-integration.md)
 - [Release procedure and artifact verification](guides/releasing.md)

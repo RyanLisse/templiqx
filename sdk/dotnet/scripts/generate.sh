@@ -4,6 +4,7 @@ set -euo pipefail
 sdk_root="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 repo_root="$(CDPATH='' cd -- "$sdk_root/../.." && pwd)"
 spec="$repo_root/openapi/templiqx-operations-v1.yaml"
+matrix="$repo_root/openapi/compatibility-matrix.yaml"
 models="$sdk_root/Templiqx.Adapter/Generated/OperationsV1.cs"
 metadata="$sdk_root/Templiqx.Adapter/Generated/GeneratedMeta.cs"
 project="$sdk_root/Templiqx.Adapter/Templiqx.Adapter.csproj"
@@ -87,10 +88,32 @@ generated_files=(
 
 openapi_version="$(awk '/^  version:/ { gsub(/[\047\042]/, "", $2); print $2; exit }' "$spec")"
 openapi_digest="sha256:$(shasum -a 256 "$spec" | awk '{print $1}')"
-sdk_version="$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' "$project" | head -n 1)"
+project_sdk_version="$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' "$project" | head -n 1)"
+project_sdk_package="$(sed -n 's:.*<PackageId>\([^<]*\)</PackageId>.*:\1:p' "$project" | head -n 1)"
 
-if [[ -z $openapi_version || -z $sdk_version ]]; then
-  echo "Could not read the OpenAPI or SDK version" >&2
+read_matrix_value() {
+  awk -v key="$1" '$1 == key ":" { value = $2; gsub(/^"|"$/, "", value); print value; exit }' "$matrix"
+}
+
+read_sdk_value() {
+  awk -v language="$1" -v key="$2" '
+    $1 == "-" && $2 == "language:" { in_row = ($3 == language); next }
+    in_row && $1 == key ":" { value = $2; gsub(/^"|"$/, "", value); print value; exit }
+  ' "$matrix"
+}
+
+contract_format="$(read_matrix_value contractFormat)"
+engine_api_version="$(read_matrix_value engineApiVersion)"
+engine_version="$(read_matrix_value engineVersion)"
+sdk_package="$(read_sdk_value dotnet package)"
+sdk_version="$(read_sdk_value dotnet sdkVersion)"
+
+if [[ -z $openapi_version || -z $contract_format || -z $engine_api_version || -z $engine_version || -z $sdk_version ]]; then
+  echo "Could not read the OpenAPI or compatibility matrix versions" >&2
+  exit 1
+fi
+if [[ $sdk_package != "$project_sdk_package" || $sdk_version != "$project_sdk_version" ]]; then
+  echo "The .NET package metadata does not match the compatibility matrix" >&2
   exit 1
 fi
 
@@ -102,6 +125,9 @@ public static class GeneratedMeta
 {
     public const string GeneratedOpenApiVersion = "$openapi_version";
     public const string GeneratedOpenApiDigest = "$openapi_digest";
+    public const string GeneratedContractFormat = "$contract_format";
+    public const string GeneratedEngineApiVersion = "$engine_api_version";
+    public const string GeneratedEngineVersion = "$engine_version";
     public const string GeneratedSdkVersion = "$sdk_version";
 }
 EOF

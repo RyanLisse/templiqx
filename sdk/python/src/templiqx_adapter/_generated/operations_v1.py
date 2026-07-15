@@ -402,4 +402,7 @@ class InspectDocumentEnvelope(OperationEnvelopeBase):
 # Codegen metadata used by the compatibility self-check.
 GENERATED_OPENAPI_VERSION = '1.0.0-alpha.1'
 GENERATED_OPENAPI_DIGEST = 'sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914'
+GENERATED_CONTRACT_FORMAT = 'templiqx/v1alpha1'
+GENERATED_ENGINE_API_VERSION = '0.1'
+GENERATED_ENGINE_VERSION = '0.1.0'
 GENERATED_SDK_VERSION = '0.1.0'

@@ -1,15 +1,18 @@
 import {
+  GENERATED_CONTRACT_FORMAT,
+  GENERATED_ENGINE_API_VERSION,
+  GENERATED_ENGINE_VERSION,
   GENERATED_OPENAPI_DIGEST,
   GENERATED_OPENAPI_VERSION,
   GENERATED_SDK_VERSION,
 } from "./generated/operations-v1.js";
 
 export const compatibility = Object.freeze({
-  // TODO(phase-6): replace with the supported engine-version range.
-  engineVersion: "TODO-phase-6",
+  engineApiVersion: GENERATED_ENGINE_API_VERSION,
+  engineVersion: GENERATED_ENGINE_VERSION,
   opsApiVersion: GENERATED_OPENAPI_VERSION,
   openApiDigest: GENERATED_OPENAPI_DIGEST,
-  contractFormat: "templiqx/v1alpha1",
+  contractFormat: GENERATED_CONTRACT_FORMAT,
   sdkVersion: GENERATED_SDK_VERSION,
 } as const);
 
@@ -23,6 +26,7 @@ export function assertCompatibility(): void {
     compatibility.openApiDigest === GENERATED_OPENAPI_DIGEST,
     "Compatibility digest does not match the generated DTO marker",
   );
+  assert(compatibility.engineVersion === GENERATED_ENGINE_VERSION, "Compatibility engine version does not match the generated marker");
 }
 
 assertCompatibility();

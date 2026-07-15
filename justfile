@@ -4,6 +4,7 @@ verify:
     cargo test --workspace --all-features
     ./scripts/check-boundaries.sh
     npm run openapi:validate
+    just compat-check
     ./scripts/check-ci-gates.sh
     # qlty is skippable (SKIP_QLTY) only for constrained cold-clone checks.
     # Normal local verification and the minimal hosted CI backstop both lint.
@@ -31,6 +32,9 @@ docs-build:
 
 openapi-validate:
     npm run openapi:validate
+
+compat-check:
+    npm run openapi:compat
 
 openapi-typescript-proof:
     npm run openapi:typescript-proof

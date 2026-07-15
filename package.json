@@ -6,6 +6,7 @@
     "dev": "blume dev",
     "build": "blume build --strict",
     "doctor": "blume doctor",
+    "openapi:compat": "node scripts/openapi/validate-compat.mjs",
     "openapi:validate": "node scripts/openapi/validate.mjs openapi/templiqx-operations-v1.yaml",
     "openapi:typescript-proof": "node scripts/openapi/generate-typescript.mjs openapi/templiqx-operations-v1.yaml"
   },

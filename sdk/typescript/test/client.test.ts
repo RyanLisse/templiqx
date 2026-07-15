@@ -188,5 +188,8 @@ describe("createTempliqxClient", () => {
     for (const operationId of operationIds) expect(client[operationId]).toBeTypeOf("function");
     expect(compatibility.opsApiVersion).toBe("1.0.0-alpha.1");
     expect(compatibility.openApiDigest).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(compatibility.engineApiVersion).toBe("0.1");
+    expect(compatibility.engineVersion).toBe("0.1.0");
+    expect(compatibility.contractFormat).toBe("templiqx/v1alpha1");
   });
 });

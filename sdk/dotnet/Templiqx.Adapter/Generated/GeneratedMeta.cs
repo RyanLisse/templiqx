@@ -5,5 +5,8 @@ public static class GeneratedMeta
 {
     public const string GeneratedOpenApiVersion = "1.0.0-alpha.1";
     public const string GeneratedOpenApiDigest = "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914";
+    public const string GeneratedContractFormat = "templiqx/v1alpha1";
+    public const string GeneratedEngineApiVersion = "0.1";
+    public const string GeneratedEngineVersion = "0.1.0";
     public const string GeneratedSdkVersion = "0.1.0";
 }

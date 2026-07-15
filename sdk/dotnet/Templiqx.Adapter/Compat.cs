@@ -3,6 +3,7 @@ using Templiqx.Adapter.Generated;
 namespace Templiqx.Adapter;
 
 public sealed record Compatibility(
+    string EngineApiVersion,
     string EngineVersion,
     string OpsApiVersion,
     string OpenApiDigest,
@@ -12,10 +13,11 @@ public sealed record Compatibility(
 public static class Compat
 {
     public static Compatibility Current { get; } = new(
-        EngineVersion: "TODO-phase-6",
+        EngineApiVersion: GeneratedMeta.GeneratedEngineApiVersion,
+        EngineVersion: GeneratedMeta.GeneratedEngineVersion,
         OpsApiVersion: GeneratedMeta.GeneratedOpenApiVersion,
         OpenApiDigest: GeneratedMeta.GeneratedOpenApiDigest,
-        ContractFormat: "templiqx/v1alpha1",
+        ContractFormat: GeneratedMeta.GeneratedContractFormat,
         SdkVersion: GeneratedMeta.GeneratedSdkVersion);
 
     public static void AssertCompatibility()
@@ -32,6 +34,15 @@ public static class Compat
         {
             throw new InvalidOperationException(
                 "Compatibility digest does not match the generated DTO marker");
+        }
+
+        if (!string.Equals(
+                Current.EngineVersion,
+                GeneratedMeta.GeneratedEngineVersion,
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Compatibility engine version does not match the generated marker");
         }
     }
 }

@@ -11,10 +11,13 @@ import tempfile
 import tomllib
 from pathlib import Path
 
+import yaml
+
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PACKAGE_ROOT.parents[1]
 SPEC_PATH = REPO_ROOT / "openapi" / "templiqx-operations-v1.yaml"
+MATRIX_PATH = REPO_ROOT / "openapi" / "compatibility-matrix.yaml"
 OUTPUT_PATH = PACKAGE_ROOT / "src" / "templiqx_adapter" / "_generated" / "operations_v1.py"
 
 
@@ -40,13 +43,19 @@ def _metadata(spec: bytes) -> str:
         raise RuntimeError(f"Could not read info.version from {SPEC_PATH}")
 
     pyproject = tomllib.loads((PACKAGE_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    sdk_version = pyproject["project"]["version"]
+    matrix = yaml.safe_load(MATRIX_PATH.read_text(encoding="utf-8"))
+    sdk = next(row for row in matrix["sdks"] if row["language"] == "python")
+    if sdk["package"] != pyproject["project"]["name"] or sdk["sdkVersion"] != pyproject["project"]["version"]:
+        raise RuntimeError("Python package metadata does not match the compatibility matrix")
     digest = f"sha256:{hashlib.sha256(spec).hexdigest()}"
     return (
         "\n# Codegen metadata used by the compatibility self-check.\n"
         f"GENERATED_OPENAPI_VERSION = {match.group(1)!r}\n"
         f"GENERATED_OPENAPI_DIGEST = {digest!r}\n"
-        f"GENERATED_SDK_VERSION = {sdk_version!r}\n"
+        f"GENERATED_CONTRACT_FORMAT = {matrix['contractFormat']!r}\n"
+        f"GENERATED_ENGINE_API_VERSION = {matrix['engineApiVersion']!r}\n"
+        f"GENERATED_ENGINE_VERSION = {matrix['engineVersion']!r}\n"
+        f"GENERATED_SDK_VERSION = {sdk['sdkVersion']!r}\n"
     )
 
 

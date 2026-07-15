@@ -3,7 +3,7 @@
 import httpx
 
 from templiqx_adapter import ExecuteRequest, JsonValue, TempliqxClient
-from templiqx_adapter.compat import assert_compatibility
+from templiqx_adapter.compat import assert_compatibility, compatibility
 
 
 def test_execute_contract_round_trip() -> None:
@@ -38,6 +38,9 @@ def test_execute_contract_round_trip() -> None:
         )
 
     assert_compatibility()
+    assert compatibility.engine_api_version == "0.1"
+    assert compatibility.engine_version == "0.1.0"
+    assert compatibility.contract_format == "templiqx/v1alpha1"
     with httpx.Client(transport=httpx.MockTransport(handler)) as transport:
         response = TempliqxClient("https://templiqx.example", client=transport).execute_contract(
             "demo",

@@ -1461,4 +1461,7 @@ export interface operations {
 /** Codegen metadata used by the compatibility self-check. */
 export const GENERATED_OPENAPI_VERSION = "1.0.0-alpha.1";
 export const GENERATED_OPENAPI_DIGEST = "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914";
+export const GENERATED_CONTRACT_FORMAT = "templiqx/v1alpha1";
+export const GENERATED_ENGINE_API_VERSION = "0.1";
+export const GENERATED_ENGINE_VERSION = "0.1.0";
 export const GENERATED_SDK_VERSION = "0.1.0";
