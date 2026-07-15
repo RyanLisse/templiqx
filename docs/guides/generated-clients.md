@@ -11,9 +11,9 @@ Templiqx validation, diagnostics, fingerprints, CAS, or runtime policy.
 
 | Language | Status in repo | Notes |
 | --- | --- | --- |
-| TypeScript | Proof script only | `npm run openapi:typescript-proof` generates to `target/openapi-sdk-proof/` and type-checks with `tsc --noEmit`. |
-| .NET | Planned pilot | Generate after two real opco pilots validate the wire contract. |
-| Python | Planned pilot | Same gate as .NET. |
+| TypeScript | Pilot SDK in `sdk/typescript/` | Generated DTOs with a hand-written transport-only façade and live conformance test. |
+| .NET | Pilot SDK in `sdk/dotnet/` | Generated DTOs (openapi-generator models-only) with a hand-written `HttpClient` façade. |
+| Python | Pilot SDK in `sdk/python/` | Generated Pydantic v2 DTOs with a hand-written synchronous `httpx` façade. |
 | Go / Rust | Later | Add when a concrete consumer appears. |
 | C++ | Consumer-driven only | No speculative generator work. |
 
@@ -21,9 +21,9 @@ Templiqx validation, diagnostics, fingerprints, CAS, or runtime policy.
 
 1. **Single source of truth** — OpenAPI under `openapi/` is normative for HTTP
    wire shape. Router handlers and integration tests must not drift from it.
-2. **No checked-in generated clients** — Broad generated output is not committed
-   until regeneration is deterministic and pinned in CI. The TypeScript proof
-   writes only under `target/`.
+2. **Deterministic checked-in DTOs** — Pilot SDKs check in generated model files
+   only when their generator and drift check are pinned. Client façades remain
+   small, hand-written transport adapters.
 3. **Transport-only SDKs** — Generated methods map 1:1 to HTTP operations and
    deserialize `OperationEnvelope` responses. Business logic stays in
    `TempliqxService` on the server.
