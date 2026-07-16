@@ -47,6 +47,6 @@ Regenerate and verify the byte-stable fixtures with:
 cargo run -p templiqx-legacy-docx-fixtures
 cargo test -p templiqx-legacy-docx-fixtures
 cargo test -p templiqx-docx-v5 legacy_corpus
-cargo test -p templiqx-conformance legal_docx
-cargo test -p templiqx-conformance reference_package_claims
+cargo test -p templiqx-conformance --test legal_docx
+cargo test -p templiqx-conformance --test reference_package_claims
 ```

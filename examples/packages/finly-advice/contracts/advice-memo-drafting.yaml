@@ -9,17 +9,17 @@ inputs:
       additionalProperties: false
       required: [risk_profile, investment_horizon_years, liquidity_need, product_recommendation, suitability, evidence]
       properties:
-        risk_profile: { type: string }
-        investment_horizon_years: { type: integer }
-        liquidity_need: { type: string }
-        product_recommendation: { type: string }
+        risk_profile: { type: string, enum: [defensive, neutral, offensive] }
+        investment_horizon_years: { type: integer, minimum: 1 }
+        liquidity_need: { type: string, enum: [low, medium, high] }
+        product_recommendation: { type: string, minLength: 1 }
         suitability:
           type: object
           additionalProperties: false
           required: [suitable, rationale]
           properties:
             suitable: { type: boolean }
-            rationale: { type: string }
+            rationale: { type: string, minLength: 1 }
         evidence:
           type: array
           minItems: 4
@@ -28,9 +28,9 @@ inputs:
             additionalProperties: false
             required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
             properties:
-              field: { type: string }
-              document_id: { type: string }
-              fragment_id: { type: string }
+              field: { type: string, minLength: 1 }
+              document_id: { type: string, minLength: 1 }
+              fragment_id: { type: string, minLength: 1 }
               start_offset: { type: integer, minimum: 0 }
               end_offset: { type: integer, minimum: 1 }
               quote_sha256: { type: string, minLength: 64, maxLength: 64 }
@@ -133,10 +133,10 @@ evals:
           suitable: true
           rationale: "horizon exceeds five years and liquidity need is not high"
         evidence:
-          - { field: risk_profile, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 16, end_offset: 38, quote_sha256: "1111111111111111111111111111111111111111111111111111111111111111" }
-          - { field: investment_horizon_years, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 62, end_offset: 71, quote_sha256: "2222222222222222222222222222222222222222222222222222222222222222" }
-          - { field: liquidity_need, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 91, end_offset: 97, quote_sha256: "3333333333333333333333333333333333333333333333333333333333333333" }
-          - { field: product_recommendation, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 122, end_offset: 163, quote_sha256: "4444444444444444444444444444444444444444444444444444444444444444" }
+          - { field: risk_profile, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 16, end_offset: 38, quote_sha256: 648d9cf01eeb36b716c06c93c939541c7561132f5f388a3f1b5b51e31308d7f4 }
+          - { field: investment_horizon_years, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 62, end_offset: 70, quote_sha256: b5dbae5bc9a65f93ce2b66899d34ec42121b4629518880374f59c589fbbde20c }
+          - { field: liquidity_need, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 90, end_offset: 96, quote_sha256: c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8 }
+          - { field: product_recommendation, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 119, end_offset: 156, quote_sha256: a00965fa98f191060fafd5cc7c8d638c1f07e5e3bd901e8d9cfc356325d554db }
     context:
       client_name: Demo Family Trust
       client_reference: SYN-CLIENT-8842

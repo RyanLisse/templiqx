@@ -104,7 +104,7 @@ evals:
         evidence_provenance_id: SYN-EVID-PROV-003
         issued_at: "2026-07-15T10:00:00Z"
         expires_at: "2099-12-31T23:59:59Z"
-        fingerprint: c11a6d6ebd4f346daea043713886628f8780c4631ccf5d445a1b85dd682fb426
+        fingerprint: a77e7a2e3be99a1f438fe47d8acc3ff3eae74b185c165eba13845a15cff8c60a
     fake_output:
       project:
         name: Website Redesign
@@ -114,6 +114,6 @@ evals:
         period: March 2026
       rate_eur: 125
       evidence:
-        - { field: project.name, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 9, end_offset: 25, quote_sha256: aaaaaaaa11111111111111111111111111111111111111111111111111111111 }
-        - { field: hours.billable, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 73, end_offset: 77, quote_sha256: bbbbbbbb22222222222222222222222222222222222222222222222222222222 }
-        - { field: rate_eur, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 93, end_offset: 104, quote_sha256: cccccccc33333333333333333333333333333333333333333333333333333333 }
+        - { field: project.name, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 9, end_offset: 25, quote_sha256: a86ee7f285a610889342446acb14f6b3286a4733dcdef75bd98fbed76641b873 }
+        - { field: hours.billable, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 79, end_offset: 83, quote_sha256: 6a8b7a87c94df84fdb35f05a06f2ddb720603e316d38f514c9e15e20b4c3363e }
+        - { field: rate_eur, document_id: SYN-TIME-DOC-0001, fragment_id: timesheet-1, start_offset: 98, end_offset: 108, quote_sha256: bdcd7236d6db2976d24e1f4612101604396baeec068d9728f2ea9a3a149eb21e }

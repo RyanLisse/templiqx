@@ -17,8 +17,8 @@ inputs:
             additionalProperties: false
             required: [name, role]
             properties:
-              name: { type: string }
-              role: { type: string }
+              name: { type: string, minLength: 1 }
+              role: { type: string, minLength: 1 }
         claims:
           type: array
           minItems: 3
@@ -27,16 +27,16 @@ inputs:
             additionalProperties: false
             required: [id, description, amount_eur]
             properties:
-              id: { type: string }
-              description: { type: string }
-              amount_eur: { type: number }
+              id: { type: string, minLength: 1 }
+              description: { type: string, minLength: 1 }
+              amount_eur: { type: number, minimum: 0 }
         financials:
           type: object
           additionalProperties: false
           required: [outstanding_total, currency]
           properties:
-            outstanding_total: { type: number }
-            currency: { type: string }
+            outstanding_total: { type: number, minimum: 0 }
+            currency: { type: string, enum: [EUR] }
         evidence:
           type: array
           minItems: 6
@@ -45,9 +45,9 @@ inputs:
             additionalProperties: false
             required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
             properties:
-              field: { type: string }
-              document_id: { type: string }
-              fragment_id: { type: string }
+              field: { type: string, minLength: 1 }
+              document_id: { type: string, minLength: 1 }
+              fragment_id: { type: string, minLength: 1 }
               start_offset: { type: integer, minimum: 0 }
               end_offset: { type: integer, minimum: 1 }
               quote_sha256: { type: string, minLength: 64, maxLength: 64 }
@@ -194,12 +194,12 @@ evals:
           outstanding_total: 45750
           currency: EUR
         evidence:
-          - { field: "parties[0].name", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 14, end_offset: 29, quote_sha256: a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456 }
-          - { field: "parties[1].name", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 42, end_offset: 61, quote_sha256: af7819cb59d72c4865699b1784c643d07c94251cda8e91b26ddc8e1f3743f5c8 }
-          - { field: "claims[0].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 130, end_offset: 175, quote_sha256: b75db1c6de0d19bab191e38f0fb7f28c5a01612ac7eacb628f7dd98aac52bdc5 }
-          - { field: "claims[1].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 177, end_offset: 224, quote_sha256: 4520d61c576b45c2fdaf7351002217dcee1f93eefa11615451c008750c5e842f }
-          - { field: "claims[2].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 226, end_offset: 272, quote_sha256: c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d }
-          - { field: financials.outstanding_total, document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 298, end_offset: 308, quote_sha256: d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e }
+          - { field: "parties[0].name", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 14, end_offset: 30, quote_sha256: 80d0ab0245804fb9002cdff01d96b8b44d8866edf7d748ed70802799d3fadf1c }
+          - { field: "parties[1].name", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 42, end_offset: 61, quote_sha256: 22f9667016f683285bd333cbcdff698b8290b34b291ab7ffbcc881b8139d021f }
+          - { field: "claims[0].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 164, end_offset: 209, quote_sha256: f061af5061f9a1eecf82152092cffa68d8b79fbcbb79aad67f56b69d70515721 }
+          - { field: "claims[1].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 220, end_offset: 242, quote_sha256: 56e3393bfb7d0c275e902332c71536768a405389bf4de00fc434f1d7109102cb }
+          - { field: "claims[2].description", document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 270, end_offset: 298, quote_sha256: 09b9e1df716c53f62b965d696c928cffd193ab64f719198e3839950d0cecde8c }
+          - { field: financials.outstanding_total, document_id: SYN-LEGAL-DOC-0001, fragment_id: matter-body-1, start_offset: 350, end_offset: 363, quote_sha256: ba1bc2345a817c53d346288c74361c179ae130cd8c5c938bbeffd8b74fd2e9bd }
     context:
       client_name: "Voorbeeld A B.V."
       matter_reference: SYN-LEGAL-2026-0017

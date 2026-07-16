@@ -10,12 +10,23 @@ use templiqx_contracts::{
 const REQUIRES_AUTHORIZED_CONTEXT: &str = "requires_authorized_context";
 
 /// Whether a package manifest declares that operations require host authorization.
-#[must_use]
-pub fn package_requires_authorized_context(manifest: &PackageManifest) -> bool {
-    manifest
-        .provenance
-        .get(REQUIRES_AUTHORIZED_CONTEXT)
-        .is_some_and(|value| value == "true")
+///
+/// # Errors
+///
+/// Returns a diagnostic when the manifest contains an unsupported requirement value.
+pub fn package_requires_authorized_context(
+    manifest: &PackageManifest,
+) -> Result<bool, Vec<Diagnostic>> {
+    match manifest.provenance.get(REQUIRES_AUTHORIZED_CONTEXT) {
+        None => Ok(false),
+        Some(value) if value == "true" => Ok(true),
+        Some(value) if value == "false" => Ok(false),
+        Some(value) => Err(vec![Diagnostic::error(
+            "TQX_AUTHORIZED_CONTEXT_REQUIREMENT_INVALID",
+            format!("requires_authorized_context must be 'true' or 'false', got '{value}'"),
+            "/provenance/requires_authorized_context",
+        )]),
+    }
 }
 
 /// Fingerprints the binding fields of an authorized merge context, excluding the
@@ -41,7 +52,7 @@ pub fn validate_authorized_context(
     manifest: &PackageManifest,
     request: &RenderRequest,
 ) -> Result<Option<AuthorizedMergeContext>, Vec<Diagnostic>> {
-    if !package_requires_authorized_context(manifest) {
+    if !package_requires_authorized_context(manifest)? {
         return Ok(None);
     }
     let Some(raw) = request.context.get(AUTHORIZED_MERGE_CONTEXT_KEY) else {
@@ -65,6 +76,13 @@ pub fn validate_authorized_context(
             "/context/_templiqx_authorized_merge/scope_id",
         )]);
     }
+    let issued_at = DateTime::parse_from_rfc3339(&context.issued_at).map_err(|error| {
+        vec![Diagnostic::error(
+            "TQX_AUTHORIZED_CONTEXT_INVALID",
+            format!("issued_at is not RFC3339: {error}"),
+            "/context/_templiqx_authorized_merge/issued_at",
+        )]
+    })?;
     let expires_at = DateTime::parse_from_rfc3339(&context.expires_at).map_err(|error| {
         vec![Diagnostic::error(
             "TQX_AUTHORIZED_CONTEXT_INVALID",
@@ -72,11 +90,26 @@ pub fn validate_authorized_context(
             "/context/_templiqx_authorized_merge/expires_at",
         )]
     })?;
-    if expires_at < Utc::now() {
+    let now = Utc::now();
+    if expires_at < now {
         return Err(vec![Diagnostic::error(
             "TQX_AUTHORIZED_CONTEXT_EXPIRED",
             "authorized merge context has expired",
             "/context/_templiqx_authorized_merge/expires_at",
+        )]);
+    }
+    if issued_at > expires_at {
+        return Err(vec![Diagnostic::error(
+            "TQX_AUTHORIZED_CONTEXT_INVALID",
+            "authorized merge context was issued after it expires",
+            "/context/_templiqx_authorized_merge/issued_at",
+        )]);
+    }
+    if issued_at > now {
+        return Err(vec![Diagnostic::error(
+            "TQX_AUTHORIZED_CONTEXT_INVALID",
+            "authorized merge context was issued in the future",
+            "/context/_templiqx_authorized_merge/issued_at",
         )]);
     }
     let expected = binding_fingerprint(&context).map_err(|error| {
@@ -97,6 +130,7 @@ pub fn validate_authorized_context(
 }
 
 /// Builds a sanitized authorized context for conformance fixtures.
+#[cfg(test)]
 #[must_use]
 pub fn synthetic_authorized_context(scope_id: &str) -> AuthorizedMergeContext {
     let mut context = AuthorizedMergeContext {
@@ -113,6 +147,7 @@ pub fn synthetic_authorized_context(scope_id: &str) -> AuthorizedMergeContext {
 }
 
 /// Injects a synthetic authorized merge context into a render request.
+#[cfg(test)]
 #[must_use]
 pub fn with_synthetic_authorized_context(
     mut request: RenderRequest,
@@ -132,10 +167,10 @@ mod tests {
     use std::collections::BTreeMap;
     use templiqx_contracts::API_VERSION;
 
-    fn manifest(requires: bool) -> PackageManifest {
+    fn manifest_with_requirement(requirement: Option<&str>) -> PackageManifest {
         let mut provenance = BTreeMap::new();
-        if requires {
-            provenance.insert(REQUIRES_AUTHORIZED_CONTEXT.into(), "true".into());
+        if let Some(requirement) = requirement {
+            provenance.insert(REQUIRES_AUTHORIZED_CONTEXT.into(), requirement.into());
         }
         PackageManifest {
             api_version: API_VERSION.into(),
@@ -153,6 +188,10 @@ mod tests {
             tool_contracts: BTreeMap::new(),
             translations: vec![],
         }
+    }
+
+    fn manifest(requires: bool) -> PackageManifest {
+        manifest_with_requirement(requires.then_some("true"))
     }
 
     #[test]
@@ -189,5 +228,83 @@ mod tests {
         };
         let error = validate_authorized_context(&manifest(true), &request).expect_err("missing");
         assert_eq!(error[0].code, "TQX_AUTHORIZED_CONTEXT_MISSING");
+    }
+
+    #[test]
+    fn requirement_accepts_absent_and_boolean_strings() {
+        assert!(!package_requires_authorized_context(&manifest_with_requirement(None)).unwrap());
+        assert!(
+            package_requires_authorized_context(&manifest_with_requirement(Some("true"))).unwrap()
+        );
+        assert!(
+            !package_requires_authorized_context(&manifest_with_requirement(Some("false")))
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn invalid_requirement_is_diagnostic() {
+        let error = package_requires_authorized_context(&manifest_with_requirement(Some("yes")))
+            .expect_err("unsupported value");
+        assert_eq!(error[0].code, "TQX_AUTHORIZED_CONTEXT_REQUIREMENT_INVALID");
+        assert_eq!(
+            error[0].json_pointer.as_deref(),
+            Some("/provenance/requires_authorized_context")
+        );
+    }
+
+    #[test]
+    fn malformed_issued_at_is_invalid() {
+        let mut context = synthetic_authorized_context("SYN-SCOPE-001");
+        context.issued_at = "not-a-timestamp".into();
+        let request = RenderRequest {
+            inputs: BTreeMap::new(),
+            context: BTreeMap::from([(
+                AUTHORIZED_MERGE_CONTEXT_KEY.into(),
+                serde_json::to_value(context).unwrap(),
+            )]),
+        };
+        let error = validate_authorized_context(&manifest(true), &request)
+            .expect_err("malformed issued_at");
+        assert_eq!(error[0].code, "TQX_AUTHORIZED_CONTEXT_INVALID");
+        assert_eq!(
+            error[0].json_pointer.as_deref(),
+            Some("/context/_templiqx_authorized_merge/issued_at")
+        );
+    }
+
+    #[test]
+    fn future_issued_at_is_invalid() {
+        let mut context = synthetic_authorized_context("SYN-SCOPE-001");
+        context.issued_at = "2099-01-01T00:00:00Z".into();
+        let request = RenderRequest {
+            inputs: BTreeMap::new(),
+            context: BTreeMap::from([(
+                AUTHORIZED_MERGE_CONTEXT_KEY.into(),
+                serde_json::to_value(context).unwrap(),
+            )]),
+        };
+        let error =
+            validate_authorized_context(&manifest(true), &request).expect_err("future issued_at");
+        assert_eq!(error[0].code, "TQX_AUTHORIZED_CONTEXT_INVALID");
+        assert!(error[0].message.contains("future"));
+    }
+
+    #[test]
+    fn issued_at_after_expiration_is_invalid() {
+        let mut context = synthetic_authorized_context("SYN-SCOPE-001");
+        context.issued_at = "2099-12-31T23:59:59Z".into();
+        context.expires_at = "2099-01-01T00:00:00Z".into();
+        let request = RenderRequest {
+            inputs: BTreeMap::new(),
+            context: BTreeMap::from([(
+                AUTHORIZED_MERGE_CONTEXT_KEY.into(),
+                serde_json::to_value(context).unwrap(),
+            )]),
+        };
+        let error = validate_authorized_context(&manifest(true), &request)
+            .expect_err("issued after expiration");
+        assert_eq!(error[0].code, "TQX_AUTHORIZED_CONTEXT_INVALID");
+        assert!(error[0].message.contains("after it expires"));
     }
 }

@@ -26,7 +26,7 @@ a host sign-off dependency before calling any package production evidence.
 |---------|-----------------|------------------------|------------------|
 | `basenet-legal` | matter, parties, custom fields, financials, evidence | letter summary, safe HTML email, DOCX V5 template | `legal-extraction-request`, `legal-extraction-output`, `legal-draft-request`, `legal-draft-output` |
 | `finly-advice` | regulated advice facts, suitability evidence | advice memo/report, safe email | `advice-extraction-request`, `advice-extraction-output`, `advice-memo-request`, `advice-memo-output` |
-| `simplicate-workflow` | project, hours, rates, invoice lines | invoice draft, report summary, safe email, SMS notification | `hours-extraction-request`, `hours-extraction-output`, `invoice-draft-request`, `invoice-draft-output` |
+| `simplicate-workflow` | project, hours, rates, invoice lines | invoice draft, report summary, SMS notification | `hours-extraction-request`, `hours-extraction-output`, `invoice-draft-request`, `invoice-draft-output` |
 
 Across the three packages the channel matrix covers safe HTML/plain email, memo,
 SMS, report, invoice, and DOCX using the same approved merge-data semantics.
@@ -72,7 +72,7 @@ Migration alias map: `migrations/v5-aliases.json`.
 ## Authorized merge context
 
 Packages that declare `provenance.requires_authorized_context: "true"` (currently
-`basenet-legal`) require a host-supplied `AuthorizedMergeContext` envelope in
+`basenet-legal` and `simplicate-workflow`) require a host-supplied `AuthorizedMergeContext` envelope in
 the render/eval request context under the key `_templiqx_authorized_merge`.
 
 | Field | Type | Notes |
@@ -96,6 +96,9 @@ Sanitized fixture IDs (for conformance and documentation only):
 | `basenet-legal` | `fixtures/authorized-context.json` | `SYN-LEGAL-SCOPE-001` |
 | `finly-advice` | `fixtures/authorized-context.json` | `SYN-ADVICE-SCOPE-001` |
 | `simplicate-workflow` | `fixtures/authorized-context.json` | `SYN-PROJECT-SCOPE-001` |
+
+The `finly-advice` context remains an unenforced fixture for rollout parity;
+its package manifest does not yet require authorized context.
 
 ## Measured DOCX fixture IDs (Legal floor)
 

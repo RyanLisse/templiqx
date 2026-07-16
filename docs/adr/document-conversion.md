@@ -5,7 +5,7 @@ title: "ADR: Document conversion (PDF and host-owned converters)"
 ## Status
 
 Accepted (2026-07-15) — host-owned conversion seam and recorded conformance
-fixture prove entry criteria; no default-composition converter ships in this
+fixture proof satisfies the entry criteria; no default-composition converter ships in this
 repository.
 
 ## Context

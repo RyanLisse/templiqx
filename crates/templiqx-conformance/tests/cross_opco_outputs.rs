@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, ensure};
 use serde::Serialize;
 use serde_json::{Value, json};
-use templiqx_application::{RenderDocumentRequest, with_synthetic_authorized_context};
+use templiqx_application::RenderDocumentRequest;
 use templiqx_conformance::{
     ConformanceTraceReceipt, DocumentEvidence, DocumentOutputEvidence, DocumentOutputKind,
     InteractionEvidence, PdfConversionEvidence, RECEIPT_SCHEMA_VERSION, TRACE_API_VERSION,
@@ -101,14 +101,24 @@ fn load_pdf_evidence() -> Result<PdfConversionEvidence> {
         serde_json::from_slice(&fs::read(&manifest_path).context("manifest")?)?;
     let pdf_path = package_root().join(&manifest.source_artifact);
     let fingerprint = file_fingerprint(&pdf_path)?;
-    ensure!(fingerprint == manifest.artifact_fingerprint);
+    let artifact_bytes = fs::metadata(&pdf_path)?.len();
+    let output_hash = file_fingerprint(&pdf_path)?;
+    ensure!(
+        fingerprint == manifest.artifact_fingerprint,
+        "PDF artifact fingerprint drift"
+    );
+    ensure!(
+        artifact_bytes == manifest.artifact_bytes,
+        "PDF artifact byte count drift"
+    );
+    ensure!(output_hash == manifest.output_hash, "PDF output hash drift");
     Ok(PdfConversionEvidence {
         renderer_id: manifest.renderer_id,
         renderer_version: manifest.renderer_version,
         environment_id: manifest.environment_id,
-        artifact_fingerprint: manifest.artifact_fingerprint,
-        artifact_bytes: manifest.artifact_bytes,
-        output_hash: manifest.output_hash,
+        artifact_fingerprint: fingerprint,
+        artifact_bytes,
+        output_hash,
     })
 }
 
@@ -231,7 +241,9 @@ fn legal_package_assembles_multi_output_receipt() -> Result<()> {
     let html_report = html_render.report;
     let pdf_evidence = load_pdf_evidence()?;
 
-    let parity = adapter.compare_normalized(&docx_output, &docx_output)?;
+    let baseline = package.join("baselines/v5-legal-approved.docx");
+    let parity = adapter.compare_normalized(&docx_output, &baseline)?;
+    ensure!(parity.equal, "OOXML parity report: {parity:?}");
     let document = DocumentEvidence {
         adapter_id: "templiqx-docx-v5".into(),
         adapter_version: env!("CARGO_PKG_VERSION").into(),
@@ -241,7 +253,7 @@ fn legal_package_assembles_multi_output_receipt() -> Result<()> {
         render_input_fingerprint: fingerprint(&render_data)?,
         render_report_fingerprint: report_fingerprint(&docx_report)?,
         artifact_fingerprint: file_fingerprint(&docx_output)?,
-        approved_baseline_fingerprint: file_fingerprint(&docx_output)?,
+        approved_baseline_fingerprint: file_fingerprint(&baseline)?,
         parity_report_fingerprint: fingerprint(&parity)?,
         normalized_ooxml_equal: parity.equal,
         unresolved_references: docx_report["unresolved"]
@@ -308,7 +320,7 @@ fn legal_package_assembles_multi_output_receipt() -> Result<()> {
                 &drafting_contract,
                 drafting_contract_fingerprint,
                 drafting_compiled_fingerprint,
-                &with_synthetic_authorized_context(drafting_request, "SYN-LEGAL-SCOPE-001"),
+                &drafting_request,
                 &capabilities,
                 &drafting_receipt,
             )?,

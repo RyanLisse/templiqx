@@ -144,7 +144,9 @@ fn bench_document_render(root: &Path) -> Result<BenchCase> {
     let fixture = root.join("examples/legacy-corpus/fixtures/v5-nested-table");
     let package_root = tempfile::tempdir()?;
     let workspace = tempfile::tempdir()?;
-    fs::create_dir_all(package_root.path().join("demo"))?;
+    // render_document fail-closes on missing/invalid package manifests.
+    templiqx_local::create_package(package_root.path(), "demo", "0.1.0")
+        .context("create demo package for document render bench")?;
     let source = package_root.path().join("demo/source.docx");
     fs::copy(fixture.join("source.docx"), &source)?;
     let adapter = DocxV5Adapter::default();

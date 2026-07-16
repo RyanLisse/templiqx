@@ -20,8 +20,7 @@ use templiqx_ports::{
 };
 
 pub use authorized_context::{
-    binding_fingerprint, package_requires_authorized_context, synthetic_authorized_context,
-    validate_authorized_context, with_synthetic_authorized_context,
+    binding_fingerprint, package_requires_authorized_context, validate_authorized_context,
 };
 
 /// Actor-neutral request for migrating one package-confined legacy artifact.
@@ -1305,9 +1304,17 @@ where
         &self,
         request: &RenderDocumentRequest,
     ) -> OperationEnvelope<RenderDocumentResult> {
-        if let Ok(manifest) = self.store.manifest(&request.package)
-            && package_requires_authorized_context(&manifest)
-        {
+        let manifest = match self.store.manifest(&request.package) {
+            Ok(manifest) => manifest,
+            Err(error) => return port_failure("render_document", error),
+        };
+        let requires_authorized_context = match package_requires_authorized_context(&manifest) {
+            Ok(required) => required,
+            Err(diagnostics) => {
+                return OperationEnvelope::new("render_document", None, diagnostics);
+            }
+        };
+        if requires_authorized_context {
             let mut context = std::collections::BTreeMap::new();
             if let Some(auth) = request.data.get(AUTHORIZED_MERGE_CONTEXT_KEY) {
                 context.insert(AUTHORIZED_MERGE_CONTEXT_KEY.into(), auth.clone());
@@ -1319,6 +1326,10 @@ where
             if let Err(diagnostics) = validate_authorized_context(&manifest, &render_request) {
                 return OperationEnvelope::new("render_document", None, diagnostics);
             }
+        }
+        let mut data = request.data.clone();
+        if let Some(data) = data.as_object_mut() {
+            data.remove(AUTHORIZED_MERGE_CONTEXT_KEY);
         }
         let template = match self
             .store
@@ -1339,7 +1350,7 @@ where
             .documents
             .render_document(&AdapterDocumentRenderRequest {
                 template,
-                data: request.data.clone(),
+                data,
                 output: output_lease.path().to_path_buf(),
             }) {
             Ok(result) => result,

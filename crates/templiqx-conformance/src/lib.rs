@@ -53,7 +53,7 @@ pub struct DocumentEvidence {
 
 /// Host-owned PDF conversion evidence recorded from a deterministic fixture or
 /// host converter. Payload-free: fingerprints and hashes only.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct PdfConversionEvidence {
     pub renderer_id: String,
@@ -73,8 +73,8 @@ pub enum DocumentOutputKind {
 }
 
 /// One document output in a multi-output conformance receipt. Ordering is
-/// deterministic: kind, then adapter_id, then artifact_fingerprint.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+/// deterministic according to field declaration order.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct DocumentOutputEvidence {
     pub kind: DocumentOutputKind,
@@ -126,12 +126,7 @@ pub fn report_fingerprint(report: &Value) -> Result<String, serde_json::Error> {
 
 /// Sorts multi-output evidence deterministically for receipt assembly.
 pub fn sort_document_outputs(outputs: &mut [DocumentOutputEvidence]) {
-    outputs.sort_by(|left, right| {
-        left.kind
-            .cmp(&right.kind)
-            .then_with(|| left.adapter_id.cmp(&right.adapter_id))
-            .then_with(|| left.artifact_fingerprint.cmp(&right.artifact_fingerprint))
-    });
+    outputs.sort();
 }
 
 #[cfg(test)]
