@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import YAML from 'yaml';
+import { writeOpenApiReport } from './report.mjs';
 
 const specPath = process.argv[2] ?? 'openapi/templiqx-operations-v1.yaml';
 const raw = fs.readFileSync(specPath, 'utf8');
@@ -64,6 +65,14 @@ for (const required of ['catalog', 'discoverPackages', 'inspectContract', 'valid
 for (const schema of ['Diagnostic', 'OperationEnvelopeBase', 'StringListEnvelope', 'JsonValueEnvelope']) {
   if (!spec.components.schemas[schema]) fail(`missing required schema: ${schema}`);
 }
+const report = {
+  status: errors.length ? 'fail' : 'ok',
+  specPath,
+  operationCount: operationIds.size,
+  errors,
+};
+writeOpenApiReport('validate', report);
+
 if (errors.length) {
   console.error(errors.map((e) => `FAIL openapi: ${e}`).join('\n'));
   process.exit(1);

@@ -1,0 +1,26 @@
+{
+  "definition": {
+    "id": "matter-volume-by-team",
+    "version": "1.0.0",
+    "tabular_binding": {
+      "rows": "rows",
+      "columns": [
+        { "key": "team", "header": "Team" },
+        { "key": "matters", "header": "Matters" },
+        { "key": "note", "header": "Note" }
+      ],
+      "chart": {
+        "type": "column",
+        "title": "Matters by team",
+        "category": "team",
+        "value": "matters"
+      }
+    }
+  },
+  "merge_data": {
+    "rows": [
+      { "team": "Employment", "matters": 12, "note": "Priority, \"A\" <review>" },
+      { "team": "Corporate", "matters": 8, "note": "Standard" }
+    ]
+  }
+}

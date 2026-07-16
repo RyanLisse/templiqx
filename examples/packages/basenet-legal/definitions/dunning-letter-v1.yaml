@@ -1,0 +1,14 @@
+id: dunning-letter
+version: 1.0.0
+query_binding: host-query://synthetic-basenet/dunning-letter/v1
+field_map:
+  recipient_name: client.name
+  outstanding_total: financials.formatted_total
+  claims: claims
+  handler_role: signature_slot.role
+template_ref: templates/v5-legal-template.docx
+target_format: docx
+approval:
+  status: approved
+  approved_by: synthetic-reviewer
+  approved_at: "2026-07-16T00:00:00Z"

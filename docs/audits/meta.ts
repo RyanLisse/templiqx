@@ -5,5 +5,6 @@ export default defineMeta({
   pages: [
     "2026-07-12-agent-native-architecture-review",
     "2026-07-13-agent-native-architecture-review-v2",
+    "2026-07-15-qlty-smells-findings",
   ],
 });

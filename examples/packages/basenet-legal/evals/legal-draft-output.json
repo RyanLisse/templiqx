@@ -17,6 +17,17 @@
       "currency": "EUR",
       "formatted_total": "EUR 45.750,00"
     },
+    "customFields": {
+      "rechtsgebied": {
+        "type": "text",
+        "value": "Handelsrecht"
+      },
+      "behandelend_advocaat": {
+        "type": "relation_link",
+        "display": "mr. Eva de Vries",
+        "ref": "SYN-REL-LAWYER-0001"
+      }
+    },
     "department": {
       "name": "Basenet Legal Corporate",
       "logo_slot": "department-logo-slot"

@@ -142,6 +142,11 @@ pub struct PackageManifest {
     /// `translations/<locale>.yaml`. Empty is omitted to preserve fingerprints.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub translations: Vec<String>,
+    /// Package-relative report-definition artifact paths (see
+    /// `report-definition-v1alpha1`). Empty is omitted to preserve existing
+    /// package fingerprints for packages without report definitions.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub definitions: Vec<String>,
 }
 
 /// Canonical signable package identity. Signatures are always removed from the

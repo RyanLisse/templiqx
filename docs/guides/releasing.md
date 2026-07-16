@@ -9,6 +9,15 @@ Templiqx releases three deliberately separate OCI artifacts and one Helm chart:
 - `ghcr.io/ryanlisse/templiqx-conformance` — explicitly synthetic mock and conformance tooling;
 - `templiqx-<version>.tgz` — the synthetic-conformance Helm chart.
 
+### Explicit non-artifact: `templiqx-http-server`
+
+**Decision (accepted):** the Operations HTTP binary / Docker target
+`templiqx-http-server` is **not** an official signed release artifact. It exists
+for local/demo Compose and chart smoke (`TEMPLIQX_RUNTIME_MODE=deterministic-fake`
+by default). Tag release does not build, push, or Cosign-sign it. Production
+hosts should compose adapters and bind `templiqx_http::router` themselves. See
+[ADR: HTTP server release artifact](../adr/http-server-release-artifact.md).
+
 The conformance image and chart are not production services. A release proves
 Templiqx-owned compiler, packaging, and synthetic conformance readiness. CRM3
 host wiring, tenant policy, production data, and opco acceptance remain outside

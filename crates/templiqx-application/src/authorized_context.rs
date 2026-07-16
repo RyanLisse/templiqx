@@ -187,6 +187,7 @@ mod tests {
             dependencies: BTreeMap::new(),
             tool_contracts: BTreeMap::new(),
             translations: vec![],
+            definitions: vec![],
         }
     }
 

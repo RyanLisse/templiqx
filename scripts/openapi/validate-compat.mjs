@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import YAML from "yaml";
+import { writeOpenApiReport } from "./report.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = (relativePath) => fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
@@ -128,6 +129,65 @@ const sdkDefinitions = {
       sdkVersion: /sdk_version=GENERATED_SDK_VERSION/,
     },
   },
+  go: {
+    manifestPath: "sdk/go/go.mod",
+    metadataPath: "sdk/go/compat_generated.go",
+    compatibilityPath: "sdk/go/compat.go",
+    manifest(text) {
+      return {
+        package: text.match(/^module\s+(\S+)/m)?.[1],
+        sdkVersion: text.match(/templiqx-sdk-version:\s*(\S+)/)?.[1],
+      };
+    },
+    markers: {
+      opsApiVersion: /GeneratedOpenAPIVersion\s*=\s*"([^"]+)"/,
+      openApiDigest: /GeneratedOpenAPIDigest\s*=\s*"([^"]+)"/,
+      contractFormat: /GeneratedContractFormat\s*=\s*"([^"]+)"/,
+      engineApiVersion: /GeneratedEngineAPIVersion\s*=\s*"([^"]+)"/,
+      engineVersion: /GeneratedEngineVersion\s*=\s*"([^"]+)"/,
+      sdkVersion: /GeneratedSDKVersion\s*=\s*"([^"]+)"/,
+    },
+    wiring: {
+      opsApiVersion: /OpsApiVersion:\s*GeneratedOpenAPIVersion/,
+      openApiDigest: /OpenApiDigest:\s*GeneratedOpenAPIDigest/,
+      contractFormat: /ContractFormat:\s*GeneratedContractFormat/,
+      engineVersion: /EngineVersion:\s*GeneratedEngineVersion/,
+      sdkVersion: /SdkVersion:\s*GeneratedSDKVersion/,
+    },
+  },
+  rust: {
+    manifestPath: "sdk/rust/Cargo.toml",
+    metadataPath: "sdk/rust/src/generated.rs",
+    compatibilityPath: "sdk/rust/src/compat.rs",
+    // Rust pilot markers omit engineApiVersion today; digest/version still gate.
+    requiredMarkers: [
+      "opsApiVersion",
+      "openApiDigest",
+      "contractFormat",
+      "engineVersion",
+      "sdkVersion",
+    ],
+    manifest(text) {
+      return {
+        package: text.match(/^name\s*=\s*"([^"]+)"/m)?.[1],
+        sdkVersion: text.match(/^version\s*=\s*"([^"]+)"/m)?.[1],
+      };
+    },
+    markers: {
+      opsApiVersion: /GENERATED_OPENAPI_VERSION:\s*&str\s*=\s*"([^"]+)"/,
+      openApiDigest: /GENERATED_OPENAPI_DIGEST:\s*&str\s*=\s*"([^"]+)"|GENERATED_OPENAPI_DIGEST:\s*&str\s*=\s*\n\s*"([^"]+)"/,
+      contractFormat: /GENERATED_CONTRACT_FORMAT:\s*&str\s*=\s*"([^"]+)"/,
+      engineVersion: /GENERATED_ENGINE_VERSION:\s*&str\s*=\s*"([^"]+)"/,
+      sdkVersion: /GENERATED_SDK_VERSION:\s*&str\s*=\s*"([^"]+)"/,
+    },
+    wiring: {
+      opsApiVersion: /ops_api_version:\s*GENERATED_OPENAPI_VERSION/,
+      openApiDigest: /openapi_digest:\s*GENERATED_OPENAPI_DIGEST/,
+      contractFormat: /contract_format:\s*GENERATED_CONTRACT_FORMAT/,
+      engineVersion: /engine_version:\s*GENERATED_ENGINE_VERSION/,
+      sdkVersion: /sdk_version:\s*GENERATED_SDK_VERSION/,
+    },
+  },
 };
 
 if (!Array.isArray(matrix?.sdks)) fail("matrix.sdks must be a list");
@@ -164,8 +224,16 @@ for (const [language, definition] of Object.entries(sdkDefinitions)) {
     engineVersion: matrix.engineVersion,
     sdkVersion: row.sdkVersion,
   };
-  for (const [field, expected] of Object.entries(expectedMarkers)) {
-    const actual = metadata.match(definition.markers[field])?.[1];
+  const requiredMarkers = definition.requiredMarkers ?? Object.keys(expectedMarkers);
+  for (const field of requiredMarkers) {
+    const expected = expectedMarkers[field];
+    const pattern = definition.markers[field];
+    if (!pattern) {
+      fail(`${language} marker pattern is missing: ${field}`);
+      continue;
+    }
+    const matched = metadata.match(pattern);
+    const actual = matched?.[1] ?? matched?.[2];
     if (actual === undefined) fail(`${language} generated marker is missing: ${field}`);
     else expectEqual(`${language} generated ${field}`, actual, expected);
   }
@@ -175,6 +243,16 @@ for (const [language, definition] of Object.entries(sdkDefinitions)) {
     if (!pattern.test(compatibility)) fail(`${language} compatibility wiring is missing: ${field}`);
   }
 }
+
+const report = {
+  status: errors.length > 0 ? "fail" : "ok",
+  matrixPath,
+  specPath,
+  sdkCount: rows.size,
+  languages: [...rows.keys()].sort(),
+  errors,
+};
+writeOpenApiReport("compat", report);
 
 if (errors.length > 0) {
   console.error(errors.map((error) => `FAIL compatibility: ${error}`).join("\n"));

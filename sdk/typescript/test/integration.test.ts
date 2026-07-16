@@ -58,6 +58,7 @@ describe.skipIf(!enabled)("Templiqx SDK against the deterministic-fake HTTP serv
         TEMPLIQX_HTTP_ADDR: `127.0.0.1:${port}`,
         TEMPLIQX_ROOT: packagesRoot,
         TEMPLIQX_WORKSPACE: workspaceRoot,
+        TEMPLIQX_RUNTIME_MODE: "deterministic-fake",
       },
       stdio: ["pipe", "pipe", "pipe"],
     });

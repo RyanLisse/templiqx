@@ -1,0 +1,50 @@
+{
+  "@odata.context": "https://synthetic.invalid/odata/$metadata#legal_matters",
+  "schema": {
+    "entities": [
+      {
+        "name": "legal_matters",
+        "fields": [
+          {
+            "name": "matter_id",
+            "type": "Edm.String"
+          },
+          {
+            "name": "title",
+            "type": "Edm.String"
+          },
+          {
+            "name": "status",
+            "type": "Edm.String"
+          }
+        ]
+      }
+    ]
+  },
+  "authorized_scopes": [
+    {
+      "actor": "synthetic-legal-author",
+      "entities": [
+        "legal_matters"
+      ]
+    },
+    {
+      "actor": "synthetic-readonly-user",
+      "entities": []
+    }
+  ],
+  "rows": {
+    "legal_matters": [
+      {
+        "matter_id": "SYN-MATTER-001",
+        "title": "Synthetic Lease Review",
+        "status": "open"
+      },
+      {
+        "matter_id": "SYN-MATTER-002",
+        "title": "Synthetic Filing Example",
+        "status": "closed"
+      }
+    ]
+  }
+}

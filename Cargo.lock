@@ -1029,6 +1029,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
 
 [[package]]
+name = "markdown"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5cab8f2cadc416a82d2e783a1946388b31654d391d1c7d92cc1f03e295b1deb"
+dependencies = [
+ "unicode-id",
+]
+
+[[package]]
 name = "matchit"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1449,6 +1458,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust_xlsxwriter"
+version = "0.96.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd1746025420e17b5d62528b930e550e016e857038794d74e169018126ef3d14"
+dependencies = [
+ "zip 7.2.0",
+]
+
+[[package]]
 name = "rustix"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1801,6 +1819,7 @@ dependencies = [
  "templiqx-docx-v5",
  "templiqx-local",
  "templiqx-ports",
+ "zip 8.6.0",
 ]
 
 [[package]]
@@ -1827,17 +1846,24 @@ dependencies = [
  "rmcp",
  "serde",
  "serde_json",
+ "serde_yaml_ng",
  "sha2",
  "tempfile",
  "templiqx-application",
+ "templiqx-bench",
  "templiqx-contracts",
  "templiqx-docx-v5",
  "templiqx-html-plain",
  "templiqx-local",
+ "templiqx-markdown",
  "templiqx-mcp",
  "templiqx-mock",
  "templiqx-ports",
+ "templiqx-rtf",
  "templiqx-runtime-http-mock",
+ "templiqx-tabular",
+ "templiqx-typst",
+ "templiqx-xlsx",
  "tokio",
  "zip 8.6.0",
 ]
@@ -1958,6 +1984,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "templiqx-markdown"
+version = "0.1.0"
+dependencies = [
+ "markdown",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "templiqx-ports",
+ "thiserror",
+]
+
+[[package]]
 name = "templiqx-mcp"
 version = "0.1.0"
 dependencies = [
@@ -2008,6 +2046,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "templiqx-rtf"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "templiqx-ports",
+ "thiserror",
+]
+
+[[package]]
 name = "templiqx-runtime-http-mock"
 version = "0.1.0"
 dependencies = [
@@ -2028,6 +2076,36 @@ dependencies = [
  "templiqx-ports",
  "time",
  "ureq",
+]
+
+[[package]]
+name = "templiqx-tabular"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2",
+ "templiqx-ports",
+ "thiserror",
+]
+
+[[package]]
+name = "templiqx-typst"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "templiqx-ports",
+ "thiserror",
+]
+
+[[package]]
+name = "templiqx-xlsx"
+version = "0.1.0"
+dependencies = [
+ "rust_xlsxwriter",
+ "serde_json",
+ "sha2",
+ "templiqx-ports",
+ "thiserror",
 ]
 
 [[package]]
@@ -2259,6 +2337,12 @@ name = "unicode-general-category"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b993bddc193ae5bd0d623b49ec06ac3e9312875fdae725a975c51db1cc1677f"
+
+[[package]]
+name = "unicode-id"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70ba288e709927c043cbe476718d37be306be53fb1fafecd0dbe36d072be2580"
 
 [[package]]
 name = "unicode-ident"
@@ -2782,6 +2866,20 @@ dependencies = [
  "flate2",
  "indexmap",
  "memchr",
+ "zopfli",
+]
+
+[[package]]
+name = "zip"
+version = "7.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c42e33efc22a0650c311c2ef19115ce232583abbe80850bc8b66509ebef02de0"
+dependencies = [
+ "crc32fast",
+ "flate2",
+ "indexmap",
+ "memchr",
+ "typed-path",
  "zopfli",
 ]
 

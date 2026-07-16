@@ -20,6 +20,8 @@ explain *why* it is that way.
 | [Document conversion](document-conversion) | Proposed (2026-07-14) | PDF/converter adapters are host-constructed; entry criteria before implementation |
 | [Compiled-artifact cache](compiled-artifact-cache) | Proposed (2026-07-14) | Cache only after benchmark evidence; host/store-backed keys |
 | [Legacy template import](legacy-template-import) | Proposed (2026-07-14) | Safe-subset legacy imports; helpers and dynamic partials unsupported |
+| [HTTP server release artifact](http-server-release-artifact) | Accepted (2026-07-16) | Operations HTTP binary is local/demo only — not Cosign-signed |
+| [High-complexity Rust modules](high-complexity-rust-modules) | Accepted (2026-07-16) | Track qlty monolith splits; no mass rewrite in readiness wave |
 
 ## Conventions
 

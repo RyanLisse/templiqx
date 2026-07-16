@@ -1,0 +1,19 @@
+[package]
+name = "templiqx-markdown"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+markdown.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+templiqx-ports = { path = "../../crates/templiqx-ports" }
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

@@ -31,7 +31,7 @@ Top-level fields apply to every dialect. Unknown fields are rejected
 | `dialect` | string | yes | Explicit adapter dialect (e.g. `v5`) |
 | `dialect_report` | object | yes | Adapter-specific compatibility report |
 | `alias_map_fingerprint` | string | no | SHA-256 over canonical JSON alias input |
-| `unresolved_fields` | string[] | yes | Canonical merge-field references still unresolved after alias migration |
+| `unresolved_fields` | string[] | yes | Canonical merge-field references still unresolved after alias migration, including unknown `customFields.*` paths |
 | `supported_output_matrix` | object[] | yes | Declared output channels this template may feed when preflight passes |
 | `renderer_identity` | object | no | Present when a host renderer binding is declared for the template |
 | `definition_fingerprint` | string | no | SHA-256 over canonical template + alias + dialect report |
@@ -41,6 +41,21 @@ Top-level fields apply to every dialect. Unknown fields are rejected
 
 Reports are **payload-free**: no document bytes, merge values, retrieval
 results, or credentials.
+
+### Unknown custom fields
+
+Payload-free `inspect_document` inventories template references but has no merge
+data with which to classify a custom field as known or unknown. During the
+merge-data-aware compatibility check, the bounded adapter resolves every
+`customFields.*` placeholder against the flat namespace documented in
+[Merge data v1alpha1](merge-data-v1alpha1.md). A path such as
+`customFields.behandelend_advocaat.display` resolves only when that entry and
+leaf are present. The adapter reports a missing path such as
+`customFields.onbekend.value` as unresolved; compatibility assembly copies that
+full reference into `unresolved_fields` and emits `TQX_UNRESOLVED_FIELD`.
+
+Relation display names are pre-resolved by the host. Preflight and rendering do
+not dereference the relation's opaque `ref` to fill a missing `display` value.
 
 ## `dialect_report` (DOCX V5)
 
@@ -129,6 +144,7 @@ must not be treated as production-ready by hosts or operators.
 |----------|----------------------------------|-----------------|
 | Alias-only migration succeeds, no unsupported constructs | `review_required` | Review alias map and unresolved fields |
 | Unknown alias target | `blocked` | Extend alias map or fix source template |
+| Unknown `customFields.*` placeholder | `blocked` | Supply the declared custom field or fix the template path |
 | Unsupported repeat/conditional marker (detect-only fixture) | `blocked` | Redesign region or defer to escape-hatch work |
 | Version drift with matching diff fingerprint | `review_required` | Confirm intentional change |
 | Version drift with changed diff fingerprint | `blocked` | Re-approve definition |

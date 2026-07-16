@@ -33,6 +33,15 @@ retry queues, or tenant quotas.
 - Hosts may wrap LibreOffice, Gotenberg, or opco-specific converters behind
   `DocumentRenderer` or a separate conversion port constructed explicitly.
 
+### Typst markup target
+
+`templiqx-typst` is an optional, host-constructed `DocumentRenderer` that emits
+deterministic Typst markup as its portable artifact. It performs only bounded
+field interpolation, locale formatting, and deterministic native table/chart
+generation; it does not embed the Typst compiler. PDF compilation, fonts,
+converter identity, and environment policy remain host-owned behind the same
+document-conversion seam and are proven with recorded artifact manifests.
+
 ## Alternatives considered
 
 - **Default CLI/MCP PDF renderer.** Rejected — pulls host policy and

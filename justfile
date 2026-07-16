@@ -1,11 +1,15 @@
 verify:
+    # OpenAPI / router drift first so CI can still upload artifacts when later
+    # Rust gates fail.
+    npm run openapi:validate
+    just compat-check
+    just bump-check
+    ./scripts/openapi/router-drift-report.sh
+    just verify-sdk-typescript
     cargo fmt --all -- --check
     cargo clippy --workspace --all-targets --all-features -- -D warnings
     cargo test --workspace --all-features
     ./scripts/check-boundaries.sh
-    npm run openapi:validate
-    just compat-check
-    just bump-check
     ./scripts/check-ci-gates.sh
     # qlty is skippable (SKIP_QLTY) only for constrained cold-clone checks.
     # Normal local verification and the minimal hosted CI backstop both lint.
@@ -98,3 +102,13 @@ bump-engine *args:
 
 openapi-typescript-proof:
     npm run openapi:typescript-proof
+
+# Checked-in TypeScript SDK: DTO drift + typecheck + build + unit tests.
+# Hosted CI and `just verify` always run this (especially TypeScript).
+verify-sdk-typescript:
+    VERIFY_SDK_LANGS=typescript ./scripts/verify-sdks.sh
+
+# All pilot SDKs. Skips languages whose toolchain is missing unless
+# VERIFY_SDK_STRICT=1. Local-first for Go/.NET/Python/Rust; TS is in `verify`.
+verify-sdk:
+    ./scripts/verify-sdks.sh

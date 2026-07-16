@@ -282,11 +282,13 @@ fn loopback_maps_timeout_malformed_and_oversized_responses() {
     ];
     for (response, delay, expected) in cases {
         let (model_url, _) = loopback(response, delay);
-        let adapter = runtime(
-            model_url,
-            "http://127.0.0.1:9".into(),
-            Duration::from_millis(25),
-        );
+        // Oversized bodies need headroom under load; keep a tight budget only for the
+        // intentional timeout case (delay 150ms vs client 25ms).
+        let client_timeout = match expected {
+            RuntimeFailureCode::Timeout => Duration::from_millis(25),
+            _ => Duration::from_secs(2),
+        };
+        let adapter = runtime(model_url, "http://127.0.0.1:9".into(), client_timeout);
         match adapter.execute(&request()).unwrap_err() {
             PortError::RuntimeFailure { failure, .. } => assert_eq!(failure.code, expected),
             other => panic!("unexpected error: {other:?}"),

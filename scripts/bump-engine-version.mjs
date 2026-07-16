@@ -19,15 +19,21 @@ const generatedPaths = [
   "sdk/python/src/templiqx_adapter/_generated/operations_v1.py",
   "sdk/dotnet/Templiqx.Adapter/Generated/OperationsV1.cs",
   "sdk/dotnet/Templiqx.Adapter/Generated/GeneratedMeta.cs",
+  "sdk/go/compat_generated.go",
+  "sdk/go/operations_v1.gen.go",
+  "sdk/rust/src/generated.rs",
 ];
 const manifestPaths = {
   typescript: "sdk/typescript/package.json",
   dotnet: "sdk/dotnet/Templiqx.Adapter/Templiqx.Adapter.csproj",
   python: "sdk/python/pyproject.toml",
+  go: "sdk/go/go.mod",
+  rust: "sdk/rust/Cargo.toml",
 };
 const sdkLockPaths = {
   typescript: "sdk/typescript/package-lock.json",
   python: "sdk/python/uv.lock",
+  rust: "sdk/rust/Cargo.lock",
 };
 const plannedPaths = [
   matrixPath,
@@ -208,6 +214,30 @@ function writeManifests(nextVersion) {
     sdkLockPaths.python,
   );
   fs.writeFileSync(absolute(sdkLockPaths.python), pythonLock);
+
+  const goMod = replaceExactlyOnce(
+    read(manifestPaths.go),
+    /(\/\/ templiqx-sdk-version:\s*)\S+/,
+    `$1${nextVersion}`,
+    manifestPaths.go,
+  );
+  fs.writeFileSync(absolute(manifestPaths.go), goMod);
+
+  const rustToml = replaceExactlyOnce(
+    read(manifestPaths.rust),
+    /(^name\s*=\s*"templiqx-adapter-rust"\s*\nversion\s*=\s*")[^"]+("\s*$)/m,
+    `$1${nextVersion}$2`,
+    manifestPaths.rust,
+  );
+  fs.writeFileSync(absolute(manifestPaths.rust), rustToml);
+
+  const rustLock = replaceExactlyOnce(
+    read(sdkLockPaths.rust),
+    /(\[\[package\]\]\nname = "templiqx-adapter-rust"\nversion = ")[^"]+("\s*$)/m,
+    `$1${nextVersion}$2`,
+    sdkLockPaths.rust,
+  );
+  fs.writeFileSync(absolute(sdkLockPaths.rust), rustLock);
 }
 
 function run(command, args, label, quietStdout = false) {
@@ -273,6 +303,17 @@ function runGenerators() {
     "Python SDK generator",
   );
   run("sdk/dotnet/scripts/generate.sh", [], ".NET SDK generator");
+  console.log("Running Go SDK generator...");
+  const goGenerate = spawnSync("go", ["generate", "./..."], {
+    cwd: path.join(repoRoot, "sdk/go"),
+    encoding: "utf8",
+    stdio: "inherit",
+  });
+  if (goGenerate.error) throw goGenerate.error;
+  if (goGenerate.status !== 0) {
+    throw new Error(`Go SDK generator failed with exit code ${goGenerate.status}`);
+  }
+  run("sdk/rust/scripts/generate.sh", [], "Rust SDK generator");
 }
 
 function changelogDetails(classification, added, oldDigest, nextDigest) {
@@ -321,6 +362,11 @@ function readManifestVersions() {
   const pythonLock = read(sdkLockPaths.python).match(
     /\[\[package\]\]\nname = "templiqx-adapter"\nversion = "([^"]+)"/,
   )?.[1];
+  const go = read(manifestPaths.go).match(/templiqx-sdk-version:\s*(\S+)/)?.[1];
+  const rust = read(manifestPaths.rust).match(/^version\s*=\s*"([^"]+)"/m)?.[1];
+  const rustLock = read(sdkLockPaths.rust).match(
+    /\[\[package\]\]\nname = "templiqx-adapter-rust"\nversion = "([^"]+)"/,
+  )?.[1];
   const cargo = read(cargoManifestPath).match(
     /\[workspace\.package\][\s\S]*?^version\s*=\s*"([^"]+)"/m,
   )?.[1];
@@ -332,6 +378,9 @@ function readManifestVersions() {
     dotnet,
     pythonProject,
     pythonLock,
+    go,
+    rust,
+    rustLock,
   ];
 }
 
@@ -361,6 +410,17 @@ function generatedMetadataMatches(
       read(generatedPaths[3]).includes(`GeneratedSdkVersion = "${version}"`) &&
       read(generatedPaths[3]).includes(`GeneratedEngineApiVersion = "${engineApiVersion}"`) &&
       read(generatedPaths[3]).includes(`GeneratedOpenApiDigest = "${openApiDigest}"`),
+    read(generatedPaths[4]).includes(`GeneratedOpenAPIVersion   = "${opsApiVersion}"`) &&
+      read(generatedPaths[4]).includes(`GeneratedContractFormat   = "${contractFormat}"`) &&
+      read(generatedPaths[4]).includes(`GeneratedEngineVersion    = "${version}"`) &&
+      read(generatedPaths[4]).includes(`GeneratedSDKVersion       = "${version}"`) &&
+      read(generatedPaths[4]).includes(`GeneratedEngineAPIVersion = "${engineApiVersion}"`) &&
+      read(generatedPaths[4]).includes(`GeneratedOpenAPIDigest    = "${openApiDigest}"`),
+    read(generatedPaths[6]).includes(`GENERATED_OPENAPI_VERSION: &str = "${opsApiVersion}"`) &&
+      read(generatedPaths[6]).includes(`GENERATED_CONTRACT_FORMAT: &str = "${contractFormat}"`) &&
+      read(generatedPaths[6]).includes(`GENERATED_ENGINE_VERSION: &str = "${version}"`) &&
+      read(generatedPaths[6]).includes(`GENERATED_SDK_VERSION: &str = "${version}"`) &&
+      read(generatedPaths[6]).includes(openApiDigest),
   ];
   return markers.every(Boolean);
 }
