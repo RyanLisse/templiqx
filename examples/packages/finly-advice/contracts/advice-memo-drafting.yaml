@@ -1,0 +1,166 @@
+api_version: templiqx/v1alpha1
+id: advice-memo-drafting
+version: 0.1.0
+description: Draft a regulated advice memo and safe email content from schema-valid extracted facts.
+inputs:
+  extracted_facts:
+    schema:
+      type: object
+      additionalProperties: false
+      required: [risk_profile, investment_horizon_years, liquidity_need, product_recommendation, suitability, evidence]
+      properties:
+        risk_profile: { type: string, enum: [defensive, neutral, offensive] }
+        investment_horizon_years: { type: integer, minimum: 1 }
+        liquidity_need: { type: string, enum: [low, medium, high] }
+        product_recommendation: { type: string, minLength: 1 }
+        suitability:
+          type: object
+          additionalProperties: false
+          required: [suitable, rationale]
+          properties:
+            suitable: { type: boolean }
+            rationale: { type: string, minLength: 1 }
+        evidence:
+          type: array
+          minItems: 4
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, document_id, fragment_id, start_offset, end_offset, quote_sha256]
+            properties:
+              field: { type: string, minLength: 1 }
+              document_id: { type: string, minLength: 1 }
+              fragment_id: { type: string, minLength: 1 }
+              start_offset: { type: integer, minimum: 0 }
+              end_offset: { type: integer, minimum: 1 }
+              quote_sha256: { type: string, minLength: 64, maxLength: 64 }
+    required: true
+    description: Output accepted from the advice-fact-extraction contract after schema validation.
+context:
+  client_name:
+    schema: { type: string, minLength: 1 }
+    required: true
+    description: Synthetic client display name.
+  client_reference:
+    schema: { type: string, minLength: 1 }
+    required: true
+    description: Host-owned opaque client reference.
+  advisor_name:
+    schema: { type: string, minLength: 1 }
+    required: true
+    description: Synthetic advisor display name for memo attribution.
+capabilities: [structured_output]
+messages:
+  - role: system
+    content:
+      - kind: text
+        value: "Draft a concise regulated advice memo and safe email summary. Use only validated facts."
+  - role: user
+    content:
+      - kind: text
+        value: "Client: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.client_name }
+        filters: [trim]
+      - kind: text
+        value: "\nReference: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.client_reference }
+        filters: [trim]
+      - kind: text
+        value: "\nAdvisor: "
+      - kind: interpolate
+        expression: { kind: ref, path: context.advisor_name }
+        filters: [trim]
+      - kind: text
+        value: "\nValidated facts: "
+      - kind: interpolate
+        expression: { kind: ref, path: inputs.extracted_facts }
+        filters: [json]
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [title, summary, email_subject, email_body, merge_data]
+  properties:
+    title: { type: string, minLength: 1 }
+    summary: { type: string, minLength: 1 }
+    email_subject: { type: string, minLength: 1 }
+    email_body: { type: string, minLength: 1 }
+    merge_data:
+      type: object
+      additionalProperties: false
+      required: [client, advice, suitability]
+      properties:
+        client:
+          type: object
+          additionalProperties: false
+          required: [name, reference]
+          properties:
+            name: { type: string }
+            reference: { type: string }
+        advice:
+          type: object
+          additionalProperties: false
+          required: [risk_profile, horizon_years, liquidity_need, product]
+          properties:
+            risk_profile: { type: string }
+            horizon_years: { type: integer }
+            liquidity_need: { type: string }
+            product: { type: string }
+        suitability:
+          type: object
+          additionalProperties: false
+          required: [suitable, rationale]
+          properties:
+            suitable: { type: boolean }
+            rationale: { type: string }
+runtime_policy:
+  temperature: 0
+extensions: {}
+components: {}
+provenance:
+  domain: regulated-advice
+  classification: synthetic
+evals:
+  - id: synthetic-advice-memo
+    inputs:
+      extracted_facts:
+        risk_profile: neutral
+        investment_horizon_years: 10
+        liquidity_need: medium
+        product_recommendation: "diversified equity fund (SYN-FUND-42)"
+        suitability:
+          suitable: true
+          rationale: "horizon exceeds five years and liquidity need is not high"
+        evidence:
+          - { field: risk_profile, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 16, end_offset: 38, quote_sha256: 648d9cf01eeb36b716c06c93c939541c7561132f5f388a3f1b5b51e31308d7f4 }
+          - { field: investment_horizon_years, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 62, end_offset: 70, quote_sha256: b5dbae5bc9a65f93ce2b66899d34ec42121b4629518880374f59c589fbbde20c }
+          - { field: liquidity_need, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 90, end_offset: 96, quote_sha256: c082456a7766e23a18db084cd34b6ff510baef506548b897cc80e9b7d3e121c8 }
+          - { field: product_recommendation, document_id: SYN-ADVICE-DOC-0001, fragment_id: intake-1, start_offset: 119, end_offset: 156, quote_sha256: a00965fa98f191060fafd5cc7c8d638c1f07e5e3bd901e8d9cfc356325d554db }
+    context:
+      client_name: Demo Family Trust
+      client_reference: SYN-CLIENT-8842
+      advisor_name: A. Adviseur
+      _templiqx_authorized_merge:
+        scope_id: SYN-ADVICE-SCOPE-001
+        policy_decision_id: SYN-POLICY-DEC-002
+        policy_version: "1.0.0"
+        evidence_provenance_id: SYN-EVID-PROV-002
+        issued_at: "2026-07-15T10:00:00Z"
+        expires_at: "2099-12-31T23:59:59Z"
+        fingerprint: c131fd10e09408ccff43dea7faa3310a0fed62a499611bf47a802f129bfbf1be
+    fake_output:
+      title: Regulated advice memo
+      summary: "Neutral-risk client with a 10-year horizon and medium liquidity need is advised a diversified equity fund; suitability confirmed."
+      email_subject: "Your regulated investment advice summary"
+      email_body: "Dear Demo Family Trust, we recommend diversified equity fund (SYN-FUND-42) based on your neutral risk profile and 10-year horizon."
+      merge_data:
+        client: { name: Demo Family Trust, reference: SYN-CLIENT-8842 }
+        advice:
+          risk_profile: neutral
+          horizon_years: 10
+          liquidity_need: medium
+          product: "diversified equity fund (SYN-FUND-42)"
+        suitability:
+          suitable: true
+          rationale: "horizon exceeds five years and liquidity need is not high"

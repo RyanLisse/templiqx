@@ -371,6 +371,25 @@ pub struct EvalFixture {
     pub fake_output: Value,
 }
 
+/// Context key injected by the host and validated by the application layer.
+pub const AUTHORIZED_MERGE_CONTEXT_KEY: &str = "_templiqx_authorized_merge";
+
+/// Opaque host-supplied authorization envelope for merge-data rendering and evaluation.
+///
+/// The portable core fingerprints and binds this envelope but does not interpret
+/// authorization policy encoded in the host validator.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct AuthorizedMergeContext {
+    pub scope_id: String,
+    pub policy_decision_id: String,
+    pub policy_version: String,
+    pub evidence_provenance_id: String,
+    pub issued_at: String,
+    pub expires_at: String,
+    pub fingerprint: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct RenderRequest {

@@ -163,6 +163,99 @@ fn generate(root: &Path) -> Result<()> {
         None,
     )?;
 
+    let repeat_source = document(
+        r#"<w:tbl><w:tr><w:tc><w:p><w:r><w:t>${#line_items}</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>$data.description</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>$data.amount</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>${/line_items}</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"#,
+        "",
+    );
+    let repeat_baseline = document(
+        r#"<w:tbl><w:tr><w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Retainer review</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>1500</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc></w:tr><w:tr><w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Court filing</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>750</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc></w:tr><w:tr><w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Client meeting</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>300</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc></w:tr></w:tbl>"#,
+        "",
+    );
+    fixture(
+        root,
+        "v5-legal-repeat-rendered",
+        &[("word/document.xml", repeat_source)],
+        json!({}),
+        report(
+            json!([
+                finding(
+                    "migrated",
+                    "word/document.xml",
+                    "v5_repeat",
+                    Some("line_items"),
+                    "bounded whole-table-row repeat"
+                ),
+                finding(
+                    "migrated",
+                    "word/document.xml",
+                    "v5_reference",
+                    Some("description"),
+                    "supported V5 reference"
+                ),
+                finding(
+                    "migrated",
+                    "word/document.xml",
+                    "v5_reference",
+                    Some("amount"),
+                    "supported V5 reference"
+                )
+            ]),
+            3,
+            0,
+            0,
+            0,
+            0,
+        ),
+        Some(json!({
+            "line_items": [
+                {"description":"Retainer review","amount":"1500"},
+                {"description":"Court filing","amount":"750"},
+                {"description":"Client meeting","amount":"300"}
+            ]
+        })),
+        Some(&[("word/document.xml", repeat_baseline)]),
+    )?;
+
+    let conditional_source = document(
+        r#"<w:p><w:r><w:t>${?include_notice}</w:t></w:r><w:r><w:t>Notice: $data.notice_text</w:t></w:r><w:r><w:t>${/include_notice}</w:t></w:r></w:p><w:p><w:r><w:t>Always visible</w:t></w:r></w:p>"#,
+        "",
+    );
+    let conditional_baseline = document(
+        r#"<w:p><w:r><w:t>Notice: Binding notice text</w:t></w:r><w:r><w:t></w:t></w:r><w:r><w:t></w:t></w:r></w:p><w:p><w:r><w:t>Always visible</w:t></w:r></w:p>"#,
+        "",
+    );
+    fixture(
+        root,
+        "v5-legal-conditional-rendered",
+        &[("word/document.xml", conditional_source)],
+        json!({}),
+        report(
+            json!([
+                finding(
+                    "migrated",
+                    "word/document.xml",
+                    "v5_conditional",
+                    Some("include_notice"),
+                    "bounded whole-paragraph conditional"
+                ),
+                finding(
+                    "migrated",
+                    "word/document.xml",
+                    "v5_reference",
+                    Some("notice_text"),
+                    "supported V5 reference"
+                )
+            ]),
+            2,
+            0,
+            0,
+            0,
+            0,
+        ),
+        Some(json!({"include_notice": true, "notice_text": "Binding notice text"})),
+        Some(&[("word/document.xml", conditional_baseline)]),
+    )?;
+
     let nested_source = document(
         r#"<w:tbl><w:tr><w:tc><w:p><w:r><w:t>$data.case.number</w:t></w:r></w:p><w:tbl><w:tr><w:tc><w:p><w:fldSimple w:instr=" MERGEFIELD case.owner "><w:r><w:t>owner</w:t></w:r></w:fldSimple></w:p></w:tc></w:tr></w:tbl></w:tc></w:tr></w:tbl>"#,
         "",

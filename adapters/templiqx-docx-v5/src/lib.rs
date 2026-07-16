@@ -17,6 +17,7 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, DateTime, ZipArchive, ZipWriter};
 
 pub const DIALECT: &str = "v5";
+const MAX_REPEAT_ITEMS: usize = 1_000;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
@@ -498,24 +499,7 @@ fn analyze_xml(
             detail: "V2 is detected but not migrated by this adapter".into(),
         });
     }
-    if sources.iter().any(|source| source.contains("${#")) {
-        findings.push(Finding {
-            category: Category::Unsupported,
-            part: part.into(),
-            construct: "v5_repeat".into(),
-            reference: None,
-            detail: "repeated table rows are outside the measured POC subset".into(),
-        });
-    }
-    if sources.iter().any(|source| source.contains("${?")) {
-        findings.push(Finding {
-            category: Category::Unsupported,
-            part: part.into(),
-            construct: "v5_conditional".into(),
-            reference: None,
-            detail: "conditional document regions are outside the measured POC subset".into(),
-        });
-    }
+    analyze_composition_markers(xml, part, findings)?;
     for source in &sources {
         for reference in extract_placeholders(source) {
             let mapped = aliases
@@ -658,7 +642,7 @@ fn migrate_split_aliases(
             rewrite_instruction_attribute(start, aliases)?;
         }
     }
-    let mut paragraph_depth = 0;
+    let mut paragraph_depth: u32 = 0;
     let mut in_text = false;
     let mut text_indices = Vec::new();
     let mut in_complex_field = false;
@@ -991,6 +975,599 @@ fn replace_references(
     (output, count)
 }
 
+fn is_truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(v) => *v,
+        Value::String(v) => !v.is_empty(),
+        Value::Number(v) => v.as_f64().is_some_and(|n| n != 0.0),
+        Value::Array(v) => !v.is_empty(),
+        Value::Object(_) => true,
+    }
+}
+
+fn region_marker_name<'a>(text: &'a str, prefix: &'a str) -> Option<&'a str> {
+    let rest = text.strip_prefix(prefix)?;
+    let end = rest.find('}')?;
+    let name = &rest[..end];
+    if name.is_empty()
+        || !name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))
+    {
+        return None;
+    }
+    Some(name)
+}
+
+fn has_nested_region_markers(text: &str) -> bool {
+    let mut rest = text;
+    let mut depth: u32 = 0;
+    while let Some(pos) = rest.find("${") {
+        rest = &rest[pos + 2..];
+        let Some(end) = rest.find('}') else {
+            break;
+        };
+        let marker = &rest[..end];
+        if let Some(name) = marker.strip_prefix('#') {
+            depth += 1;
+            if depth > 1 {
+                return true;
+            }
+            let _ = name;
+        } else if marker.starts_with('?') {
+            depth += 1;
+            if depth > 1 {
+                return true;
+            }
+        } else if let Some(name) = marker.strip_prefix('/') {
+            depth = depth.saturating_sub(1);
+            let _ = name;
+        }
+        rest = &rest[end + 1..];
+    }
+    depth != 0
+}
+
+fn bounded_repeat_name(paragraphs: &[String]) -> Option<String> {
+    if paragraphs.len() < 2 {
+        return None;
+    }
+    let first = paragraphs.first()?.trim();
+    let last = paragraphs.last()?.trim();
+    let open = region_marker_name(first, "${#")?;
+    let close = region_marker_name(last, "${/")?;
+    if open != close {
+        return None;
+    }
+    let middle = paragraphs
+        .iter()
+        .skip(1)
+        .take(paragraphs.len().saturating_sub(2))
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join("");
+    if middle.contains("${#") || middle.contains("${?") || middle.contains("${/") {
+        return None;
+    }
+    if has_nested_region_markers(&format!("{first}{middle}{last}")) {
+        return None;
+    }
+    Some(open.into())
+}
+
+fn bounded_conditional_name(text: &str) -> Option<String> {
+    let trimmed = text.trim();
+    let open = region_marker_name(trimmed, "${?")?;
+    let close_marker = format!("${{{}}}", "/".to_owned() + open);
+    if !trimmed.ends_with(&close_marker) || !trimmed.contains("$data.") {
+        return None;
+    }
+    if has_nested_region_markers(trimmed) {
+        return None;
+    }
+    let open_marker = format!("${{{}}}", "?".to_owned() + open);
+    let after_open = trimmed.strip_prefix(&open_marker)?;
+    if after_open.trim() == close_marker {
+        return None;
+    }
+    Some(open.into())
+}
+
+fn paragraph_texts_in_span(events: &[Event<'static>], start: usize, end: usize) -> Vec<String> {
+    let mut paragraphs = Vec::new();
+    let mut paragraph_depth: u32 = 0;
+    let mut in_text = false;
+    let mut current = String::new();
+    for (offset, event) in events[start..=end].iter().enumerate() {
+        let idx = start + offset;
+        match event {
+            Event::Start(start) if local_name(start.name().as_ref()) == b"p" => {
+                paragraph_depth += 1;
+                if paragraph_depth == 1 {
+                    current.clear();
+                }
+            }
+            Event::End(end) if local_name(end.name().as_ref()) == b"p" => {
+                if paragraph_depth == 1 {
+                    paragraphs.push(std::mem::take(&mut current));
+                }
+                paragraph_depth = paragraph_depth.saturating_sub(1);
+            }
+            Event::Start(start) if local_name(start.name().as_ref()) == b"t" => in_text = true,
+            Event::End(end) if local_name(end.name().as_ref()) == b"t" => in_text = false,
+            Event::Text(_) if paragraph_depth > 0 && in_text => {
+                if let Some(text) = text_value(&events[idx]) {
+                    current.push_str(&text);
+                }
+            }
+            _ => {}
+        }
+    }
+    paragraphs
+}
+
+fn paragraph_text(events: &[Event<'static>], start: usize, end: usize) -> String {
+    paragraph_texts_in_span(events, start, end)
+        .into_iter()
+        .next()
+        .unwrap_or_default()
+}
+
+fn find_element_end(events: &[Event<'static>], start: usize, tag: &[u8]) -> Option<usize> {
+    let mut depth: u32 = 0;
+    for (idx, event) in events.iter().enumerate().skip(start) {
+        match event {
+            Event::Start(start) if local_name(start.name().as_ref()) == tag => depth += 1,
+            Event::End(end) if local_name(end.name().as_ref()) == tag => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(idx);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn composition_row_spans(events: &[Event<'static>]) -> Vec<(usize, usize)> {
+    let mut rows = Vec::new();
+    let mut table_depth: u32 = 0;
+    let mut row_depth: u32 = 0;
+    let mut row_start = None;
+    for (idx, event) in events.iter().enumerate() {
+        match event {
+            Event::Start(start) if local_name(start.name().as_ref()) == b"tbl" => table_depth += 1,
+            Event::End(end) if local_name(end.name().as_ref()) == b"tbl" => {
+                table_depth = table_depth.saturating_sub(1);
+            }
+            Event::Start(start)
+                if local_name(start.name().as_ref()) == b"tr" && table_depth > 0 =>
+            {
+                row_depth += 1;
+                if row_depth == 1 {
+                    row_start = Some(idx);
+                }
+            }
+            Event::End(end) if local_name(end.name().as_ref()) == b"tr" && table_depth > 0 => {
+                if row_depth == 1
+                    && let Some(start) = row_start.take()
+                {
+                    rows.push((start, idx));
+                }
+                row_depth = row_depth.saturating_sub(1);
+            }
+            _ => {}
+        }
+    }
+    rows
+}
+
+fn composition_marker_names(text: &str, prefix: &str) -> Vec<Option<String>> {
+    text.match_indices(prefix)
+        .map(|(start, _)| region_marker_name(&text[start..], prefix).map(str::to_owned))
+        .collect()
+}
+
+fn extend_composition_findings(
+    findings: &mut Vec<Finding>,
+    part: &str,
+    bounded_repeats: Vec<String>,
+    bounded_conditionals: Vec<String>,
+    unsupported_repeats: usize,
+    unsupported_conditionals: usize,
+) {
+    findings.extend(bounded_repeats.into_iter().map(|name| Finding {
+        category: Category::Migrated,
+        part: part.into(),
+        construct: "v5_repeat".into(),
+        reference: Some(name),
+        detail: "bounded whole-table-row repeat".into(),
+    }));
+    findings.extend(bounded_conditionals.into_iter().map(|name| Finding {
+        category: Category::Migrated,
+        part: part.into(),
+        construct: "v5_conditional".into(),
+        reference: Some(name),
+        detail: "bounded whole-paragraph conditional".into(),
+    }));
+    findings.extend((0..unsupported_repeats).map(|_| Finding {
+        category: Category::Unsupported,
+        part: part.into(),
+        construct: "v5_repeat".into(),
+        reference: None,
+        detail: "repeated table rows are outside the measured POC subset".into(),
+    }));
+    findings.extend((0..unsupported_conditionals).map(|_| Finding {
+        category: Category::Unsupported,
+        part: part.into(),
+        construct: "v5_conditional".into(),
+        reference: None,
+        detail: "conditional document regions are outside the measured POC subset".into(),
+    }));
+}
+
+fn analyze_composition_markers(
+    xml: &[u8],
+    part: &str,
+    findings: &mut Vec<Finding>,
+) -> Result<(), PortError> {
+    let mut reader = Reader::from_reader(xml);
+    reader.config_mut().trim_text(false);
+    let mut events = Vec::new();
+    loop {
+        match reader.read_event().map_err(AdapterError::from)? {
+            Event::Eof => break,
+            event => events.push(event.into_owned()),
+        }
+    }
+    let rows = composition_row_spans(&events);
+    let mut bounded_repeats = Vec::new();
+    let mut unsupported_repeats = 0;
+    let mut row_repeat_names = Vec::with_capacity(rows.len());
+    for (start, end) in &rows {
+        let paragraphs = paragraph_texts_in_span(&events, *start, *end);
+        let repeat_names = composition_marker_names(&paragraphs.join(""), "${#");
+        if let Some(name) = bounded_repeat_name(&paragraphs) {
+            bounded_repeats.push(name);
+        } else {
+            unsupported_repeats += repeat_names.len();
+        }
+        row_repeat_names.push(repeat_names);
+    }
+
+    let mut bounded_conditionals = Vec::new();
+    let mut unsupported_conditionals = 0;
+    let mut idx = 0;
+    while idx < events.len() {
+        if let Event::Start(start) = &events[idx]
+            && local_name(start.name().as_ref()) == b"p"
+            && let Some(end) = find_element_end(&events, idx, b"p")
+        {
+            let text = paragraph_text(&events, idx, end);
+            let row = rows
+                .iter()
+                .position(|(row_start, row_end)| idx >= *row_start && end <= *row_end);
+            let paragraph_repeat_names = composition_marker_names(&text, "${#");
+            if row.is_none() {
+                unsupported_repeats += paragraph_repeat_names.len();
+            }
+            let conditional_names = composition_marker_names(&text, "${?");
+            if let Some(name) = bounded_conditional_name(&text) {
+                bounded_conditionals.push(name);
+            } else {
+                unsupported_conditionals += conditional_names.len();
+            }
+            for close in composition_marker_names(&text, "${/") {
+                let matches_conditional = close.as_ref().is_some_and(|close| {
+                    conditional_names.iter().flatten().any(|open| open == close)
+                });
+                let matches_repeat = close.as_ref().is_some_and(|close| {
+                    paragraph_repeat_names
+                        .iter()
+                        .flatten()
+                        .any(|open| open == close)
+                        || row.is_some_and(|row| {
+                            row_repeat_names[row]
+                                .iter()
+                                .flatten()
+                                .any(|open| open == close)
+                        })
+                });
+                if !matches_conditional && !matches_repeat {
+                    if row.is_some() || !paragraph_repeat_names.is_empty() {
+                        unsupported_repeats += 1;
+                    } else {
+                        unsupported_conditionals += 1;
+                    }
+                }
+            }
+            idx = end + 1;
+            continue;
+        }
+        idx += 1;
+    }
+
+    extend_composition_findings(
+        findings,
+        part,
+        bounded_repeats,
+        bounded_conditionals,
+        unsupported_repeats,
+        unsupported_conditionals,
+    );
+    Ok(())
+}
+
+fn strip_markers_in_paragraph(
+    events: &mut [Event<'static>],
+    start: usize,
+    end: usize,
+    markers: &[&str],
+) {
+    let mut in_text = false;
+    let mut text_indices = Vec::new();
+    for (offset, event) in events[start..=end].iter().enumerate() {
+        let idx = start + offset;
+        match event {
+            Event::Start(start) if local_name(start.name().as_ref()) == b"t" => in_text = true,
+            Event::End(end) if local_name(end.name().as_ref()) == b"t" => in_text = false,
+            Event::Text(_) if in_text => text_indices.push(idx),
+            _ => {}
+        }
+    }
+    if text_indices.is_empty() {
+        return;
+    }
+    let joined: String = text_indices
+        .iter()
+        .filter_map(|index| text_value(&events[*index]))
+        .collect();
+    let mut removals = Vec::new();
+    for marker in markers {
+        removals.extend(
+            joined
+                .match_indices(marker)
+                .map(|(start, matched)| (start, start + matched.len())),
+        );
+    }
+    if removals.is_empty() {
+        return;
+    }
+    removals.sort_unstable();
+
+    let mut global_start = 0;
+    for index in text_indices {
+        let original = text_value(&events[index]).unwrap_or_default();
+        let global_end = global_start + original.len();
+        let mut cursor = 0;
+        let mut retained = String::with_capacity(original.len());
+        for &(remove_start, remove_end) in &removals {
+            let overlap_start = remove_start.max(global_start);
+            let overlap_end = remove_end.min(global_end);
+            if overlap_start >= overlap_end {
+                continue;
+            }
+            let local_start = overlap_start - global_start;
+            let local_end = overlap_end - global_start;
+            retained.push_str(&original[cursor..local_start]);
+            cursor = local_end;
+        }
+        retained.push_str(&original[cursor..]);
+        set_text(&mut events[index], &retained);
+        global_start = global_end;
+    }
+}
+
+fn strip_repeat_markers(events: &mut [Event<'static>], start: usize, end: usize, name: &str) {
+    let open = format!("${{{}}}", "#".to_owned() + name);
+    let close = format!("${{{}}}", "/".to_owned() + name);
+    let mut index = start;
+    while index <= end {
+        if let Event::Start(start) = &events[index]
+            && local_name(start.name().as_ref()) == b"p"
+            && let Some(paragraph_end) = find_element_end(events, index, b"p")
+        {
+            strip_markers_in_paragraph(events, index, paragraph_end, &[&open, &close]);
+            index = paragraph_end + 1;
+            continue;
+        }
+        index += 1;
+    }
+}
+
+struct RepeatRowSpan {
+    start: usize,
+    end: usize,
+    name: String,
+}
+
+fn find_repeat_template_row(events: &[Event<'static>], from: usize) -> Option<RepeatRowSpan> {
+    let mut table_depth: u32 = 0;
+    let mut row_depth: u32 = 0;
+    let mut row_start = None;
+    for index in from..events.len() {
+        match &events[index] {
+            Event::Start(start) if local_name(start.name().as_ref()) == b"tbl" => table_depth += 1,
+            Event::End(end) if local_name(end.name().as_ref()) == b"tbl" => {
+                table_depth = table_depth.saturating_sub(1);
+            }
+            Event::Start(start)
+                if local_name(start.name().as_ref()) == b"tr" && table_depth > 0 =>
+            {
+                row_depth += 1;
+                if row_depth == 1 {
+                    row_start = Some(index);
+                }
+            }
+            Event::End(end) if local_name(end.name().as_ref()) == b"tr" && table_depth > 0 => {
+                if row_depth == 1
+                    && let Some(start) = row_start
+                    && let Some(name) =
+                        bounded_repeat_name(&paragraph_texts_in_span(events, start, index))
+                {
+                    return Some(RepeatRowSpan {
+                        start,
+                        end: index,
+                        name,
+                    });
+                }
+                row_depth = row_depth.saturating_sub(1);
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn render_table_row_repeats(
+    events: &mut Vec<Event<'static>>,
+    data: &Value,
+    part: &str,
+    unresolved: &mut BTreeSet<UnresolvedReference>,
+    replacements: &mut usize,
+) -> Result<(), PortError> {
+    while let Some(row) = find_repeat_template_row(events, 0) {
+        let items = resolve(data, &row.name)
+            .and_then(Value::as_array)
+            .map_or(&[][..], Vec::as_slice);
+        if items.len() > MAX_REPEAT_ITEMS {
+            return Err(AdapterError::Limit(format!(
+                "repeat `{}` has {} items; adapter limit is {MAX_REPEAT_ITEMS}",
+                row.name,
+                items.len()
+            ))
+            .into());
+        }
+        let template = events[row.start..=row.end].to_vec();
+        let mut rendered_rows = Vec::new();
+        for item in items {
+            let mut row_events = template.clone();
+            let row_end = row_events.len().saturating_sub(1);
+            strip_repeat_markers(&mut row_events, 0, row_end, &row.name);
+            render_fields(&mut row_events, item, part, unresolved, replacements);
+            render_paragraph_placeholders(&mut row_events, item, part, unresolved, replacements);
+            rendered_rows.extend(row_events);
+        }
+        events.splice(row.start..=row.end, rendered_rows);
+    }
+    Ok(())
+}
+
+fn render_paragraph_conditionals(
+    events: &mut Vec<Event<'static>>,
+    data: &Value,
+    part: &str,
+    unresolved: &mut BTreeSet<UnresolvedReference>,
+    replacements: &mut usize,
+) {
+    let mut index = 0;
+    while index < events.len() {
+        if let Event::Start(start) = &events[index]
+            && local_name(start.name().as_ref()) == b"p"
+            && let Some(end) = find_element_end(events, index, b"p")
+            && let Some(name) = bounded_conditional_name(&paragraph_text(events, index, end))
+        {
+            let include = resolve(data, &name).is_some_and(is_truthy);
+            if include {
+                let open = format!("${{{}}}", "?".to_owned() + &name);
+                let close = format!("${{{}}}", "/".to_owned() + &name);
+                strip_markers_in_paragraph(events, index, end, &[&open, &close]);
+                render_fields(
+                    &mut events[index..=end],
+                    data,
+                    part,
+                    unresolved,
+                    replacements,
+                );
+                render_paragraph_placeholders(
+                    &mut events[index..=end],
+                    data,
+                    part,
+                    unresolved,
+                    replacements,
+                );
+                index = end + 1;
+            } else {
+                events.drain(index..=end);
+            }
+            continue;
+        }
+        index += 1;
+    }
+}
+
+fn structural_spans(events: &[Event<'static>]) -> Vec<(usize, usize)> {
+    let mut spans = Vec::new();
+    for (start, end) in composition_row_spans(events) {
+        if bounded_repeat_name(&paragraph_texts_in_span(events, start, end)).is_some() {
+            spans.push((start, end));
+        }
+    }
+
+    let mut index = 0;
+    while index < events.len() {
+        if let Event::Start(start) = &events[index]
+            && local_name(start.name().as_ref()) == b"p"
+            && let Some(end) = find_element_end(events, index, b"p")
+        {
+            if bounded_conditional_name(&paragraph_text(events, index, end)).is_some() {
+                spans.push((index, end));
+            }
+            index = end + 1;
+            continue;
+        }
+        index += 1;
+    }
+
+    spans.sort_unstable();
+    spans.into_iter().fold(Vec::new(), |mut merged, span| {
+        if let Some((_, end)) = merged.last_mut()
+            && span.0 <= end.saturating_add(1)
+        {
+            *end = (*end).max(span.1);
+        } else {
+            merged.push(span);
+        }
+        merged
+    })
+}
+
+fn render_fields_outside_structural_spans(
+    events: &mut [Event<'static>],
+    data: &Value,
+    part: &str,
+    unresolved: &mut BTreeSet<UnresolvedReference>,
+    replacements: &mut usize,
+) {
+    let spans = structural_spans(events);
+    let mut start = 0;
+    for (span_start, span_end) in spans {
+        if start < span_start {
+            render_fields(
+                &mut events[start..span_start],
+                data,
+                part,
+                unresolved,
+                replacements,
+            );
+            render_paragraph_placeholders(
+                &mut events[start..span_start],
+                data,
+                part,
+                unresolved,
+                replacements,
+            );
+        }
+        start = span_end + 1;
+    }
+    if start < events.len() {
+        render_fields(&mut events[start..], data, part, unresolved, replacements);
+        render_paragraph_placeholders(&mut events[start..], data, part, unresolved, replacements);
+    }
+}
+
 fn render_xml(
     xml: &[u8],
     data: &Value,
@@ -1007,8 +1584,15 @@ fn render_xml(
     }
     let mut unresolved = BTreeSet::new();
     let mut replacements = 0;
-    render_fields(&mut events, data, part, &mut unresolved, &mut replacements);
-    render_paragraph_placeholders(&mut events, data, part, &mut unresolved, &mut replacements);
+    render_fields_outside_structural_spans(
+        &mut events,
+        data,
+        part,
+        &mut unresolved,
+        &mut replacements,
+    );
+    render_table_row_repeats(&mut events, data, part, &mut unresolved, &mut replacements)?;
+    render_paragraph_conditionals(&mut events, data, part, &mut unresolved, &mut replacements);
     let mut writer = Writer::new(Cursor::new(Vec::new()));
     for event in events {
         writer.write_event(event).map_err(AdapterError::from)?;
@@ -1219,7 +1803,7 @@ fn render_paragraph_placeholders(
     unresolved: &mut BTreeSet<UnresolvedReference>,
     replacements: &mut usize,
 ) {
-    let mut paragraph_depth = 0;
+    let mut paragraph_depth: u32 = 0;
     let mut in_text = false;
     let mut text_indices = Vec::new();
     for idx in 0..events.len() {
@@ -1259,14 +1843,50 @@ fn render_text_group(
         .iter()
         .filter_map(|i| text_value(&events[*i]))
         .collect();
-    let (rendered, count) = replace_references(&joined, data, part, "v5_reference", unresolved);
+    let mut joined_unresolved = BTreeSet::new();
+    let (rendered, count) =
+        replace_references(&joined, data, part, "v5_reference", &mut joined_unresolved);
     if count > 0 {
-        set_text(&mut events[indices[0]], &rendered);
-        for idx in &indices[1..] {
-            set_text(&mut events[*idx], "");
+        let mut per_node = Vec::with_capacity(indices.len());
+        let mut per_node_count = 0;
+        let mut per_node_unresolved = BTreeSet::new();
+        for index in indices {
+            let original = text_value(&events[*index]).unwrap_or_default();
+            let (rendered, node_count) = replace_references(
+                &original,
+                data,
+                part,
+                "v5_reference",
+                &mut per_node_unresolved,
+            );
+            per_node.push(rendered);
+            per_node_count += node_count;
+        }
+        let paragraph_start = (0..indices[0]).rev().find(|index| {
+            matches!(&events[*index], Event::Start(start) if local_name(start.name().as_ref()) == b"p")
+        });
+        let has_run_formatting = paragraph_start
+            .and_then(|start| find_element_end(events, start, b"p").map(|end| (start, end)))
+            .is_some_and(|(start, end)| {
+                events[start..=end].iter().any(|event| {
+                    matches!(event, Event::Start(element) | Event::Empty(element)
+                        if matches!(local_name(element.name().as_ref()), b"rPr" | b"hyperlink"))
+                })
+            });
+        if has_run_formatting && per_node_count == count && per_node_unresolved == joined_unresolved
+        {
+            for (index, rendered) in indices.iter().zip(per_node) {
+                set_text(&mut events[*index], &rendered);
+            }
+        } else {
+            set_text(&mut events[indices[0]], &rendered);
+            for idx in &indices[1..] {
+                set_text(&mut events[*idx], "");
+            }
         }
         *replacements += count;
     }
+    unresolved.extend(joined_unresolved);
 }
 
 fn normalize_xml(xml: &[u8]) -> Result<Vec<u8>, PortError> {
@@ -1442,6 +2062,177 @@ mod tests {
                 .unwrap();
         }
         assert_eq!(fs::read(one).unwrap(), fs::read(two).unwrap());
+    }
+
+    #[test]
+    fn conditional_marker_removal_preserves_run_formatting_parity() {
+        let dir = TempDir::new().unwrap();
+        let source = dir.path().join("source.docx");
+        fixture(
+            &source,
+            r#"<w:document xmlns:w="w" xmlns:r="r"><w:body><w:p>
+                <w:r><w:rPr><w:b/></w:rPr><w:t>${?sh</w:t></w:r>
+                <w:r><w:rPr><w:i/></w:rPr><w:t>ow}</w:t></w:r>
+                <w:hyperlink r:id="link"><w:r><w:rPr><w:color w:val="0000FF"/></w:rPr><w:t>$data.label</w:t></w:r></w:hyperlink>
+                <w:r><w:rPr><w:u w:val="single"/></w:rPr><w:t>${/show}</w:t></w:r>
+            </w:p></w:body></w:document>"#,
+            None,
+        );
+        let expected = dir.path().join("expected.docx");
+        fixture(
+            &expected,
+            r#"<w:document xmlns:w="w" xmlns:r="r"><w:body><w:p>
+                <w:r><w:rPr><w:b/></w:rPr><w:t></w:t></w:r>
+                <w:r><w:rPr><w:i/></w:rPr><w:t></w:t></w:r>
+                <w:hyperlink r:id="link"><w:r><w:rPr><w:color w:val="0000FF"/></w:rPr><w:t>Styled link</w:t></w:r></w:hyperlink>
+                <w:r><w:rPr><w:u w:val="single"/></w:rPr><w:t></w:t></w:r>
+            </w:p></w:body></w:document>"#,
+            None,
+        );
+        let output = dir.path().join("output.docx");
+        DocxV5Adapter::default()
+            .render_document(&DocumentRenderRequest {
+                template: source,
+                data: json!({"show": true, "label": "Styled link"}),
+                output: output.clone(),
+            })
+            .unwrap();
+
+        let parity = DocxV5Adapter::default()
+            .compare_normalized(&output, &expected)
+            .unwrap();
+        assert!(parity.equal, "conditional styling drifted: {parity:#?}");
+    }
+
+    #[test]
+    fn repeat_item_limit_fails_before_expansion() {
+        let dir = TempDir::new().unwrap();
+        let source = dir.path().join("source.docx");
+        fixture(
+            &source,
+            r#"<w:document xmlns:w="w"><w:body><w:tbl><w:tr><w:tc>
+                <w:p><w:r><w:t>${#items}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>$data.name</w:t></w:r></w:p>
+                <w:p><w:r><w:t>${/items}</w:t></w:r></w:p>
+            </w:tc></w:tr></w:tbl></w:body></w:document>"#,
+            None,
+        );
+        let output = dir.path().join("output.docx");
+        let items: Vec<_> = (0..=MAX_REPEAT_ITEMS)
+            .map(|index| json!({"name": index.to_string()}))
+            .collect();
+        let error = DocxV5Adapter::default()
+            .render_document(&DocumentRenderRequest {
+                template: source,
+                data: json!({"items": items}),
+                output: output.clone(),
+            })
+            .unwrap_err();
+        let PortError::InvalidData(message) = error else {
+            panic!("repeat limit must return invalid data");
+        };
+        assert!(message.contains("1001 items; adapter limit is 1000"));
+        assert!(!output.exists());
+    }
+
+    #[test]
+    fn structural_regions_exclusively_render_their_retained_fields() {
+        let xml = br#"<w:document xmlns:w="w"><w:body>
+            <w:p><w:r><w:t>$data.title</w:t></w:r></w:p>
+            <w:tbl><w:tr><w:tc>
+                <w:p><w:r><w:t>${#items}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>$data.name</w:t></w:r></w:p>
+                <w:p><w:r><w:t>${/items}</w:t></w:r></w:p>
+            </w:tc></w:tr></w:tbl>
+            <w:p><w:r><w:t>${?show}$data.secret${/show}</w:t></w:r></w:p>
+            <w:p><w:r><w:t>${?keep}$data.kept${/keep}</w:t></w:r></w:p>
+        </w:body></w:document>"#;
+        let (rendered, replacements, unresolved) = render_xml(
+            xml,
+            &json!({
+                "title": "Invoice",
+                "name": "WRONG ROOT VALUE",
+                "items": [{"name": "First"}, {"name": "Second"}],
+                "show": false,
+                "keep": true,
+                "kept": "Retained"
+            }),
+            "word/document.xml",
+        )
+        .unwrap();
+        let rendered = String::from_utf8(rendered).unwrap();
+
+        assert_eq!(replacements, 4);
+        assert!(unresolved.is_empty());
+        assert!(rendered.contains("Invoice"));
+        assert!(rendered.contains("First"));
+        assert!(rendered.contains("Second"));
+        assert!(rendered.contains("Retained"));
+        assert!(!rendered.contains("WRONG ROOT VALUE"));
+        assert!(!rendered.contains("secret"));
+    }
+
+    #[test]
+    fn analyzes_valid_and_unmatched_composition_markers_independently() {
+        let dir = TempDir::new().unwrap();
+        let source = dir.path().join("source.docx");
+        fixture(
+            &source,
+            r#"<w:document xmlns:w="w"><w:body>
+                <w:tbl><w:tr><w:tc>
+                    <w:p><w:r><w:t>${#items}</w:t></w:r></w:p>
+                    <w:p><w:r><w:t>$data.name</w:t></w:r></w:p>
+                    <w:p><w:r><w:t>${/items}</w:t></w:r></w:p>
+                </w:tc></w:tr></w:tbl>
+                <w:tbl><w:tr><w:tc><w:p><w:r><w:t>${/orphan_repeat}</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+                <w:p><w:r><w:t>${?show}$data.notice${/show}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>${#outside}$data.value${/outside}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>${?malformed</w:t></w:r></w:p>
+                <w:p><w:r><w:t>${?mismatch}$data.value${/other}</w:t></w:r></w:p>
+                <w:p><w:r><w:t>${/orphan_conditional}</w:t></w:r></w:p>
+            </w:body></w:document>"#,
+            None,
+        );
+        let report = DocxV5Adapter::default()
+            .analyze(&source, &json!({}))
+            .unwrap();
+
+        assert_eq!(
+            report
+                .findings
+                .iter()
+                .filter(|finding| finding.category == Category::Migrated
+                    && finding.construct == "v5_repeat")
+                .count(),
+            1
+        );
+        assert_eq!(
+            report
+                .findings
+                .iter()
+                .filter(|finding| finding.category == Category::Migrated
+                    && finding.construct == "v5_conditional")
+                .count(),
+            1
+        );
+        assert_eq!(
+            report
+                .findings
+                .iter()
+                .filter(|finding| finding.category == Category::Unsupported
+                    && finding.construct == "v5_repeat")
+                .count(),
+            2
+        );
+        assert_eq!(
+            report
+                .findings
+                .iter()
+                .filter(|finding| finding.category == Category::Unsupported
+                    && finding.construct == "v5_conditional")
+                .count(),
+            4
+        );
     }
 
     #[cfg(unix)]
@@ -1746,6 +2537,8 @@ mod tests {
             "v2-marker-detected",
             "v5-repeat-marker-detected",
             "v5-conditional-marker-detected",
+            "v5-legal-repeat-rendered",
+            "v5-legal-conditional-rendered",
             "v5-nested-table",
             "v5-header-footer",
             "v5-alias-collision-missing",
@@ -1769,6 +2562,8 @@ mod tests {
     #[test]
     fn legacy_corpus_supported_render_parity_and_missing_reference_are_exact() {
         for id in [
+            "v5-legal-repeat-rendered",
+            "v5-legal-conditional-rendered",
             "v5-nested-table",
             "v5-header-footer",
             "v5-alias-collision-missing",
@@ -1796,7 +2591,12 @@ mod tests {
                 })
                 .unwrap();
             let report: RenderReport = serde_json::from_value(rendered.report).unwrap();
-            let expected_replacements = if id == "v5-header-footer" { 3 } else { 2 };
+            let expected_replacements = match id {
+                "v5-legal-repeat-rendered" => 6,
+                "v5-legal-conditional-rendered" => 1,
+                "v5-header-footer" => 3,
+                _ => 2,
+            };
             assert_eq!(report.replacements, expected_replacements, "fixture `{id}`");
             if id == "v5-alias-collision-missing" {
                 assert_eq!(

@@ -1696,7 +1696,9 @@ dependencies = [
 name = "templiqx-application"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "base64",
+ "chrono",
  "hex",
  "semver",
  "serde",
@@ -1761,6 +1763,7 @@ dependencies = [
  "templiqx-ports",
  "templiqx-runtime-http-mock",
  "tokio",
+ "zip",
 ]
 
 [[package]]

@@ -12,6 +12,8 @@ only the explicitly listed constructs are tested.
 | `v2-marker-detected` | V2 `${v2:...}` | `unsupported` | Report-only migration |
 | `v5-repeat-marker-detected` | V5 `${#...}` / `${/...}` | `unsupported` | Repeat markers detected; not rendered in this slice |
 | `v5-conditional-marker-detected` | V5 `${?...}` / `${/...}` | `unsupported` | Conditional regions detected; not rendered in this slice |
+| `v5-legal-repeat-rendered` | V5 bounded table-row repeat | `migrated` | Three repeated claim rows; normalized OOXML parity |
+| `v5-legal-conditional-rendered` | V5 bounded paragraph conditional | `migrated` | Optional clause included/excluded by truthy merge data |
 | `v5-nested-table` | V5 nested table | `migrated` | Placeholder plus merge field in a nested table |
 | `v5-header-footer` | V5 story parts | `migrated` | Body, header, and footer rendering |
 | `v5-alias-collision-missing` | V5 aliases | `migrated` | Two aliases converge; missing merge data stays unresolved |
@@ -36,6 +38,8 @@ Run corpus tests:
 cargo run -p templiqx-legacy-docx-fixtures
 cargo test -p templiqx-legacy-docx-fixtures
 cargo test -p templiqx-docx-v5 legacy_corpus
+cargo test -p templiqx-conformance --test legal_docx
+cargo test -p templiqx-conformance --test reference_package_claims
 ```
 
 Production customer templates are out of scope; host teams must add sanitized

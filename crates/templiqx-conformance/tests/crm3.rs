@@ -285,6 +285,7 @@ fn composes_grounded_interactions_and_explicit_v5_document_conformance() -> Resu
 
     let trace = ConformanceTraceReceipt {
         api_version: TRACE_API_VERSION.into(),
+        receipt_schema_version: templiqx_conformance::RECEIPT_SCHEMA_VERSION.into(),
         package: PACKAGE.into(),
         package_version: manifest.version,
         package_fingerprint,
@@ -321,6 +322,7 @@ fn composes_grounded_interactions_and_explicit_v5_document_conformance() -> Resu
             normalized_ooxml_equal: parity.equal,
             unresolved_references: 1,
         },
+        outputs: vec![],
     };
     let trace_json = serde_json::to_string_pretty(&trace)?;
     for forbidden_payload in [

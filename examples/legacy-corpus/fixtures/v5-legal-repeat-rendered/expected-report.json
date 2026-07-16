@@ -1,0 +1,31 @@
+{
+  "approximated": 0,
+  "dialect": "v5",
+  "findings": [
+    {
+      "category": "migrated",
+      "construct": "v5_repeat",
+      "detail": "bounded whole-table-row repeat",
+      "part": "word/document.xml",
+      "reference": "line_items"
+    },
+    {
+      "category": "migrated",
+      "construct": "v5_reference",
+      "detail": "supported V5 reference",
+      "part": "word/document.xml",
+      "reference": "description"
+    },
+    {
+      "category": "migrated",
+      "construct": "v5_reference",
+      "detail": "supported V5 reference",
+      "part": "word/document.xml",
+      "reference": "amount"
+    }
+  ],
+  "migrated": 3,
+  "unresolved": 0,
+  "unsafe_constructs": 0,
+  "unsupported": 0
+}

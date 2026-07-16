@@ -1,0 +1,9 @@
+{
+  "source_artifact": "fixtures/recorded-legal.pdf",
+  "renderer_id": "basenet-recorded-pdf",
+  "renderer_version": "2026.07.15",
+  "environment_id": "conformance-recorded-v1",
+  "artifact_fingerprint": "dbc0ea64969b9e56f629900e3bb1974d20b38a32b23cf7751fc77953b72ebfbd",
+  "artifact_bytes": 578,
+  "output_hash": "dbc0ea64969b9e56f629900e3bb1974d20b38a32b23cf7751fc77953b72ebfbd"
+}

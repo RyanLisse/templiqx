@@ -1,20 +1,26 @@
 //! Actor-neutral atomic Templiqx capabilities used by Rust, CLI and MCP.
 
+mod authorized_context;
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::Path;
 use templiqx_contracts::{
-    ArtifactContent, ContentEncoding, Contract, ContractDiff, ContractSummary, Diagnostic,
-    ExecutionRequest, Explanation, OperationEnvelope, PackageIdentity, PackageManifest,
-    PackageSignature, PackageTrustReport, RenderRequest, Severity, TestCaseResult, TestReport,
-    WorkspaceArtifact, fingerprint, fingerprint_bytes,
+    AUTHORIZED_MERGE_CONTEXT_KEY, ArtifactContent, ContentEncoding, Contract, ContractDiff,
+    ContractSummary, Diagnostic, ExecutionRequest, Explanation, OperationEnvelope, PackageIdentity,
+    PackageManifest, PackageSignature, PackageTrustReport, RenderRequest, Severity, TestCaseResult,
+    TestReport, WorkspaceArtifact, fingerprint, fingerprint_bytes,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentInspectionRequest as AdapterDocumentInspectionRequest,
     DocumentInspector, DocumentRenderRequest as AdapterDocumentRenderRequest, DocumentRenderer,
     LegacyImportAdapter, LegacyImportRequest as AdapterLegacyImportRequest, PackageStore,
     PortError, RuntimeAdapter,
+};
+
+pub use authorized_context::{
+    binding_fingerprint, package_requires_authorized_context, validate_authorized_context,
 };
 
 /// Actor-neutral request for migrating one package-confined legacy artifact.
@@ -909,6 +915,13 @@ where
                 return OperationEnvelope::new("compile_contract", None, diagnostics);
             }
         };
+        let manifest = match self.store.manifest(package) {
+            Ok(manifest) => manifest,
+            Err(error) => return port_failure("compile_contract", error),
+        };
+        if let Err(diagnostics) = validate_authorized_context(&manifest, &request) {
+            return OperationEnvelope::new("compile_contract", None, diagnostics);
+        }
         match templiqx_core::compile(&value, &request, capabilities) {
             Ok(compiled) => with_hash(
                 OperationEnvelope::new("compile_contract", Some(compiled.clone()), vec![]),
@@ -1291,6 +1304,33 @@ where
         &self,
         request: &RenderDocumentRequest,
     ) -> OperationEnvelope<RenderDocumentResult> {
+        let manifest = match self.store.manifest(&request.package) {
+            Ok(manifest) => manifest,
+            Err(error) => return port_failure("render_document", error),
+        };
+        let requires_authorized_context = match package_requires_authorized_context(&manifest) {
+            Ok(required) => required,
+            Err(diagnostics) => {
+                return OperationEnvelope::new("render_document", None, diagnostics);
+            }
+        };
+        if requires_authorized_context {
+            let mut context = std::collections::BTreeMap::new();
+            if let Some(auth) = request.data.get(AUTHORIZED_MERGE_CONTEXT_KEY) {
+                context.insert(AUTHORIZED_MERGE_CONTEXT_KEY.into(), auth.clone());
+            }
+            let render_request = RenderRequest {
+                inputs: std::collections::BTreeMap::new(),
+                context,
+            };
+            if let Err(diagnostics) = validate_authorized_context(&manifest, &render_request) {
+                return OperationEnvelope::new("render_document", None, diagnostics);
+            }
+        }
+        let mut data = request.data.clone();
+        if let Some(data) = data.as_object_mut() {
+            data.remove(AUTHORIZED_MERGE_CONTEXT_KEY);
+        }
         let template = match self
             .store
             .resolve_artifact_path(&request.package, &request.template)
@@ -1310,7 +1350,7 @@ where
             .documents
             .render_document(&AdapterDocumentRenderRequest {
                 template,
-                data: request.data.clone(),
+                data,
                 output: output_lease.path().to_path_buf(),
             }) {
             Ok(result) => result,

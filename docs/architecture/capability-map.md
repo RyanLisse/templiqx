@@ -50,6 +50,30 @@ signatures. Package deletion refuses to remove a referenced package or any
 untracked content. Workspace deletion compares the current byte fingerprint
 and applies the same path and symlink confinement as workspace reads.
 
+## Cross-opco reference packages
+
+Three sanitized reference packages under `examples/packages/` prove contract
+portability across Legal/Basenet, regulated advice, and Simplicate-shaped
+project-to-invoice workflows:
+
+| Package | Contracts | Primary outputs |
+|---------|-----------|-----------------|
+| `basenet-legal` | `legal-matter-extraction`, `legal-document-drafting` | grounded extraction, safe email, DOCX V5 |
+| `finly-advice` | `advice-fact-extraction`, `advice-memo-drafting` | advice memo/report, safe email |
+| `simplicate-workflow` | `project-hours-extraction`, `invoice-drafting` | invoice, report summary, safe email, SMS |
+
+Channel/domain matrix, authorized-context fixture IDs, and measured DOCX fixture
+IDs are documented in
+[Cross-opco reference packages v1alpha1](../contracts/cross-opco-reference-packages-v1alpha1.md).
+Preflight and migration reporting use
+[Template compatibility report v1alpha1](../contracts/template-compatibility-report-v1alpha1.md).
+
+Executable claim verification:
+
+```sh
+cargo test -p templiqx-conformance reference_package_claims
+```
+
 ## Host policy boundary
 
 Authentication, tenant authorization, secrets, signing, and publication approval remain host-owned concerns. A Blinqx opco can require human approval, agent approval, or automated policy checks around an operation, but must not implement a second semantic path with different Templiqx capabilities or artifacts. Both actors ultimately invoke the same canonical operation and receive the same envelope.

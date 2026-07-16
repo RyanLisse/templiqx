@@ -1,0 +1,16 @@
+{
+  "line_items": [
+    {
+      "amount": "1500",
+      "description": "Retainer review"
+    },
+    {
+      "amount": "750",
+      "description": "Court filing"
+    },
+    {
+      "amount": "300",
+      "description": "Client meeting"
+    }
+  ]
+}

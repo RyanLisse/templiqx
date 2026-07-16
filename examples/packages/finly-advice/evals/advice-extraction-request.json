@@ -1,0 +1,19 @@
+{
+  "inputs": {
+    "document_id": "SYN-ADVICE-DOC-0001",
+    "fragment_id": "intake-1",
+    "intake_text": "Client profile: neutral risk tolerance. Investment horizon is 10 years. Liquidity need is medium. Recommended product: diversified equity fund (SYN-FUND-42). Suitability check: suitable because horizon exceeds five years and liquidity need is not high."
+  },
+  "context": {
+    "client_reference": "SYN-CLIENT-8842",
+    "_templiqx_authorized_merge": {
+      "scope_id": "SYN-ADVICE-SCOPE-001",
+      "policy_decision_id": "SYN-POLICY-DEC-002",
+      "policy_version": "1.0.0",
+      "evidence_provenance_id": "SYN-EVID-PROV-002",
+      "issued_at": "2026-07-15T10:00:00Z",
+      "expires_at": "2099-12-31T23:59:59Z",
+      "fingerprint": "c131fd10e09408ccff43dea7faa3310a0fed62a499611bf47a802f129bfbf1be"
+    }
+  }
+}

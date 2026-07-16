@@ -1,0 +1,24 @@
+api_version: templiqx/v1alpha1
+package: basenet-legal
+version: 0.1.0
+description: Synthetic Basenet Legal reference package; contains no production matter data or host credentials.
+contracts:
+  - legal-matter-extraction
+  - legal-document-drafting
+components: []
+evals:
+  - evals/legal-extraction-request.json
+  - evals/legal-extraction-output.json
+  - evals/legal-draft-request.json
+  - evals/legal-draft-output.json
+migrations:
+  - migrations/v5-aliases.json
+templates:
+  - templates/v5-legal-template.docx
+  - templates/draft-email.html
+provenance:
+  owner: templiqx
+  domain: legal/basenet
+  pilot: Basenet Legal
+  classification: synthetic
+  requires_authorized_context: "true"

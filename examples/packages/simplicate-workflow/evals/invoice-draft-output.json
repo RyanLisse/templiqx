@@ -1,0 +1,27 @@
+{
+  "title": "Project invoice draft",
+  "summary": "Invoice for 32.5 billable hours on Website Redesign at EUR 125.00 per hour.",
+  "sms_text": "Demo Agency B.V.: invoice SYN-INV-2026-0312 for EUR 4,915.63 is ready.",
+  "merge_data": {
+    "customer": { "name": "Demo Agency B.V." },
+    "project": {
+      "name": "Website Redesign",
+      "reference": "SYN-PROJ-2201",
+      "period": "March 2026"
+    },
+    "lines": [
+      {
+        "description": "Billable consulting hours",
+        "quantity": 32.5,
+        "unit_price_eur": 125,
+        "line_total_eur": 4062.5
+      }
+    ],
+    "totals": {
+      "subtotal_eur": 4062.5,
+      "vat_eur": 853.13,
+      "total_eur": 4915.63,
+      "currency": "EUR"
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "inputs": {
+    "extracted_facts": {
+      "parties": [
+        { "name": "Voorbeeld A B.V.", "role": "eiser" },
+        { "name": "Demo Transport N.V.", "role": "verweerder" }
+      ],
+      "claims": [
+        { "id": "claim-1", "description": "schade door verlate levering op 12 maart 2026", "amount_eur": 0 },
+        { "id": "claim-2", "description": "onterechte factuurpost", "amount_eur": 3200 },
+        { "id": "claim-3", "description": "rente over openstaand bedrag", "amount_eur": 42550 }
+      ],
+      "financials": {
+        "outstanding_total": 45750,
+        "currency": "EUR"
+      },
+      "evidence": [
+        {
+          "field": "parties[0].name",
+          "document_id": "SYN-LEGAL-DOC-0001",
+          "fragment_id": "matter-body-1",
+          "start_offset": 14,
+          "end_offset": 30,
+          "quote_sha256": "80d0ab0245804fb9002cdff01d96b8b44d8866edf7d748ed70802799d3fadf1c"
+        },
+        {
+          "field": "parties[1].name",
+          "document_id": "SYN-LEGAL-DOC-0001",
+          "fragment_id": "matter-body-1",
+          "start_offset": 42,
+          "end_offset": 61,
+          "quote_sha256": "22f9667016f683285bd333cbcdff698b8290b34b291ab7ffbcc881b8139d021f"
+        },
+        {
+          "field": "claims[0].description",
+          "document_id": "SYN-LEGAL-DOC-0001",
+          "fragment_id": "matter-body-1",
+          "start_offset": 164,
+          "end_offset": 209,
+          "quote_sha256": "f061af5061f9a1eecf82152092cffa68d8b79fbcbb79aad67f56b69d70515721"
+        },
+        {
+          "field": "claims[1].description",
+          "document_id": "SYN-LEGAL-DOC-0001",
+          "fragment_id": "matter-body-1",
+          "start_offset": 220,
+          "end_offset": 242,
+          "quote_sha256": "56e3393bfb7d0c275e902332c71536768a405389bf4de00fc434f1d7109102cb"
+        },
+        {
+          "field": "claims[2].description",
+          "document_id": "SYN-LEGAL-DOC-0001",
+          "fragment_id": "matter-body-1",
+          "start_offset": 270,
+          "end_offset": 298,
+          "quote_sha256": "09b9e1df716c53f62b965d696c928cffd193ab64f719198e3839950d0cecde8c"
+        },
+        {
+          "field": "financials.outstanding_total",
+          "document_id": "SYN-LEGAL-DOC-0001",
+          "fragment_id": "matter-body-1",
+          "start_offset": 350,
+          "end_offset": 363,
+          "quote_sha256": "ba1bc2345a817c53d346288c74361c179ae130cd8c5c938bbeffd8b74fd2e9bd"
+        }
+      ]
+    }
+  },
+  "context": {
+    "client_name": "Voorbeeld A B.V.",
+    "matter_reference": "SYN-LEGAL-2026-0017",
+    "department_name": "Basenet Legal Corporate",
+    "_templiqx_authorized_merge": {
+      "scope_id": "SYN-LEGAL-SCOPE-001",
+      "policy_decision_id": "SYN-POLICY-DEC-001",
+      "policy_version": "1.0.0",
+      "evidence_provenance_id": "SYN-EVID-PROV-001",
+      "issued_at": "2026-07-15T10:00:00Z",
+      "expires_at": "2099-12-31T23:59:59Z",
+      "fingerprint": "a14d0cba0844767fcf43bb6e4af8b03e8373c0faaa3ce7a39deda4265e9d19e7"
+    }
+  }
+}

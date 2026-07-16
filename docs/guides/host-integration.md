@@ -22,7 +22,8 @@ production data before claiming production readiness.
 | Retry / workflow | Typed failures | Scripted attempts | ModelGateway / BullMQ per ADR-0006 |
 | Document rendering | Port + V5 adapter | DOCX baseline | Storage, permissions, lifecycle |
 | Document preflight (`inspect_document`) | Port + V5 adapter | Legacy corpus inspect fixtures | Host template storage only |
-| PDF / conversion | ADR entry criteria only | Not in repo | Host-constructed converter adapter |
+| PDF / conversion | ADR entry criteria + typed seam | Recorded fixture metadata only | Host-constructed converter adapter |
+| Authorized merge context | Fingerprint + fail-closed binding | Synthetic `fixtures/authorized-context.json` | Host validator supplies scope, policy, provenance |
 | Translation bundle policy | Package artifacts + filters | Demo `translations/` | Tenant locale selection |
 | Kubernetes runtime | Separate CLI/MCP artifacts | Synthetic conformance image, 8 Jobs, mock gateway | Host chart or sidecar integration |
 
@@ -133,6 +134,52 @@ just verify          # fmt, clippy, tests, boundaries, CI gates, qlty
 just verify-deploy   # Docker, Compose, kind, supply chain (needs Docker)
 just fresh-clone     # isolated worktree + empty Cargo cache
 ```
+
+## Authorized merge context
+
+Packages may declare `provenance.requires_authorized_context: "true"`. The host
+validator supplies an opaque `AuthorizedMergeContext` envelope on every
+render, eval, and compatibility preflight that binds merge data to tenant/matter
+scope:
+
+| Field | Host-owned meaning |
+|-------|-------------------|
+| `scope_id` | Tenant/matter scope authorized for this operation |
+| `policy_decision_id` | Authorization decision identity |
+| `policy_version` | Policy version bound to the decision |
+| `evidence_provenance_id` | Retrieval/provenance identity for grounded facts |
+| `issued_at` / `expires_at` | Freshness window |
+| `fingerprint` | SHA-256 over canonical binding fields |
+
+Inject the envelope in request `context` under `_templiqx_authorized_merge`.
+The portable core fingerprints and binds the envelope but does not interpret
+tenant policy. Missing, mismatched, expired, or redacted context fails closed
+with stable diagnostics (`TQX_AUTHORIZED_CONTEXT_*`) before evaluation,
+rendering, or a production-ready compatibility report.
+
+Sanitized examples live under `examples/packages/*/fixtures/authorized-context.json`.
+See [Cross-opco reference packages](../contracts/cross-opco-reference-packages-v1alpha1.md).
+
+## Host-owned PDF conversion seam
+
+PDF is **not** a default `TempliqxService` format selector. After the existing
+DOCX or HTML artifact is produced, the host invokes an optional conversion
+adapter that accepts a confined workspace artifact identity (source path, source
+hash, declared output identity) and returns payload-free renderer metadata:
+converter ID, version, environment identity, byte size, and output hash.
+
+Minimum host contract:
+
+- confined input/output paths under an ephemeral workspace
+- no-network execution and least-privilege filesystem access
+- resource limits, source-hash binding, output size/type checks
+- cleanup on every outcome (success or failure)
+- host-owned encrypted persistence, retention, and access controls
+
+The repository records deterministic conversion fixture metadata for conformance;
+it does not ship a default PDF converter in `templiqx-local`, CLI, or MCP.
+See [Document conversion ADR](../adr/document-conversion.md) and
+[Template compatibility report](../contracts/template-compatibility-report-v1alpha1.md).
 
 ## Explicitly host-blocked
 
