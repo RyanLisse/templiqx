@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Close BLI-230 report-engine gaps in Templiqx</title>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    themeVariables: {
+      background: "#f8fafc",
+      primaryColor: "#eef8f6",
+      primaryTextColor: "#172033",
+      primaryBorderColor: "#0f766e",
+      lineColor: "#5d667a",
+      secondaryColor: "#f3efff",
+      tertiaryColor: "#fff7ed",
+      fontFamily: "Inter, ui-sans-serif, system-ui"
+    }
+  });
+</script>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --ink: #172033;
+    --muted: #5d667a;
+    --line: #d9e0ea;
+    --accent: #0f766e;
+    --accent-2: #7c3aed;
+    --code-bg: #eef2f7;
+    --warn-bg: #fff7ed;
+    --radius: 8px;
+    --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.55; }
+  main { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 40px 0 64px; }
+  header, section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; margin: 0 0 18px; }
+  h1, h2, h3, h4 { line-height: 1.2; margin: 0 0 12px; }
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.35rem; color: var(--accent); }
+  h3 { font-size: 1.05rem; margin-top: 18px; }
+  p, ul, ol, dl, table, figure, details { margin-top: 0; }
+  a { color: var(--accent); }
+  code { background: var(--code-bg); border-radius: 5px; font-family: var(--mono); font-size: 0.92em; padding: 0.12rem 0.32rem; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+  th { background: #eef8f6; }
+  figure { border: 1px solid var(--line); border-radius: var(--radius); margin: 18px 0; padding: 12px; background: #fbfdff; }
+  img, .hero-image { display: block; max-width: 100%; border-radius: 6px; margin: 0 auto; }
+  figcaption { color: var(--muted); font-size: 0.92rem; margin-top: 8px; text-align: center; }
+  details { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin: 10px 0; background: #fcfdff; }
+  summary { cursor: pointer; font-weight: 700; }
+  .meta dl { display: grid; grid-template-columns: minmax(120px, 180px) 1fr; gap: 8px 14px; }
+  .meta dt { color: var(--muted); font-weight: 700; }
+  .meta dd { margin: 0; }
+  .phase { border-top: 3px solid var(--accent); padding-top: 18px; margin-top: 20px; }
+  .tag { border-radius: 999px; color: white; display: inline-block; font-size: 0.78rem; font-weight: 700; padding: 0.12rem 0.48rem; }
+  .tag.existing { background: var(--accent); }
+  .tag.new { background: var(--accent-2); }
+  .status { white-space: nowrap; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { margin: 0.45rem 0; }
+  .loop { background: var(--warn-bg); border: 1px solid #fed7aa; border-radius: var(--radius); padding: 12px 14px; margin-top: 14px; }
+  .mermaid { background: #fbfdff; border: 1px solid var(--line); border-radius: var(--radius); margin: 14px 0; padding: 16px; overflow-x: auto; }
+  .diagram-summary { border-left: 3px solid var(--accent); color: var(--muted); margin: 10px 0 0; padding-left: 12px; }
+  @media (max-width: 720px) {
+    main { width: min(100% - 24px, 1120px); padding-top: 24px; }
+    header, section { padding: 18px; }
+    table { display: block; overflow-x: auto; }
+    .meta dl { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <h1>Plan: Close BLI-230 report-engine gaps in Templiqx</h1>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt><dd>2026-07-16T10:20:00+02:00</dd>
+        <dt>modified</dt><dd>2026-07-16T10:20:00+02:00</dd>
+        <dt>commits</dt><dd>(uncommitted draft)</dd>
+        <dt>agent name</dt><dd>Auto</dd>
+        <dt>session id</dt><dd>templiqx-bli-230-gaps</dd>
+        <dt>back refs</dt><dd>basenet-rebuild-poc/docs/research/bli-230-report-engine.md; docs/plans/2026-07-15-001-feat-cross-opco-document-breadth-plan.md</dd>
+        <dt>forward refs</dt><dd>docs/plans/2026-07-16-001-feat-bli-230-report-engine-gaps-plan.md</dd>
+      </dl>
+    </details>
+  </header>
+
+  <figure class="hero-media">
+    <img class="hero-image" src="bli-230-report-engine-gaps/hero.png" alt="Conceptual diagram of frozen report definitions flowing through a deterministic renderer with host-authorized data">
+    <figcaption>Option B/hybrid: model authors definitions; deterministic renderer produces official bytes under host authorization.</figcaption>
+  </figure>
+
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Close the portable-core gaps between Basenet BLI-230 research and Templiqx’s current proof so CRM3 can run the report-engine PoC with versioned definitions, evidence/custom-field contracts, measurement harnesses, and typed host data ports — without importing OData, retrieval, or legacy multi-format engines into core.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <p>Templiqx already implements the safe BLI-230 direction (typed contracts → <code>merge_data</code> → deterministic <code>render_document</code>), but research across <code>bli-230-report-engine.md</code>, <code>bli-65-custom-fields.md</code>, <code>bli-60-retrieval-index.md</code>, and <code>gap-analysis-linear-vs-build.md</code> shows missing artifacts: no report-definition entity, no <code>customFields</code> merge contract, no evidence-fragment spec, no determinism/fan-out benches, and underspecified query ports for host OData integration.</p>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <p>Three gated phases: (1) publish portable specs and extend <code>basenet-legal</code> fixtures; (2) add determinism and fan-out benches in <code>tools/templiqx-bench</code>; (3) introduce <code>DataIntrospectPort</code> / <code>AuthorizedQueryPort</code> traits with fake fixtures and update host-integration docs. Host retains retrieval, approval, DMS, and query execution.</p>
+  </section>
+
+  <section id="diagram">
+    <h2>Architecture Diagram</h2>
+    <p>End-to-end shape for official (Option B) output:</p>
+    <pre class="mermaid">
+flowchart TB
+  subgraph host["Host Basenet CRM3"]
+    RET["Retrieval BLI-60"]
+    AUTH["can + AuthorizedMergeContext"]
+    QUERY["AuthorizedQueryPort"]
+    ASM["Merge context assembler"]
+  end
+  subgraph templiqx["Templiqx portable core"]
+    EXT["BLI-61 extract contract"]
+    DEF["report-definition artifact"]
+    DRAFT["BLI-62 draft contract"]
+    REN["render_document"]
+    BENCH["determinism + fan-out bench"]
+  end
+  RET --> ASM
+  AUTH --> ASM
+  QUERY --> ASM
+  ASM --> EXT
+  EXT --> DRAFT
+  DEF --> REN
+  DRAFT --> REN
+  REN --> BENCH
+    </pre>
+    <p class="diagram-summary">The model never ships recipient-facing bytes directly in production. Host assembles authorized data; Templiqx validates, drafts typed <code>merge_data</code>, and a frozen definition drives deterministic rendering. Benches prove render-path determinism without model calls.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope</h2>
+    <h3>In Scope</h3>
+    <ul>
+      <li><code>evidence-fragment/v1alpha1</code> and <code>report-definition/v1alpha1</code> contracts</li>
+      <li><code>customFields</code> merge namespace + <code>basenet-legal</code> fixture extension; locale/number/date formatting (R11)</li>
+      <li>100× determinism and 1,000-record fan-out benches</li>
+      <li>Typed data-access ports with synthetic fixtures only</li>
+      <li><strong>Format-renderer adapters behind the conversion seam:</strong> Typst (reports + native charts + pagination → PDF), XLSX (<code>rust_xlsxwriter</code>, native charts), CSV/XML (thin) — each with renderer-identity + fingerprint evidence</li>
+      <li>Receipt fingerprint == host <code>document_version.checksum</code> (SHA-256) shape (R10)</li>
+      <li>v5 compatibility matrix documentation</li>
+    </ul>
+    <h3>Gated / Dropped</h3>
+    <ul>
+      <li><strong>Gated on measured legacy need:</strong> RTF (<code>scrivener-rtf</code>) — build only if evidenced (U10)</li>
+      <li><strong>Dropped (no demand):</strong> standalone chart engine (charts are native to Typst / <code>rust_xlsxwriter</code>); v5 report-XML output (accounting XML is a separate connector)</li>
+    </ul>
+    <h3>Out of Scope (host-owned)</h3>
+    <ul>
+      <li><strong><code>compileToFilter</code> (ADR-0002, unbuilt) — hard prerequisite</strong> for authorized <code>query</code>/<code>introspect</code> execution</li>
+      <li>OData/OpenSearch execution, Docling OCR, DMS lifecycle, <code>document_version</code> persistence + its write-race fix</li>
+      <li>AI authoring agent + hybrid loop + A/B routing (templiqx supplies <code>validate</code>/<code>compile</code>/<code>explain</code>/<code>diff</code> guardrails only)</li>
+      <li>Production CRM3 fixture swap (host workstream)</li>
+    </ul>
+  </section>
+
+  <section id="traceability">
+    <h2>Requirements Traceability</h2>
+    <table>
+      <thead>
+        <tr><th>Requirement</th><th>Source</th><th>Plan Coverage</th><th>Acceptance Signal</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>R1 Evidence fragment contract</td>
+          <td>BLI-60, BLI-68, BLI-61</td>
+          <td>Phase 1 / U1</td>
+          <td><code>docs/contracts/evidence-fragment-v1alpha1.md</code> published</td>
+        </tr>
+        <tr>
+          <td>R2 customFields merge + preflight</td>
+          <td>BLI-65</td>
+          <td>Phase 1 / U2</td>
+          <td>Legal eval + compatibility diagnostic for unknown field</td>
+        </tr>
+        <tr>
+          <td>R3 Report definition artifact</td>
+          <td>BLI-230 §3</td>
+          <td>Phase 1 / U3</td>
+          <td>Example <code>dunning-letter-v1.yaml</code> validates</td>
+        </tr>
+        <tr>
+          <td>R4 100× determinism</td>
+          <td>BLI-230 §3.5</td>
+          <td>Phase 2 / U4</td>
+          <td>Bench reports exactly 1 distinct SHA-256</td>
+        </tr>
+        <tr>
+          <td>R5 1,000-record fan-out</td>
+          <td>BLI-230 §3.5</td>
+          <td>Phase 2 / U5</td>
+          <td>Bench receipt with validity rate</td>
+        </tr>
+        <tr>
+          <td>R6 Query/introspect ports</td>
+          <td>BLI-230 §4, BLI-66</td>
+          <td>Phase 3 / U6</td>
+          <td><code>cargo test -p templiqx-ports</code> green</td>
+        </tr>
+        <tr>
+          <td>R7–R8 Docs + matrix</td>
+          <td>BLI-230 §1–2</td>
+          <td>Phase 3 / U7</td>
+          <td><code>just docs-build</code> green</td>
+        </tr>
+        <tr>
+          <td>R9 Format renderers (Typst / XLSX / CSV / XML)</td>
+          <td>BLI-230 §1, ADR-0019</td>
+          <td>Phase 4 / U8–U9</td>
+          <td>Byte-stable PDF + native chart; valid <code>.xlsx</code> with chart</td>
+        </tr>
+        <tr>
+          <td>R10 Receipt fingerprint == doc-store checksum</td>
+          <td>BLI-68</td>
+          <td>Phase 1 / U1</td>
+          <td>SHA-256 shape documented; one integrity concept</td>
+        </tr>
+        <tr>
+          <td>R11 Locale / number / date formatting</td>
+          <td>BLI-65, BLI-256</td>
+          <td>Phase 4 / U8</td>
+          <td>Locale-formatted values in Typst render</td>
+        </tr>
+        <tr>
+          <td>R12 Host prerequisites documented</td>
+          <td>ADR-0002, BLI-68</td>
+          <td>Phase 3 / U7</td>
+          <td><code>compileToFilter</code> + version-race flagged as tracked deps</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+    <h3>Existing Files</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>examples/crm3/contracts/bli-61-date-term-extraction.yaml</code> — evidence schema reference</li>
+      <li><span class="tag existing">existing</span> <code>examples/packages/basenet-legal/</code> — Legal reference package</li>
+      <li><span class="tag existing">existing</span> <code>crates/templiqx-application/src/authorized_context.rs</code> — host auth binding</li>
+      <li><span class="tag existing">existing</span> <code>tools/templiqx-bench/</code> — performance baseline home</li>
+      <li><span class="tag existing">existing</span> <code>docs/guides/host-integration.md</code> — ownership matrix</li>
+    </ul>
+    <h3>New Files</h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>docs/contracts/evidence-fragment-v1alpha1.md</code> — fragment identity spec</li>
+      <li><span class="tag new">new</span> <code>docs/contracts/report-definition-v1alpha1.md</code> — versioned definition spec</li>
+      <li><span class="tag new">new</span> <code>examples/packages/basenet-legal/definitions/dunning-letter-v1.yaml</code> — synthetic definition</li>
+      <li><span class="tag new">new</span> <code>tools/templiqx-bench/src/report_determinism.rs</code> — 100× bench</li>
+      <li><span class="tag new">new</span> <code>tools/templiqx-bench/src/report_fanout.rs</code> — 1,000-record bench</li>
+      <li><span class="tag new">new</span> <code>crates/templiqx-ports/src/data_access.rs</code> — introspect/query traits</li>
+      <li><span class="tag new">new</span> <code>docs/guides/report-engine-compatibility.md</code> — v5 power matrix</li>
+    </ul>
+  </section>
+
+  <section id="decisions">
+    <h2>Key Decisions</h2>
+    <details open>
+      <summary>Report definition as package artifact</summary>
+      <p>Versioned YAML in package <code>definitions/</code> matches Templiqx package model and Option B/hybrid runtime guarantee.</p>
+      <p><strong>Alternatives considered:</strong> Basenet <code>reports.reporttemplate</code> DB entity (host-owned, rejected for portable core).</p>
+    </details>
+    <details>
+      <summary>customFields resolved before render</summary>
+      <p>BLI-65 requires DB-aware assembler at host; template engine and DOCX adapter stay pure.</p>
+      <p><strong>Alternatives considered:</strong> Resolver inside <code>templiqx-docx-v5</code> (rejected — IO in adapter).</p>
+    </details>
+    <details>
+      <summary>Query ports are traits + fixtures only</summary>
+      <p>Research defaults to OData behind host <code>AuthorizedQueryPort</code>; portable core must not embed query engine. <strong>Note:</strong> the row-level <code>compileToFilter</code> (ADR-0002) this depends on is <em>unbuilt</em> — the #1 host prerequisite.</p>
+      <p><strong>Alternatives considered:</strong> OData crate in core (rejected — boundary violation).</p>
+    </details>
+    <details open>
+      <summary>Formats via specialized Rust crates behind the conversion seam</summary>
+      <p><strong>Typst</strong> (reports + native charts + pagination → PDF) is the primary report-style path — leapfrogs deferred DOCX-floor work. <strong><code>rust_xlsxwriter</code></strong> for XLSX with native Excel charts (deterministic; model never emits binary). CSV/XML thin. Charts are native to these crates, not a separate power.</p>
+      <p><strong>Alternatives considered:</strong> <code>docxide-template</code> (rejected — compile-time macro model can't render runtime AI-authored definitions); a standalone chart engine (rejected — no demand); <code>docx-rust</code> noted as an option to harden <code>docx-v5</code> (BLI-256).</p>
+    </details>
+    <details>
+      <summary>Aggregation in the query layer; billing math upstream</summary>
+      <p>Legacy reports are mostly flat grid-column exports; VAT/interest/legal-aid math (19 golden tests) is owned by the billing domain. templiqx renders pre-computed, pre-aggregated values — no expression/aggregation engine in the portable core.</p>
+    </details>
+    <details>
+      <summary>Receipt fingerprint is the document-store checksum</summary>
+      <p>The templiqx SHA-256 receipt == host <code>document_version.checksum</code> — generated reports land in the existing document-store model (BLI-68). One integrity concept for uploaded + generated docs.</p>
+      <p><strong>Alternatives considered:</strong> a separate report-receipt table (rejected — duplicate integrity concept).</p>
+    </details>
+  </section>
+
+  <section id="sequencing">
+    <h2>Dependencies and Sequencing</h2>
+    <ol>
+      <li>Phase 1 specs (U1–U3) — no code dependencies; unblocks fixtures and docs</li>
+      <li>Phase 2 benches (U4–U5) — depends on U2 <code>basenet-legal</code> merge fixture</li>
+      <li>Phase 3 ports + docs (U6–U7) — depends on U1/U2 for assembler handoff text</li>
+      <li>Host integration — after U6/U7; Basenet wires real OData and production fragments</li>
+    </ol>
+  </section>
+
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed.</p>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 1: Portable contracts and fixtures</h3>
+      <p>Publish evidence fragment, customFields merge, and report-definition specs; extend basenet-legal fixture.</p>
+      <h4>1. Evidence fragment spec (U1)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Author <code>docs/contracts/evidence-fragment-v1alpha1.md</code></li>
+        <li><code class="status">[]</code> Link from <code>docs/README.md</code></li>
+      </ul>
+      <h4>2. CustomFields namespace (U2)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Extend legal draft contract and merge fixture with text + relation_link fields</li>
+        <li><code class="status">[]</code> Add compatibility diagnostic for unknown <code>customFields.*</code></li>
+      </ul>
+      <h4>3. Report definition example (U3)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Author <code>docs/contracts/report-definition-v1alpha1.md</code></li>
+        <li><code class="status">[]</code> Add <code>examples/packages/basenet-legal/definitions/dunning-letter-v1.yaml</code></li>
+      </ul>
+      <h4>4. Testing Strategy</h4>
+      <p>Conformance regression; docs build.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test crm3 --test cross_opco_outputs</code></li>
+        <li><code class="status">[]</code> <code>just docs-build</code></li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit Phase 1 until every box above is checked.</strong></div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 2: BLI-230 measurement harness</h3>
+      <p>Prove render-path determinism and fan-out viability without model inference.</p>
+      <h4>1. Determinism bench (U4)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Implement 100× render loop in <code>tools/templiqx-bench</code></li>
+        <li><code class="status">[]</code> Assert single distinct output hash</li>
+      </ul>
+      <h4>2. Fan-out bench (U5)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Add 1,000-record synthetic fixture</li>
+        <li><code class="status">[]</code> Record validity rate and wall-clock in JSON receipt</li>
+      </ul>
+      <h4>3. Testing Strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>cargo run -p templiqx-bench -- report-determinism</code></li>
+        <li><code class="status">[]</code> <code>cargo run -p templiqx-bench -- report-fanout</code></li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit Phase 2 until benches exit 0 and receipts are checked in.</strong></div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 3: Host ports and compatibility matrix</h3>
+      <p>Typed introspect/query ports and v5→Templiqx mapping for host handoff.</p>
+      <h4>1. Data access ports (U6)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Add <code>DataIntrospectPort</code> and <code>AuthorizedQueryPort</code> to <code>templiqx-ports</code></li>
+        <li><code class="status">[]</code> Fake adapter in <code>templiqx-local</code> with synthetic JSON fixtures</li>
+        <li><code class="status">[]</code> Run <code>scripts/check-boundaries.sh</code></li>
+      </ul>
+      <h4>2. Documentation (U7)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Publish <code>docs/guides/report-engine-compatibility.md</code></li>
+        <li><code class="status">[]</code> Update <code>docs/guides/host-integration.md</code> assembler section</li>
+      </ul>
+      <h4>3. Testing Strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>just verify</code></li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit Phase 3 until full verify passes.</strong></div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 4: Format-renderer adapters</h3>
+      <p>Bring the v5 format surface into templiqx as deterministic adapters behind the conversion seam — no format selector in the portable core.</p>
+      <h4>1. Typst report adapter (U8)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> New <code>adapters/templiqx-typst/</code> — contract → Typst markup → PDF (charts, pagination, locale)</li>
+        <li><code class="status">[]</code> Renderer-identity + fingerprint evidence in the receipt; golden-pinned</li>
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test typst_render</code></li>
+      </ul>
+      <h4>2. XLSX + CSV/XML (U9)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> New <code>adapters/templiqx-xlsx/</code> via <code>rust_xlsxwriter</code> (native charts); thin CSV/XML</li>
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test xlsx_render</code></li>
+      </ul>
+      <h4>3. RTF gate + format-scope decision (U10)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Measure legacy RTF/XLS/CSV usage; build <code>scrivener-rtf</code> adapter only if evidenced</li>
+        <li><code class="status">[]</code> Record final format set + non-claims in <code>docs/guides/report-engine-compatibility.md</code></li>
+      </ul>
+      <h4>4. Testing Strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Byte-stable re-render (fingerprint pinned); native chart present; <code>check-boundaries.sh</code> clean</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit Phase 4 until each shipped format re-renders byte-stable and boundaries stay green.</strong></div>
+    </div>
+  </section>
+
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <ul class="checklist">
+      <li><code class="status">[]</code> <code>just verify</code> — fmt, clippy, tests, boundaries, qlty</li>
+      <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test crm3 --test cross_opco_outputs</code></li>
+      <li><code class="status">[]</code> <code>cargo run -p templiqx-bench -- report-determinism</code></li>
+      <li><code class="status">[]</code> <code>cargo run -p templiqx-bench -- report-fanout</code></li>
+      <li><code class="status">[]</code> <code>just docs-build</code></li>
+    </ul>
+    <div class="loop">🔁 <strong>Plan complete when every validation command passes.</strong></div>
+  </section>
+
+  <section id="test-scenarios">
+    <h2>Test Scenarios</h2>
+    <table>
+      <thead>
+        <tr><th>Scenario</th><th>Coverage</th><th>Test Location</th><th>Expected Result</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>100× identical DOCX render</td>
+          <td>R4 determinism</td>
+          <td><code>tools/templiqx-bench</code></td>
+          <td>Exactly 1 distinct SHA-256</td>
+        </tr>
+        <tr>
+          <td>1,000-record fan-out</td>
+          <td>R5 batch mailing</td>
+          <td><code>tools/templiqx-bench</code></td>
+          <td>0 corrupt DOCX; timing recorded</td>
+        </tr>
+        <tr>
+          <td>Unknown customFields placeholder</td>
+          <td>R2 preflight</td>
+          <td><code>reference_package_claims.rs</code></td>
+          <td>Compatibility report flags field</td>
+        </tr>
+        <tr>
+          <td>Query without authorized context</td>
+          <td>R6 port boundary</td>
+          <td><code>templiqx-ports</code> tests</td>
+          <td>Fail-closed diagnostic</td>
+        </tr>
+        <tr>
+          <td>CRM3 evidence grounding unchanged</td>
+          <td>Regression</td>
+          <td><code>crates/templiqx-conformance/tests/crm3.rs</code></td>
+          <td>All scenarios green</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="risks">
+    <h2>Risks and Assumptions</h2>
+    <details>
+      <summary>Report-definition scope creep</summary>
+      <p>Approval fields are metadata only; host owns workflow state machine.</p>
+    </details>
+    <details>
+      <summary>Fan-out bench CI flakiness</summary>
+      <p>Keep local-first; optional CI job with generous timeout.</p>
+    </details>
+    <details>
+      <summary>Assumption: OData behind host query port</summary>
+      <p>Research default; port trait remains transport-neutral.</p>
+    </details>
+  </section>
+
+  <section id="notes">
+    <h2>Notes</h2>
+    <h3>v5 power coverage (research summary)</h3>
+    <table>
+      <thead><tr><th>v5 power</th><th>Templiqx today</th><th>After plan</th></tr></thead>
+      <tbody>
+        <tr><td>Reflective data traversal</td><td>Partial (caller-built merge_data)</td><td>customFields + query port docs</td></tr>
+        <tr><td>Ad-hoc entity search</td><td>Missing (host)</td><td>AuthorizedQueryPort trait</td></tr>
+        <tr><td>Transform utils</td><td>Bounded contract filters</td><td>Unchanged</td></tr>
+        <tr><td>Multi-format render</td><td>DOCX V5 + HTML partial</td><td>Matrix documents gaps</td></tr>
+      </tbody>
+    </table>
+    <p>Markdown sibling plan: <code>docs/plans/2026-07-16-001-feat-bli-230-report-engine-gaps-plan.md</code></p>
+  </section>
+
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <ul>
+      <li><strong>2026-07-16 — Report-engine ambition + format strategy.</strong> Brought the v5 format surface into scope as deterministic Rust adapters behind the conversion seam: <strong>Typst</strong> (reports + native charts + pagination → PDF, U8), <strong>XLSX</strong> via <code>rust_xlsxwriter</code> (native charts, U9), CSV/XML thin, <strong>RTF</strong> via <code>scrivener-rtf</code> gated on legacy usage (U10). Rejected <code>docxide-template</code> (compile-time vs runtime-authored mismatch); noted <code>docx-rust</code> for <code>docx-v5</code> hardening. Dropped standalone chart engine + v5 report-XML. Added Phase 4 and R9–R12.</li>
+      <li><strong>2026-07-16 — Research synthesis (BLI-60/63/64/66/68, ADR-0002/0016/0018).</strong> Flagged <code>compileToFilter</code> (ADR-0002) as unbuilt = #1 host prerequisite; pushed aggregation to the query layer with billing math upstream; bound the receipt fingerprint to <code>document_version.checksum</code> (R10); added locale formatting (R11); recorded host prerequisites (query interface, version-race, authoring agent) and reuse hooks (<code>@blinqx/reports</code>, api-contract, "productions" consumer).</li>
+    </ul>
+  </section>
+
+</main>
+</body>
+</html>
