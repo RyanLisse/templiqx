@@ -17,3 +17,4 @@ node_modules/
 .blume-verify/
 .worktrees/scratchpad/
 examples_we _must_support/
+scratchpad/
