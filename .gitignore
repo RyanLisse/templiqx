@@ -15,4 +15,5 @@ sites
 dist/
 node_modules/
 .blume-verify/
-.worktrees/
+.worktrees/scratchpad/
+examples_we _must_support/

@@ -131,7 +131,7 @@ path; promote-one-off-to-definition workflow in host UI.
 | Aggregation in the query layer; billing math upstream | Legacy reports are flat grid exports; VAT/interest/legal-aid math has 19 golden tests owned by the billing domain — templiqx renders pre-computed values | Aggregation/expression engine in portable core |
 | Receipt fingerprint **is** the doc-store checksum | One SHA-256 integrity concept for uploaded + generated docs (BLI-68) | Separate report-receipt table |
 | Reject compile-time DOCX templating for the core | templiqx definitions are runtime data authored by an AI agent, not compile-time Rust structs — a `generate_templates!` macro cannot render a dynamically-authored definition | `docxide-template` as the docx engine |
-| `docx-rust` as an *option* to harden `docx-v5` | Library OOXML read/write could replace hand-rolled run-splitting and cut `docx-v5` complexity (qlty: 1862 LoC / cx 239); tie to BLI-256, not urgent | Rewrite `docx-v5` from scratch |
+| `docx-rust` as an *option* to harden `docx-v5` | Library OOXML read/write could replace hand-rolled run-splitting and cut `docx-v5` complexity (qlty: ~1862 qlty LoC (physical `wc -l` ≈ 2662) / cx 239); tie to BLI-256, not urgent | Rewrite `docx-v5` from scratch |
 | **Markdown** as a third bounded text dialect (`markdown-rs`) | Additive text surface alongside `docx-v5` (measured DOCX) + `html-plain` (safe HTML/plain) — for memo/report/email → safe HTML/plain; AST fits inspection + fail-closed default; **declarative only, no embedded code** | `mdxjs-rs` (MDX→JS = component execution / template-language creep / weakens determinism) |
 
 ### High-Level Technical Design
@@ -327,7 +327,7 @@ synthetic OData-shaped JSON. Not wired into default CLI/MCP graph beyond local c
 
 **Goal:** Publish v5→Templiqx mapping and assembler guidance.
 
-**Requirements:** R7, R8
+**Requirements:** R7, R8, R10, R12
 
 **Dependencies:** U1, U2, U6
 
@@ -350,7 +350,7 @@ query port injection, revision checksum on fragments.
 
 ### U8. Typst report render adapter
 
-**Goal:** A deterministic `templiqx contract → Typst markup → PDF` render path for
+**Goal:** A deterministic `templiqx contract → bounded `.typ` markup (PDF via the recorded host conversion seam)` render path for
 stylized, chart-bearing, paginated *report-style* output.
 
 **Requirements:** R9, R11
@@ -358,18 +358,17 @@ stylized, chart-bearing, paginated *report-style* output.
 **Dependencies:** conversion seam (shipped); U3 (report-definition)
 
 **Files:**
-- `adapters/templiqx-typst/` (new crate — Typst compile of generated markup)
-- `crates/templiqx-conformance/tests/typst_render.rs` (new; golden-pinned PDF-metadata)
+- `adapters/templiqx-typst/` (crate — emits bounded `.typ` markup; no Typst-compiler dep)
+- `crates/templiqx-conformance/tests/typst_render.rs` (new; golden-pinned `.typ` markup + recorded host PDF seam)
 - `examples/packages/basenet-legal/definitions/dunning-letter-v1.yaml` (target_format: typst)
 - `docs/adr/document-conversion.md` (add Typst as a host-composed/adapter render target)
 
-**Approach:** Map the frozen definition + merge data to Typst markup; compile via the
-`typst`/`typst-library` crates; emit renderer-identity (typst version, environment) +
+**Approach:** Map the frozen definition + merge data to Typst markup; emit byte-stable markup via the `templiqx-typst` adapter (no Typst-compiler dependency); emit renderer-identity (typst version, environment) +
 artifact fingerprint in the receipt, same shape as the PDF seam. Native charts +
 pagination + locale-formatted values (R11). Deterministic; no model on the render path.
 
 **Test scenarios:**
-- Frozen definition renders byte-stable PDF (fingerprint pinned)
+- Frozen definition renders byte-stable `.typ` markup (fingerprint pinned)
 - A native column chart from tabular merge data appears; re-render byte-stable
 - Missing/unauthorized field → fail-closed diagnostic, no guessed value
 
@@ -460,11 +459,11 @@ Golden updates require `GOLDEN_REVIEW:` commit marker or `ALLOW_GOLDEN_UPDATE=1`
 
 ## Definition of Done
 
-- [ ] R1–R12 implemented or explicitly documented as host-deferred with port/fixture proof
+- [ ] R1–R13 implemented or explicitly documented as host-deferred with port/fixture proof
 - [ ] `just verify` and `just docs-build` pass
 - [ ] Determinism bench: 1 distinct hash over 100 renders
 - [ ] Fan-out bench: validity rate recorded for 1,000 renders
-- [ ] Typst adapter: byte-stable PDF with a native chart (golden-pinned)
+- [ ] Typst adapter: byte-stable `.typ` markup with a native chart (golden-pinned)
 - [ ] XLSX adapter: valid `.xlsx` with a native chart; CSV/XML golden-pinned
 - [ ] Format set + non-claims documented; RTF built or explicitly dropped with rationale
 - [ ] Receipt fingerprint == document-store SHA-256 checksum shape documented (R10)
