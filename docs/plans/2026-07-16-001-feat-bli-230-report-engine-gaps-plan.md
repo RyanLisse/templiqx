@@ -63,6 +63,7 @@ and gap analysis show missing pieces before the host can run the full PoC:
 | R10 | The templiqx receipt fingerprint **is** the host `document_version.checksum` (SHA-256) — generated reports land in the existing document-store model, one row per version, no separate report-receipt table | BLI-68 |
 | R11 | Provide **locale/number/date value formatting** in the render layer (close the BLI-65 custom-fields formatting gap; shares the BLI-256 locale work) rather than inheriting it as a host gap | BLI-65, BLI-256 |
 | R12 | Document the host-side **prerequisites/blockers** the engine depends on: authorized `query` needs `compileToFilter` (ADR-0002, **unbuilt**) for row-level `can()`; the `document_version` write race (`documents.ts:133`) must be fixed before templiqx writes versions | ADR-0002, BLI-68, security-audit |
+| R13 | Ship a **bounded Markdown text adapter** (`templiqx-markdown`, `markdown-rs`) for memo/report/email-style output — contract/definition + approved `merge_data` → Markdown → **safe HTML/plain only**; declarative, **no embedded code**; AST used for inspection/linting/deterministic transforms. `mdxjs-rs` explicitly excluded (MDX→JS is code execution) | BLI-230, `markdown-rs` |
 
 ### Actors
 
@@ -75,8 +76,9 @@ and gap analysis show missing pieces before the host can run the full PoC:
 ### Scope Boundaries
 
 **In scope:** portable contracts, fixtures, benches, port traits, docs, conformance tests;
-**format-renderer adapters — Typst, XLSX (`rust_xlsxwriter`), CSV/XML — behind the
-conversion seam** with renderer-identity + fingerprint evidence.
+**format-renderer adapters — Typst, XLSX (`rust_xlsxwriter`), CSV/XML, and a bounded
+Markdown text adapter (`markdown-rs` → safe HTML/plain, declarative, no embedded code) —
+behind the conversion seam** with renderer-identity + fingerprint evidence.
 
 **Gated on measured legacy need:** RTF (`scrivener-rtf`) — build only if legacy usage is
 real (see U10); do not build speculatively.
@@ -85,6 +87,12 @@ real (see U10); do not build speculatively.
 **native** to Typst and `rust_xlsxwriter`, never a separate "power"; and **v5 report-XML
 output** — the only live XML need is accounting export (Exact/Twinfield), a separate
 connector with a different data shape, not this engine.
+
+**Rejected (architectural, not demand):** `mdxjs-rs` — MDX compiles to JavaScript
+(component execution). It moves logic into the content layer, weakens determinism, and is
+exactly the template-language creep the frozen-definition model exists to prevent. Markdown
+enters templiqx **only** as a declarative output dialect via `markdown-rs` (R13), never as
+an authoring surface with embedded code.
 
 **Out of scope (host-owned):** authorized `query`/`introspect` **execution** and
 `compileToFilter` (ADR-0002, **unbuilt — a hard prerequisite**), OpenSearch retrieval,
@@ -124,6 +132,7 @@ path; promote-one-off-to-definition workflow in host UI.
 | Receipt fingerprint **is** the doc-store checksum | One SHA-256 integrity concept for uploaded + generated docs (BLI-68) | Separate report-receipt table |
 | Reject compile-time DOCX templating for the core | templiqx definitions are runtime data authored by an AI agent, not compile-time Rust structs — a `generate_templates!` macro cannot render a dynamically-authored definition | `docxide-template` as the docx engine |
 | `docx-rust` as an *option* to harden `docx-v5` | Library OOXML read/write could replace hand-rolled run-splitting and cut `docx-v5` complexity (qlty: 1862 LoC / cx 239); tie to BLI-256, not urgent | Rewrite `docx-v5` from scratch |
+| **Markdown** as a third bounded text dialect (`markdown-rs`) | Additive text surface alongside `docx-v5` (measured DOCX) + `html-plain` (safe HTML/plain) — for memo/report/email → safe HTML/plain; AST fits inspection + fail-closed default; **declarative only, no embedded code** | `mdxjs-rs` (MDX→JS = component execution / template-language creep / weakens determinism) |
 
 ### High-Level Technical Design
 
@@ -368,27 +377,34 @@ pagination + locale-formatted values (R11). Deterministic; no model on the rende
 
 ---
 
-### U9. XLSX + CSV/XML renderers
+### U9. XLSX + CSV/XML + Markdown text renderers
 
-**Goal:** Spreadsheet output with native Excel charts, plus thin deterministic CSV/XML.
+**Goal:** Spreadsheet output with native Excel charts, thin deterministic CSV/XML, and a
+**bounded Markdown text adapter** for memo/report/email-style output.
 
-**Requirements:** R9
+**Requirements:** R9, R13
 
 **Files:**
 - `adapters/templiqx-xlsx/` (new — `rust_xlsxwriter` over structured tabular output)
 - `adapters/templiqx-tabular/` or thin CSV/XML emitters (deterministic)
-- `crates/templiqx-conformance/tests/xlsx_render.rs`
+- `adapters/templiqx-markdown/` (new — `markdown-rs`: definition + merge_data → Markdown → safe HTML/plain)
+- `crates/templiqx-conformance/tests/xlsx_render.rs`, `crates/templiqx-conformance/tests/markdown_render.rs`
 
-**Approach:** Consume the frozen definition's tabular binding; `rust_xlsxwriter` emits
-`.xlsx` with native charts; renderer-identity + fingerprint evidence. CSV/XML are
-straight serializers. Charts are a deterministic function of definition + data (R11) —
-never model-emitted.
+**Approach:** XLSX — consume the frozen definition's tabular binding; `rust_xlsxwriter` emits
+`.xlsx` with native charts; renderer-identity + fingerprint evidence. CSV/XML are straight
+serializers. **Markdown** — the adapter renders the definition + approved `merge_data` to
+Markdown, then compiles via `markdown-rs` to **safe HTML/plain only** (default-safe, no raw
+HTML passthrough); the `markdown-rs` AST enables deterministic transforms + linting. It is a
+third bounded output surface alongside `docx-v5` and `html-plain` — **declarative, no embedded
+code**; `mdxjs-rs` is not used. Charts stay a deterministic function of definition + data (R11).
 
 **Test scenarios:**
 - Tabular definition → valid `.xlsx` with a native chart; re-render byte-stable
 - CSV/XML output matches golden; no injection from merge values
+- Memo definition → Markdown → safe HTML/plain golden; raw-HTML/script in merge values is
+  escaped/stripped (fail-closed); re-render byte-stable
 
-**Verification:** `cargo test -p templiqx-conformance --test xlsx_render`; boundaries clean.
+**Verification:** `cargo test -p templiqx-conformance --test xlsx_render --test markdown_render`; boundaries clean.
 
 ---
 
@@ -482,7 +498,9 @@ Golden updates require `GOLDEN_REVIEW:` commit marker or `ALLOW_GOLDEN_UPDATE=1`
 - Templiqx: `docs/plans/2026-07-15-001-feat-cross-opco-document-breadth-plan.md`, `examples/crm3/`, `examples/packages/basenet-legal/`
 - Rust format crates: [`typst`/`typst-library`](https://crates.io/crates/typst-library) (reports + charts + PDF),
   [`rust_xlsxwriter`](https://crates.io/crates/rust_xlsxwriter) (XLSX + native charts),
-  [`scrivener-rtf`](https://crates.io/crates/scrivener-rtf) (RTF, gated).
+  [`scrivener-rtf`](https://crates.io/crates/scrivener-rtf) (RTF, gated),
+  [`markdown-rs`](https://github.com/wooorm/markdown-rs) (bounded Markdown → safe HTML/plain, R13).
+  Rejected: [`mdxjs-rs`](https://github.com/wooorm/mdxjs-rs) (MDX→JS = code execution, template-language creep).
   Considered & rejected for the runtime core: [`docxide-template`](https://docs.rs/crate/docxide-template)
   (compile-time macro model conflicts with runtime AI-authored definitions);
   [`docx-rust`](https://github.com/cstkat/docx-rust) noted as an option to harden `docx-v5` (BLI-256).
