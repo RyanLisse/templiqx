@@ -1,13 +1,22 @@
 ---
 title: "feat: Prove cross-opco document breadth"
 type: feat
-status: active
+status: landed-partial
 date: 2026-07-15
 origin: docs/brainstorms/2026-07-15-templiqx-cross-opco-breadth-requirements.md
 deepened: 2026-07-15
+landed: 2026-07-16
 ---
 
 # Prove cross-opco document breadth
+
+> **Landed 2026-07-16 (PR #12).** The spine shipped: U1 (three reference packages +
+> authorized-context binding), U3 (host-owned PDF conversion seam), and the additive
+> multi-output-receipt half of U4 — all green (conformance crm3 + cross_opco_* +
+> legal_docx + pdf_render, application, docx-v5; clippy `-D warnings`; boundaries).
+> The DOCX floor landed as bounded repeat/conditional render only (KTD9 "first shape").
+> **Deferred:** the full U2 Legal DOCX floor (branding/signature-render/cover/pagination/
+> locale) → **BLI-256**; U4 cross-surface parity (CLI/MCP/HTTP multi-output) → **BLI-257**.
 
 ## Overview
 
