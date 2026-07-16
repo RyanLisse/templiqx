@@ -37,3 +37,5 @@ jobs:
         run: |
           just verify
           just docs-build
+      - name: Run HTTP conformance certification gate
+        run: just conformance-http
