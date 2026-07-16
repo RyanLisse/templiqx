@@ -47,13 +47,13 @@ The split keeps policy and transport out of the portable core:
 
 - `templiqx-contracts` holds serializable DTOs, diagnostics, fingerprints, and envelopes.
 - `templiqx-core` owns parsing, validation, rendering, and compilation logic.
-- `templiqx-ports` defines the seams that host code must implement.
+- `templiqx-ports` defines the seams that host code must implement, including `DataIntrospectPort` and `AuthorizedQueryPort` for host-owned query and schema introspection.
 - `templiqx-application` exposes actor-neutral operations and catalog introspection.
 - `templiqx-local` assembles a concrete local runtime from filesystem-backed and deterministic adapters.
 - `templiqx-mock` and `adapters/templiqx-runtime-http-mock` are deterministic/conformance-oriented runtime adapters rather than production policy engines.
 - `adapters/templiqx-docx-v5` handles explicit DOCX V5 compatibility for the CRM3 fixture.
 
-This is deliberate: auth, tenant policy, approval, retries, retrieval, workflow, and secrets remain host concerns and are not embedded into the core graph.
+This is deliberate: auth, tenant policy, approval, retries, retrieval, workflow, schema/query access, and secrets remain host concerns and are not embedded into the core graph.
 
 ## Package and filesystem boundaries
 

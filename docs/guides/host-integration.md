@@ -255,6 +255,6 @@ Tracked host dependencies Templiqx does **not** build:
 
 Format coverage and non-claims live in
 [Report engine compatibility](report-engine-compatibility.md).
-Legacy files under `examples_we _must_support/` evidence **formats only** (DOCX/RTF/BIFF
+Legacy files under `examples/legacy-corpus/v5-report-templates/` evidence **formats only** (DOCX/RTF/BIFF
 presence); they are Velocity-era binaries, not Templiqx definitions — do not treat them
 as round-trip fixtures.

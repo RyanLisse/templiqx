@@ -69,6 +69,18 @@ The CRM3 conformance test in `crates/templiqx-conformance/tests/crm3.rs` orchest
 
 This workflow is where the repository proves that multiple operations can be composed without creating a special agent-only path.
 
+## Report-engine assembly workflow
+
+The BLI-230 report-engine docs introduced a separate host-facing assembly path:
+
+1. host code retrieves evidence fragments and binds them into `evidence-fragment-v1alpha1` records;
+2. host code resolves `customFields` relation links into `merge-data-v1alpha1` before calling Templiqx;
+3. host code supplies report definitions that point at a package-local template and an opaque query binding;
+4. `templiqx-ports` provides the `DataIntrospectPort` and `AuthorizedQueryPort` seams for schema discovery and authorized row access;
+5. bounded adapters render the selected output format, while the host owns any query execution, storage, or approval workflow.
+
+The recent benchmark entrypoint in `tools/templiqx-bench` exercises two report-engine checks as separate subcommands: `report-determinism` and `report-fanout`. The library surface is split into `report_determinism` and `report_fanout` modules so future changes can reason about deterministic render stability and high-volume render throughput separately.
+
 ## Readiness and smoke workflows
 
 Recent readiness work added Docker, Helm, and smoke scripts so the repo can validate deployment assumptions outside the unit tests. The important scripts are:

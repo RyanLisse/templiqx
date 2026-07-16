@@ -7,9 +7,9 @@ Templiqx is a standalone, provider-neutral AI interaction contract compiler. The
 Start here:
 
 - [Architecture overview](architecture.md) — crate layering, adapter boundaries, and why the repo is organized the way it is.
-- [Domain and contract model](domains.md) — the v1alpha1 contract format, CRM3, and DOCX V5 compatibility.
-- [Workflows](workflows.md) — CLI, MCP, migration, rendering, and conformance flow.
-- [Testing and verification](testing.md) — the test suites and smoke checks that protect the boundary rules.
+- [Domain and contract model](domains.md) — the v1alpha1 contract format, CRM3, and report-engine compatibility.
+- [Workflows](workflows.md) — CLI, MCP, migration, rendering, conformance, and report-engine flow.
+- [Testing and verification](testing.md) — the test suites, report-engine benches, and smoke checks that protect the boundary rules.
 - [Operations HTTP API (handbook)](/guides/operations-api) — northbound `/operations/v1` transport, checked-in OpenAPI, and local/demo Swagger UI at `/swagger-ui`.
 
 ## What this repo is for

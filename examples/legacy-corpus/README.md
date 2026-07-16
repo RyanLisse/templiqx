@@ -42,5 +42,15 @@ cargo test -p templiqx-conformance --test legal_docx
 cargo test -p templiqx-conformance --test reference_package_claims
 ```
 
-Production customer templates are out of scope; host teams must add sanitized
-fixtures after legal review.
+## Real v5 report templates (reference, not fixtures)
+
+[`v5-report-templates/`](v5-report-templates/) holds three **real** legacy
+Basenet v5 report templates (company overview, case cover, WIP per cost centre)
+as format/dialect evidence for the report engine. They are reference-only:
+outside `fixtures/`, so the conformance scanners do not load them, and they
+carry **no client data** — only merge-field/Velocity template logic. See
+[`v5-report-templates/README.md`](v5-report-templates/README.md) and
+[`docs/guides/report-engine-compatibility.md`](../../docs/guides/report-engine-compatibility.md).
+
+Production *customer* templates (filled with client data) remain out of scope;
+host teams must add sanitized fixtures after legal review.

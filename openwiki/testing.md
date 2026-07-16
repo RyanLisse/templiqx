@@ -35,6 +35,15 @@ If you change Cargo dependencies, adapter wiring, or product image composition, 
 
 `crates/templiqx-conformance/tests/crm3.rs` is the highest-signal product test. It asserts that the CRM3 package can be discovered, validated, executed, migrated, and rendered as a grounded workflow. It also checks evidence traceability so the draft cannot invent facts that are not sourced from the inputs.
 
+### Report-engine benches
+
+The report-engine work added a small bench harness in `tools/templiqx-bench` with two focused entrypoints:
+
+- `report-determinism` — exercises frozen `basenet-legal` DOCX renders repeatedly and checks for stable output hashes;
+- `report-fanout` — renders the same migrated template across 1,000 records and checks for corrupt output.
+
+The shared library code lives in `tools/templiqx-bench/src/report_determinism.rs` and `tools/templiqx-bench/src/report_fanout.rs`. When changing report adapters or template handling, use these benches to confirm the render path remains deterministic and can fan out without corruption.
+
 ### Deployment and release smoke
 
 The repository includes smoke checks for Docker, kind, and supply chain validation:

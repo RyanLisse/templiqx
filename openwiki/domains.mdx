@@ -81,9 +81,18 @@ The checked-in CRM3 scenarios are synthetic and data-driven through `templiqx.mo
 
 This is a core product boundary: the repository is not just generating text; it is preserving evidence traceability across interactions.
 
-## DOCX V5 compatibility
+## Report-engine compatibility
 
-`adapters/templiqx-docx-v5` and the CRM3 fixtures model a specific legacy-document migration path. The tests cover body paragraphs, table cells, header/footer parts, split-run alias migration, MERGEFIELD behavior, repeated references, and intentionally unresolved references.
+The recent BLI-230 work splits the report-engine problem into three portable contracts and one reference corpus:
+
+- `report-definition-v1alpha1` binds a host-owned query reference and package-local template path to a frozen report definition.
+- `evidence-fragment-v1alpha1` carries quoted source evidence with byte offsets and SHA-256 identity.
+- `merge-data-v1alpha1` carries render-ready values, including pre-resolved `customFields` relation links.
+- `examples/legacy-corpus/v5-report-templates/` holds real legacy templates as format evidence only; they are not fixtures and do not prove dialect fidelity.
+
+The compatibility guide in `docs/guides/report-engine-compatibility.md` is the canonical place for the measured support matrix across DOCX, HTML/plain, Typst, XLSX, CSV/XML, Markdown, RTF, and the host-owned PDF seam.
+
+`adapters/templiqx-docx-v5` still models the specific legacy-document migration path used by the CRM3 and report-engine benches. The tests cover body paragraphs, table cells, header/footer parts, split-run alias migration, MERGEFIELD behavior, repeated references, and intentionally unresolved references.
 
 That compatibility is chosen and documented. It should not be generalized without new evidence and tests.
 

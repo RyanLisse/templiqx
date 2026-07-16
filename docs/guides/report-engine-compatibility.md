@@ -8,7 +8,7 @@ conformance/benches) from **non-claims** and host-owned prerequisites.
 
 ## Legacy corpus: format evidence, not dialect fidelity
 
-The files under `examples_we _must_support/` evidence **which wire formats still
+The files under `examples/legacy-corpus/v5-report-templates/` evidence **which wire formats still
 appear in the wild**. They are **not** frozen Templiqx definitions and do **not**
 prove dialect fidelity for Velocity / MERGEFIELD / `$func` / cell scripts.
 
@@ -16,7 +16,7 @@ prove dialect fidelity for Velocity / MERGEFIELD / `$func` / cell scripts.
 |----------|-------------------|---------------------------|
 | `Dossiervoorblad.docx` | DOCX still used for dossier covers | Not a simple modern cover — dense Velocity-in-MERGEFIELD authoring. Templiqx does **not** execute Velocity; proof is via bounded `docx-v5` + synthetic report definitions |
 | `Bedrijfsoverzicht.rtf` | Real RTF report usage (**gate for building `templiqx-rtf`**) | Not a simple memo — heavy tables, `#if`, `$func`. Adapter emits bounded interpolated RTF; it does **not** parse or run Velocity/`$func` |
-| `xls OHW per kostenplaats.xls` | Spreadsheet reports still exist as BIFF `.xls` | **Input non-claim** — no BIFF reader. Emit `.xlsx`/CSV/XML from frozen tabular bindings; aggregation stays in the host/query layer |
+| `OHW-per-kostenplaats.xls` | Spreadsheet reports still exist as BIFF `.xls` | **Input non-claim** — no BIFF reader. Emit `.xlsx`/CSV/XML from frozen tabular bindings; aggregation stays in the host/query layer |
 
 Do **not** treat these binaries as migration fixtures that Templiqx must round-trip.
 Semantic successors (if needed later) are new report-definition + merge_data packages,
