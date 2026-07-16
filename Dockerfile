@@ -62,7 +62,9 @@ ARG TARGETPLATFORM
 ARG VERSION=0.1.0
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="templiqx-http-server"
-LABEL org.opencontainers.image.description="Production Templiqx Operations HTTP server"
+LABEL org.opencontainers.image.description="Local/demo Operations HTTP server (deterministic-fake by default). Not an official signed release artifact."
+LABEL io.templiqx.artifact.class="local-demo-not-signed-release"
+LABEL io.templiqx.runtime.default-mode="deterministic-fake"
 LABEL org.opencontainers.image.source="https://github.com/RyanLisse/templiqx"
 LABEL org.opencontainers.image.url="https://github.com/RyanLisse/templiqx"
 LABEL org.opencontainers.image.version=$VERSION

@@ -11,6 +11,8 @@ services:
       TEMPLIQX_HTTP_ADDR: 0.0.0.0:8080
       TEMPLIQX_ROOT: /packages
       TEMPLIQX_WORKSPACE: /workspace
+      # Local demo only — not a signed release artifact; see docs/guides/releasing.md
+      TEMPLIQX_RUNTIME_MODE: deterministic-fake
     volumes:
       - ../examples/packages:/packages:ro
       - templiqx-http-workspace:/workspace:rw

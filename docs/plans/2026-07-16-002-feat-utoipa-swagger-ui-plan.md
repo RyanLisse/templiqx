@@ -15,8 +15,6 @@ related:
   - docs/README.md
 ---
 
-# Serve Operations API Swagger UI via utoipa
-
 ## Summary
 
 Add interactive Swagger UI to the Operations HTTP surface using

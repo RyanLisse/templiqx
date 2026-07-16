@@ -39,3 +39,12 @@ jobs:
           just docs-build
       - name: Run HTTP conformance certification gate
         run: just conformance-http
+      - name: Upload OpenAPI / router / SDK drift reports
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: openapi-drift-reports
+          path: |
+            artifacts/openapi/
+          if-no-files-found: warn
+          retention-days: 14

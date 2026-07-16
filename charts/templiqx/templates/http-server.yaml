@@ -42,6 +42,8 @@ spec:
               value: /packages
             - name: TEMPLIQX_WORKSPACE
               value: /workspace
+            - name: TEMPLIQX_RUNTIME_MODE
+              value: {{ $mode | quote }}
             {{- if eq $mode "langfuse" }}
             - name: MODEL_BASE_URL
               value: {{ required "httpServer.runtime.modelBaseUrl is required in langfuse mode" .Values.httpServer.runtime.modelBaseUrl | quote }}

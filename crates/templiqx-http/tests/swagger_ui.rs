@@ -19,19 +19,14 @@ async fn swagger_ui_serves_html_and_points_at_checked_in_openapi_json() {
         )
         .await
         .expect("response");
-    assert!(
-        ui.status() == StatusCode::OK || ui.status().is_redirection(),
-        "expected Swagger UI success or redirect, got {}",
-        ui.status()
-    );
-    let ui_status = ui.status();
+    assert_eq!(ui.status(), StatusCode::OK);
     let ui_bytes = to_bytes(ui.into_body(), usize::MAX)
         .await
         .expect("body bytes");
     let ui_body = String::from_utf8_lossy(&ui_bytes);
     assert!(
-        ui_body.to_ascii_lowercase().contains("swagger") || ui_status.is_redirection(),
-        "Swagger UI body should mention swagger (or redirect to index)"
+        ui_body.to_ascii_lowercase().contains("swagger"),
+        "Swagger UI body should mention swagger"
     );
 
     let openapi = app
