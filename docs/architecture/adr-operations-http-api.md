@@ -61,6 +61,14 @@ Templiqx transport does not retry operations internally. Hosts and SDKs may retr
 
 ## Consequences
 
-- TypeScript, .NET, and Python clients can be generated from one contract when needed.
+- TypeScript, .NET, Python, Go, and Rust pilot SDKs generate from one OpenAPI contract.
 - Runtime/storage/document behavior remains application-owned and conformance-tested.
 - HTTP parity can be tested black-box without giving the mock gateway production responsibilities.
+- The runnable `templiqx-http-server` binary is a **local/demo** composition
+  (`TEMPLIQX_RUNTIME_MODE=deterministic-fake` by default, optional `langfuse`).
+  It is **not** an official signed release artifact; see
+  [HTTP server release artifact](../adr/http-server-release-artifact.md).
+- Discovery routes on `templiqx_http::router` include the checked-in OpenAPI
+  document (`/operations/v1/openapi.json` / `.yaml`) and interactive Swagger UI
+  at `/swagger-ui` (utoipa-swagger-ui pointed at that JSON). Operator narrative:
+  [Operations HTTP API](../guides/operations-api.md).

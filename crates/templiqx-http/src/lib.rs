@@ -47,6 +47,10 @@ use templiqx_ports::{
     RuntimeAdapter,
 };
 use tower::{BoxError, ServiceBuilder, timeout::TimeoutLayer};
+use utoipa_swagger_ui::{Config, SwaggerUi};
+
+const OPENAPI_JSON_PATH: &str = "/operations/v1/openapi.json";
+const SWAGGER_UI_PATH: &str = "/swagger-ui";
 
 const MAX_BODY_BYTES: usize = 1024 * 1024;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
@@ -360,6 +364,7 @@ pub fn router_from_root(root: impl AsRef<FsPath>) -> Result<Router, templiqx_por
 /// Build a router over an injected service so hosts can supply their own adapters.
 pub fn router(service: impl HttpOperations) -> Router {
     Router::new()
+        .merge(swagger_ui())
         .route("/healthz", get(health))
         .route("/readyz", get(ready))
         .route("/operations/v1/health/live", get(health))
@@ -440,6 +445,14 @@ pub fn router(service: impl HttpOperations) -> Router {
                 .layer(TimeoutLayer::new(REQUEST_TIMEOUT)),
         )
         .with_state(HttpState::new(service))
+}
+
+/// Interactive Swagger UI for the checked-in Operations OpenAPI document.
+///
+/// Points the browser at [`OPENAPI_JSON_PATH`] so YAML remains the sole
+/// wire-contract source of truth (no parallel utoipa-derived schema tree).
+fn swagger_ui() -> SwaggerUi {
+    SwaggerUi::new(SWAGGER_UI_PATH).config(Config::from(OPENAPI_JSON_PATH))
 }
 
 /// Bind `addr` and serve the router until SIGINT/CTRL+C, then drain in-flight requests.

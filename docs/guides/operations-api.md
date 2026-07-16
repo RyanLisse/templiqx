@@ -8,8 +8,9 @@ returns an `OperationEnvelope`; health (`/healthz`, `/operations/v1/health/*`)
 and OpenAPI discovery routes return their own lightweight shapes. Transport adds
 request IDs, body limits, and timeouts only.
 
-See also: [ADR: Operations HTTP API boundary](../architecture/adr-operations-http-api.md)
-and the checked-in contract at [`openapi/templiqx-operations-v1.yaml`](../../openapi/templiqx-operations-v1.yaml).
+See also: [ADR: Operations HTTP API boundary](../architecture/adr-operations-http-api.md),
+the checked-in contract at [`openapi/templiqx-operations-v1.yaml`](../../openapi/templiqx-operations-v1.yaml),
+and [OpenWiki quickstart](/wiki/quickstart) for crate-layer context.
 
 ## Base path and versioning
 
@@ -31,7 +32,12 @@ Compatible additions may add optional response fields or new operations under
 | `GET /operations/v1/health/ready` | Readiness |
 | `GET /operations/v1/openapi.yaml` | Checked-in OpenAPI 3.1 (YAML) |
 | `GET /operations/v1/openapi.json` | Same document (JSON) |
+| `GET /swagger-ui` | Interactive Swagger UI (utoipa-swagger-ui) over the checked-in JSON document |
 | `GET /operations/v1/catalog` | Canonical 27-operation catalog |
+
+Local/demo: after `cargo run -p templiqx-http-server`, open
+`http://localhost:8080/swagger-ui/` — the UI fetches
+`/operations/v1/openapi.json` (YAML remains the SDK contract source of truth).
 
 ## Raw HTTP usage
 
@@ -47,6 +53,23 @@ curl -sS -X POST http://localhost:8080/operations/v1/packages/demo/contracts/gre
   -d '{"render":{"inputs":{"name":"Ryan"},"context":{"organization":"Blinqx"}},"capabilities":["structured_output"]}'
 ```
 
+### Local demo binary vs production-ready host operation
+
+| Surface | Role |
+| --- | --- |
+| `templiqx-mock-gateway` | Conformance-only scenario transport — never Operations API |
+| `templiqx-http-server` | **Local/demo** Operations binary. Default `TEMPLIQX_RUNTIME_MODE=deterministic-fake`. Optional `langfuse` when credentials are supplied. **Not** a signed release artifact. |
+| `templiqx_http::router` | Library hosts should bind for production-shaped deployment |
+
+Set mode explicitly:
+
+```bash
+export TEMPLIQX_RUNTIME_MODE=deterministic-fake   # demo / SDK IT / Compose default
+# or
+export TEMPLIQX_RUNTIME_MODE=langfuse             # requires MODEL_* + LANGFUSE_*
+cargo run -p templiqx-http-server
+```
+
 Hosts compose production adapters and bind the router themselves:
 
 ```rust
@@ -60,7 +83,8 @@ serve(router(service), "0.0.0.0:8080".parse().unwrap()).await?;
 `serve` and `serve_from_root` drain in-flight requests on SIGINT/CTRL+C or
 SIGTERM (Unix) before exit. Production hosts may wrap the same router in their
 own process manager,
-load balancer, and TLS termination.
+load balancer, and TLS termination. Do not treat the demo binary's
+deterministic-fake mode as production-ready operation.
 
 ## Transport metadata
 
@@ -92,7 +116,8 @@ JSON request bodies on strict DTOs reject unknown fields. Invalid JSON returns
 - Inject a host-composed `TempliqxService` through `router(service)`; do not
   import `templiqx-mock-gateway` into production transport.
 - Publish the served OpenAPI document from `/operations/v1/openapi.json` or
-  `.yaml` so SDK generation tracks the running transport.
+  `.yaml` so SDK generation tracks the running transport. Local/demo browsers
+  can use `/swagger-ui` (same JSON document).
 
 ## Non-goals
 
@@ -104,8 +129,8 @@ JSON request bodies on strict DTOs reject unknown fields. Invalid JSON returns
 ## Verification
 
 ```bash
-cargo test -p templiqx-http
+cargo test -p templiqx-http --test openapi_drift
 npm run openapi:validate
-npm run openapi:typescript-proof
+just verify-sdk-typescript
 ./scripts/check-boundaries.sh
 ```
