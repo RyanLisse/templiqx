@@ -20,12 +20,37 @@ production data before claiming production readiness.
 | Grounded evidence schema | Validation | Golden offsets / hashes | Retrieval and source authorization |
 | Proposal / approval / audit | No ownership | Consumer-contract harness | Owner per ADR-0016 |
 | Retry / workflow | Typed failures | Scripted attempts | ModelGateway / BullMQ per ADR-0006 |
-| Document rendering | Port + V5 adapter | DOCX baseline | Storage, permissions, lifecycle |
+| Document rendering | Port + bounded adapters (DOCX V5, Typst, XLSX, RTF, Markdown, tabular) | Package fixtures | Storage, permissions, lifecycle |
 | Document preflight (`inspect_document`) | Port + V5 adapter | Legacy corpus inspect fixtures | Host template storage only |
 | PDF / conversion | ADR entry criteria + typed seam | Recorded fixture metadata only | Host-constructed converter adapter |
 | Authorized merge context | Fingerprint + fail-closed binding | Synthetic `fixtures/authorized-context.json` | Host validator supplies scope, policy, provenance |
+| Authorized query / schema introspect | `DataIntrospectPort` / `AuthorizedQueryPort` | `FakeDataAccess` + synthetic OData-shaped fixture | Host OData (or chosen query) + row-level `can()` |
 | Translation bundle policy | Package artifacts + filters | Demo `translations/` | Tenant locale selection |
-| Kubernetes runtime | Separate CLI/MCP artifacts | Synthetic conformance image, 8 Jobs, mock gateway | Host chart or sidecar integration |
+| Operations HTTP | `templiqx-http` router + OpenAPI | Deterministic-fake demo binary | Host auth/TLS + bind router (or host process) |
+| Kubernetes runtime | Signed CLI/MCP + conformance images | Synthetic conformance image, 8 Jobs, mock gateway | Host chart or sidecar integration |
+
+## Beyond synthetic CRM3 (in-repo enablement)
+
+Synthetic CRM3 under `examples/crm3/` remains the language-neutral conformance
+proof. This repository also ships host-facing seams so Basenet (and other opcos)
+can progress without pulling host policy into portable core:
+
+| In-repo seam | Location | Host still owns |
+|--------------|----------|-----------------|
+| Operations OpenAPI + pilot SDKs | `openapi/`, `sdk/*` | Auth tokens, base URL, retries |
+| HTTP conformance gate | `just conformance-http` | Basenet ModelGateway certification (BLI-246 host side) |
+| Authorized merge context | contracts + application binding | Tenant/matter policy issuance |
+| Evidence fragment shape | `docs/contracts/evidence-fragment-v1alpha1.md` | Retrieval + legal sanitization |
+| Merge-data / `customFields` | `docs/contracts/merge-data-v1alpha1.md` | Resolving display names before render |
+| Data access ports | `crates/templiqx-ports/src/data_access.rs` | Real query surface + authorization |
+| Report definitions | `docs/contracts/report-definition-v1alpha1.md` | Assembler workflow + persistence |
+| Cross-opco package examples | `examples/packages/` (incl. `basenet-legal`) | Production data + second-opco acceptance |
+
+**Honest remainder (host-only):** live ModelGateway wiring, tenant/auth/SSO,
+retrieval authorization, approval/audit persistence, legal-policy review of
+customer fixtures, and production promotion controls stay in the Basenet host
+(see BLI-243 family). Do not import those concerns into
+`templiqx-contracts` / `templiqx-core` / `templiqx-ports` vocabulary.
 
 ## ModelGateway consumer contract
 
@@ -101,12 +126,13 @@ When CRM3 host integration is ready:
 
 | Artifact | Location | Host use |
 |----------|----------|----------|
-| CLI OCI image | `Dockerfile` target `templiqx-cli` | Sidecar or Job runner |
-| MCP OCI image | `Dockerfile` target `templiqx-mcp` | Agent stdio transport |
-| Synthetic conformance OCI image | `Dockerfile` target `templiqx-conformance` | Contains mock gateway, HTTP runner, and fixtures; never a product service |
-| Helm chart | `charts/templiqx/` | Inventory-driven 8-Job conformance + mock gateway proof |
-| Compose | `deploy/compose.yml` | Local adapter smoke |
-| Supply chain / release | `scripts/supply-chain-smoke.sh`, `.github/workflows/release.yml` | SBOM/provenance, immutable digest and Cosign verification |
+| CLI OCI image | `Dockerfile` target `templiqx-cli` | Sidecar or Job runner — **signed** on tag release |
+| MCP OCI image | `Dockerfile` target `templiqx-mcp` | Agent stdio transport — **signed** on tag release |
+| Synthetic conformance OCI image | `Dockerfile` target `templiqx-conformance` | Contains mock gateway, HTTP runner, and fixtures; never a product service — **signed** |
+| Operations HTTP server image | `Dockerfile` target `templiqx-http-server` | **Local/demo only** (`TEMPLIQX_RUNTIME_MODE=deterministic-fake` by default). **Not** a signed release artifact; production hosts bind `templiqx_http::router` |
+| Helm chart | `charts/templiqx/` | Inventory-driven 8-Job conformance + optional local HTTP demo |
+| Compose | `deploy/compose.yml` | Local adapter smoke (HTTP demo + mock profile) |
+| Supply chain / release | `scripts/supply-chain-smoke.sh`, `.github/workflows/release.yml` | SBOM/provenance, immutable digest and Cosign verification for the three signed images + chart |
 
 ## Package trust handoff
 
@@ -191,3 +217,44 @@ See [Document conversion ADR](../adr/document-conversion.md) and
 
 See [Pre-CRM3 readiness](pre-crm3-readiness.md) and
 [Deployment boundary](../architecture/deployment.md) for core boundaries.
+
+## Report-engine assembler handoff (BLI-230)
+
+When assembling merge context for report definitions and grounded contracts, the
+host owns:
+
+1. **Evidence fragments** — retrieve and authorize fragments, then pass the portable
+   shape in [`evidence-fragment-v1alpha1`](../contracts/evidence-fragment-v1alpha1.md)
+   (identity, UTF-8 offsets, `quote_sha256`, optional revision checksum).
+2. **`customFields` resolution** — resolve display names for `relation_link` values
+   **before** render so the template engine stays IO-free
+   ([`merge-data-v1alpha1`](../contracts/merge-data-v1alpha1.md)).
+3. **Authorized query port** — implement `DataIntrospectPort` / `AuthorizedQueryPort`
+   behind host OData (or chosen query surface); Templiqx ships traits + synthetic
+   fixtures only (`examples/packages/basenet-legal/fixtures/authorized-query-response.json`).
+4. **Revision checksum on fragments** — bind DMS revision identity when available
+   (BLI-68) so grounded drafts survive store mutations.
+
+### Receipt fingerprint as `document_version.checksum` (R10)
+
+The Templiqx artifact fingerprint (SHA-256) **is** the host document-store
+checksum for generated reports: one `document_version` row per render, no
+parallel report-receipt table. See
+[Report engine compatibility](report-engine-compatibility.md).
+
+### Host prerequisites (R12)
+
+Tracked host dependencies Templiqx does **not** build:
+
+| Prerequisite | Why it blocks production |
+|--------------|--------------------------|
+| `compileToFilter` (ADR-0002, unbuilt) | Row-level `can()` for every authorized query |
+| `document_version` write-race fix | Required before Templiqx receipts persist as versions |
+| AI authoring agent + hybrid loop + A/B routing | Host UI/workflow; Templiqx supplies validate/compile/explain/diff |
+| Query interface choice (OData / GraphQL / DSL) | Must settle before the query port hardens |
+
+Format coverage and non-claims live in
+[Report engine compatibility](report-engine-compatibility.md).
+Legacy files under `examples_we _must_support/` evidence **formats only** (DOCX/RTF/BIFF
+presence); they are Velocity-era binaries, not Templiqx definitions — do not treat them
+as round-trip fixtures.

@@ -16,3 +16,11 @@ sdks:
     package: "templiqx-adapter"
     supportedEngineRange: ">=0.1.0,<0.2.0"
     sdkVersion: "0.1.0"
+  - language: go
+    package: "github.com/blinqx/templiqx-adapter-go"
+    supportedEngineRange: ">=0.1.0,<0.2.0"
+    sdkVersion: "0.1.0"
+  - language: rust
+    package: "templiqx-adapter-rust"
+    supportedEngineRange: ">=0.1.0,<0.2.0"
+    sdkVersion: "0.1.0"

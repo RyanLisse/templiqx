@@ -29,11 +29,16 @@ Production deployment should provide real package stores, runtime adapters,
 document adapters and host policy at the edge. The same Templiqx service methods
 must remain the semantic boundary for humans and agents.
 
-The deployable artifacts are intentionally split:
+The **signed** deployable artifacts are intentionally split:
 
 - `templiqx-cli`: minimal standalone compiler product image;
 - `templiqx-mcp`: minimal stdio MCP product image;
 - `templiqx-conformance`: synthetic fixtures, HTTP runner, and mock gateway.
+
+`templiqx-http-server` is an additional **local/demo** Docker target (Compose +
+chart defaults with `TEMPLIQX_RUNTIME_MODE=deterministic-fake`). It is **not**
+built, published, or Cosign-signed by the tag release workflow. See
+[HTTP server release artifact ADR](../adr/http-server-release-artifact.md).
 
 Boundary and image-content checks keep mocks out of the two product images. The
 Compose and Helm/kind paths enumerate all 8 entries from the scenario inventory;

@@ -39,15 +39,21 @@ the OpenAPI digest, engine compatibility, contract format, and SDK versions.
 
 ```bash
 npm run openapi:validate
-npm run openapi:typescript-proof
+npm run openapi:compat
+npm run openapi:bump-check
 just openapi-validate
-just openapi-typescript-proof
+just verify-sdk-typescript   # checked-in TS DTO drift + typecheck + build + unit tests
+just verify-sdk              # all pilot SDKs (skips missing toolchains unless VERIFY_SDK_STRICT=1)
+just openapi-typescript-proof  # ephemeral codegen proof under target/ (optional extra)
 ```
 
 Validation checks OpenAPI 3.1 structure, internal refs, versioned paths, required
-operation ids, idempotency metadata on mutations, and core envelope schemas. The
-TypeScript proof uses pinned `openapi-typescript` and `typescript` versions via
-`npx` so local runs stay reproducible without adding generated files to git.
+operation ids, idempotency metadata on mutations, and core envelope schemas.
+`just verify` and hosted CI always run OpenAPI validate/compat/bump, router drift
+(`templiqx-http` `openapi_drift` tests), and **`just verify-sdk-typescript`**.
+Drift JSON lands under `artifacts/openapi/` and is uploaded as the
+`openapi-drift-reports` CI artifact. Full multi-language `just verify-sdk` stays
+local-first when Go / .NET / Python / Rust toolchains are present.
 
 ## Publishing gate
 
@@ -55,6 +61,6 @@ Do not publish package-registry SDKs from this repository until:
 
 1. Two opco pilots have exercised the same `/operations/v1` contract against
    host-owned transports.
-2. CI runs `openapi:validate` and `openapi:typescript-proof` on every change to
-   the spec or HTTP router.
+2. CI runs `openapi:validate`, compat/bump, router drift, and
+   `just verify-sdk-typescript` on every PR (already wired in `just verify`).
 3. Breaking HTTP changes ship only through a new `/operations/vN` base path.

@@ -9,12 +9,12 @@ landed: 2026-07-16
 
 # Qlty smells refactor and optimize plan
 
-> **Phase 0 landed 2026-07-16 (PR #15).** `.qlty/qlty.toml` now excludes
-> `**/.worktrees/**` and `**/Generated/**` — verified `qlty smells --all`
-> duplication findings 131 → 0. **Split waves 1–4 (templiqx-core, application/
-> `validate_package`, docx-v5, secondary crates) remain deferred** — start on a
-> clean `main` now that the SDK + breadth PRs have merged; one crate per PR,
-> keeping docx-v5 dialect/capability claims byte-identical.
+> **Phase 0 landed 2026-07-16 (PR #15).** `.qlty/qlty.toml` excludes
+> `**/.worktrees/**`, generated SDK trees, `scratchpad/**`, and `artifacts/**`
+> so smell noise stays out of the signal. **Split waves 1–4 remain deferred** —
+> formalized in [`docs/adr/high-complexity-rust-modules.md`](../adr/high-complexity-rust-modules.md):
+> track + suppress noise; no mass rewrite in the readiness wave. Start Phase 1
+> on a clean `main` (one crate per PR; docx-v5 dialect claims byte-identical).
 
 ## Overview
 

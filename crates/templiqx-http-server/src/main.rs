@@ -11,10 +11,15 @@ use std::{
 use axum::Router;
 use templiqx_local::DeterministicFakeRuntime;
 use templiqx_runtime_langfuse::{LangfuseConfig, LangfuseTracedRuntime, ModelConfig};
-use tracing::info;
+use tracing::{info, warn};
 
 const DEFAULT_HTTP_ADDR: &str = "0.0.0.0:8080";
 const DEFAULT_MODEL_TIMEOUT_MS: u64 = 30_000;
+/// Explicit runtime mode. Prefer this over inferring from `MODEL_API_KEY`.
+/// `deterministic-fake` is local/demo only — not production-ready host operation.
+const ENV_RUNTIME_MODE: &str = "TEMPLIQX_RUNTIME_MODE";
+const MODE_DETERMINISTIC_FAKE: &str = "deterministic-fake";
+const MODE_LANGFUSE: &str = "langfuse";
 
 type AnyError = Box<dyn Error + Send + Sync>;
 
@@ -47,8 +52,15 @@ enum RuntimeConfig {
 impl RuntimeConfig {
     const fn mode(&self) -> &'static str {
         match self {
-            Self::DeterministicFake => "deterministic-fake",
-            Self::Langfuse { .. } => "langfuse",
+            Self::DeterministicFake => MODE_DETERMINISTIC_FAKE,
+            Self::Langfuse { .. } => MODE_LANGFUSE,
+        }
+    }
+
+    const fn readiness_class(&self) -> &'static str {
+        match self {
+            Self::DeterministicFake => "local-demo-deterministic-fake",
+            Self::Langfuse { .. } => "optional-langfuse-runtime-not-a-signed-release",
         }
     }
 }
@@ -78,34 +90,51 @@ impl Config {
 
 impl RuntimeConfig {
     fn from_env() -> Result<Self, AnyError> {
-        let Some(api_key) = env_value("MODEL_API_KEY") else {
-            return Ok(Self::DeterministicFake);
-        };
-        let timeout_source =
-            env_value("MODEL_TIMEOUT_MS").unwrap_or_else(|| DEFAULT_MODEL_TIMEOUT_MS.to_string());
-        let timeout_ms = timeout_source.parse::<u64>().map_err(|error| {
-            ConfigError(format!(
-                "invalid MODEL_TIMEOUT_MS '{timeout_source}': {error}"
+        let mode = env_value(ENV_RUNTIME_MODE).unwrap_or_else(|| MODE_DETERMINISTIC_FAKE.into());
+        match mode.as_str() {
+            MODE_DETERMINISTIC_FAKE => {
+                if env_value("MODEL_API_KEY").is_some() {
+                    warn!(
+                        runtime_mode = MODE_DETERMINISTIC_FAKE,
+                        "MODEL_API_KEY is set but TEMPLIQX_RUNTIME_MODE=deterministic-fake; ignoring model credentials (demo mode)"
+                    );
+                }
+                Ok(Self::DeterministicFake)
+            }
+            MODE_LANGFUSE => {
+                let api_key = required_env("MODEL_API_KEY")?;
+                let timeout_source = env_value("MODEL_TIMEOUT_MS")
+                    .unwrap_or_else(|| DEFAULT_MODEL_TIMEOUT_MS.to_string());
+                let timeout_ms = timeout_source.parse::<u64>().map_err(|error| {
+                    ConfigError(format!(
+                        "invalid MODEL_TIMEOUT_MS '{timeout_source}': {error}"
+                    ))
+                })?;
+                if timeout_ms == 0 {
+                    return Err(ConfigError(
+                        "invalid MODEL_TIMEOUT_MS: must be greater than zero".into(),
+                    )
+                    .into());
+                }
+                Ok(Self::Langfuse {
+                    model: ModelConfig {
+                        base_url: required_env("MODEL_BASE_URL")?,
+                        api_key,
+                        model: required_env("MODEL_ID")?,
+                        timeout: Duration::from_millis(timeout_ms),
+                    },
+                    langfuse: LangfuseConfig {
+                        host: required_env("LANGFUSE_HOST")?,
+                        public_key: required_env("LANGFUSE_PUBLIC_KEY")?,
+                        secret_key: required_env("LANGFUSE_SECRET_KEY")?,
+                    },
+                })
+            }
+            other => Err(ConfigError(format!(
+                "invalid {ENV_RUNTIME_MODE} '{other}': expected '{MODE_DETERMINISTIC_FAKE}' (local demo) or '{MODE_LANGFUSE}' (optional real-model wiring). Neither mode is a signed release artifact; production hosts should bind templiqx_http::router themselves."
             ))
-        })?;
-        if timeout_ms == 0 {
-            return Err(
-                ConfigError("invalid MODEL_TIMEOUT_MS: must be greater than zero".into()).into(),
-            );
+            .into()),
         }
-        Ok(Self::Langfuse {
-            model: ModelConfig {
-                base_url: required_env("MODEL_BASE_URL")?,
-                api_key,
-                model: required_env("MODEL_ID")?,
-                timeout: Duration::from_millis(timeout_ms),
-            },
-            langfuse: LangfuseConfig {
-                host: required_env("LANGFUSE_HOST")?,
-                public_key: required_env("LANGFUSE_PUBLIC_KEY")?,
-                secret_key: required_env("LANGFUSE_SECRET_KEY")?,
-            },
-        })
     }
 }
 
@@ -173,9 +202,16 @@ async fn run() -> Result<(), AnyError> {
     info!(
         bind_addr = %bound_addr,
         root = %config.root.display(),
-        runtime = config.runtime.mode(),
-        "templiqx HTTP server starting"
+        runtime_mode = config.runtime.mode(),
+        readiness_class = config.runtime.readiness_class(),
+        "templiqx HTTP server starting (not an official signed release artifact; see docs/guides/releasing.md)"
     );
+    if matches!(config.runtime, RuntimeConfig::DeterministicFake) {
+        warn!(
+            runtime_mode = MODE_DETERMINISTIC_FAKE,
+            "deterministic-fake demo mode: fixture runtime only — not production-ready host operation"
+        );
+    }
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal())
         .await?;

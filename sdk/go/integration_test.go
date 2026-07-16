@@ -51,11 +51,12 @@ func TestIntegrationAgainstRealServer(t *testing.T) {
 	command := exec.Command("cargo", "run", "--quiet", "-p", "templiqx-http-server")
 	command.Dir = repoRoot
 	command.Env = append(filteredEnvironment(
-		"MODEL_API_KEY", "TEMPLIQX_HTTP_ADDR", "TEMPLIQX_ROOT", "TEMPLIQX_WORKSPACE",
+		"MODEL_API_KEY", "TEMPLIQX_HTTP_ADDR", "TEMPLIQX_ROOT", "TEMPLIQX_WORKSPACE", "TEMPLIQX_RUNTIME_MODE",
 	),
 		fmt.Sprintf("TEMPLIQX_HTTP_ADDR=127.0.0.1:%d", port),
 		"TEMPLIQX_ROOT="+packagesRoot,
 		"TEMPLIQX_WORKSPACE="+workspaceRoot,
+		"TEMPLIQX_RUNTIME_MODE=deterministic-fake",
 	)
 	var serverOutput bytes.Buffer
 	command.Stdout = &serverOutput

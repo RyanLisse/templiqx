@@ -52,7 +52,7 @@ if [[ -e crates/templiqx-http-server ]]; then
     crates/templiqx-http-server/Cargo.toml crates/templiqx-http-server/src \
     >/tmp/templiqx-boundary-http-server-prod.txt 2>/dev/null; then
     cat /tmp/templiqx-boundary-http-server-prod.txt >&2
-    fail "production templiqx-http-server must not depend on conformance mocks"
+    fail "templiqx-http-server (local/demo Operations binary) must not depend on conformance mocks"
   fi
 fi
 

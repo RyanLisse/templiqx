@@ -1,5 +1,9 @@
 //! Local filesystem composition and deterministic conformance adapters.
 
+mod fake_data_access;
+
+pub use fake_data_access::FakeDataAccess;
+
 use fs2::FileExt;
 use std::{
     fs,
@@ -1183,6 +1187,7 @@ pub fn create_package(
         migrations: vec![],
         templates: vec![],
         translations: vec![],
+        definitions: vec![],
         provenance: Default::default(),
         signatures: vec![],
         dependencies: Default::default(),

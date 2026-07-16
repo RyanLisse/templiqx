@@ -8,5 +8,7 @@ export default defineMeta({
     "tool-contract-refs",
     "streaming-runtime-port",
     "odt-compatibility",
+    "http-server-release-artifact",
+    "high-complexity-rust-modules",
   ],
 });

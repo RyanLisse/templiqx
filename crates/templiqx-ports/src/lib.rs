@@ -1,5 +1,9 @@
 //! Host-facing ports. Implementations belong in adapters, never core.
 
+mod data_access;
+
+pub use data_access::*;
+
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 use templiqx_contracts::{

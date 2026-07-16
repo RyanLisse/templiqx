@@ -1,9 +1,15 @@
 //! U5 claim test: documented fixture IDs, packages, and corpus artifacts exist.
 
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, ensure};
+use serde_json::{Value, json};
+use templiqx_docx_v5::DocxV5Adapter;
+use templiqx_ports::{DocumentRenderRequest, DocumentRenderer};
+use zip::write::SimpleFileOptions;
+use zip::{CompressionMethod, ZipWriter};
 
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -90,8 +96,27 @@ const DOCX_DETECT_ONLY_FIXTURES: &[&str] = &[
 
 const CONTRACT_DOCS: &[&str] = &[
     "docs/contracts/cross-opco-reference-packages-v1alpha1.md",
+    "docs/contracts/merge-data-v1alpha1.md",
     "docs/contracts/template-compatibility-report-v1alpha1.md",
 ];
+
+fn write_docx(path: &Path, document_xml: &str) -> Result<()> {
+    let file = fs::File::create(path)?;
+    let mut archive = ZipWriter::new(file);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+    archive.start_file("[Content_Types].xml", options)?;
+    archive.write_all(
+        br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#,
+    )?;
+    archive.start_file("word/document.xml", options)?;
+    archive.write_all(document_xml.as_bytes())?;
+    archive.finish()?;
+    Ok(())
+}
 
 #[test]
 fn reference_package_claims_match_repository() -> Result<()> {
@@ -219,6 +244,71 @@ fn documented_contract_docs_reference_fixture_ids() -> Result<()> {
     ensure!(
         compatibility_doc.contains("approval_handoff"),
         "compatibility report doc must document approval_handoff"
+    );
+    ensure!(
+        compatibility_doc.contains("customFields.*"),
+        "compatibility report doc must document unknown customFields placeholders"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn custom_fields_merge_namespace_is_fixture_backed_and_reports_unknown_paths() -> Result<()> {
+    let package = packages_root().join("basenet-legal");
+    let merge_data: Value =
+        serde_json::from_slice(&fs::read(package.join("fixtures/merge-data.json"))?)?;
+    let custom_fields = &merge_data["customFields"];
+
+    ensure!(
+        custom_fields["rechtsgebied"] == json!({ "type": "text", "value": "Handelsrecht" }),
+        "text custom field must use the portable shape"
+    );
+    ensure!(
+        custom_fields["behandelend_advocaat"]
+            == json!({
+                "type": "relation_link",
+                "display": "mr. Eva de Vries",
+                "ref": "SYN-REL-LAWYER-0001"
+            }),
+        "relation custom field must contain a pre-resolved display and opaque ref"
+    );
+
+    let golden: Value =
+        serde_json::from_slice(&fs::read(package.join("evals/legal-draft-output.json"))?)?;
+    ensure!(
+        golden["merge_data"]["customFields"] == *custom_fields,
+        "legal draft golden must carry the fixture customFields namespace"
+    );
+    let contract = fs::read_to_string(package.join("contracts/legal-document-drafting.yaml"))?;
+    ensure!(
+        contract.contains("${customFields.rechtsgebied.value}"),
+        "legal drafting contract must reference a customFields placeholder"
+    );
+
+    let temporary = tempfile::tempdir()?;
+    let source = temporary.path().join("custom-fields.docx");
+    write_docx(
+        &source,
+        r#"<w:document xmlns:w="w"><w:body><w:p><w:r><w:t>${customFields.rechtsgebied.value} | ${customFields.behandelend_advocaat.display} | ${customFields.onbekend.value}</w:t></w:r></w:p></w:body></w:document>"#,
+    )?;
+    let output = temporary.path().join("rendered.docx");
+    let result = DocxV5Adapter::default().render_document(&DocumentRenderRequest {
+        template: source,
+        data: merge_data,
+        output,
+    })?;
+
+    ensure!(result.report["replacements"] == 2);
+    ensure!(
+        result.report["unresolved"]
+            == json!([{
+                "part": "word/document.xml",
+                "reference": "customFields.onbekend.value",
+                "construct": "v5_reference"
+            }]),
+        "unknown customFields path must be surfaced as unresolved: {}",
+        result.report
     );
 
     Ok(())

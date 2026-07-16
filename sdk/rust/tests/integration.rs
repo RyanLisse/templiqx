@@ -46,6 +46,7 @@ async fn deterministic_fake_server_conformance() {
         .env("TEMPLIQX_HTTP_ADDR", format!("127.0.0.1:{port}"))
         .env("TEMPLIQX_ROOT", &packages)
         .env("TEMPLIQX_WORKSPACE", &workspace)
+        .env("TEMPLIQX_RUNTIME_MODE", "deterministic-fake")
         .stdin(Stdio::null())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())

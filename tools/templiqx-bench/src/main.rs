@@ -2,7 +2,7 @@
 
 #![forbid(unsafe_code)]
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 use serde::Serialize;
 use serde_json::Value;
 use std::{
@@ -11,6 +11,7 @@ use std::{
     time::Instant,
 };
 use templiqx_application::{InspectDocumentRequest, RenderDocumentRequest};
+use templiqx_bench::{run_report_determinism_default, run_report_fanout};
 use templiqx_contracts::{RenderRequest, fingerprint_bytes};
 use templiqx_docx_v5::{DocxV5Adapter, Limits};
 use templiqx_ports::LegacyImportAdapter;
@@ -37,12 +38,63 @@ struct BenchCase {
 }
 
 fn main() -> Result<()> {
-    let root = std::env::args_os()
-        .nth(1)
-        .map(PathBuf::from)
-        .unwrap_or_else(repo_root);
-    let report = run(&root)?;
-    println!("{}", serde_json::to_string_pretty(&report)?);
+    let mut args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    let command = args
+        .first()
+        .and_then(|value| value.to_str())
+        .filter(|value| !value.starts_with('-') && *value != "--root")
+        .map(str::to_owned);
+
+    if command.is_some() {
+        args.remove(0);
+    }
+
+    let root = parse_root(&args)?;
+    match command.as_deref() {
+        Some("report-determinism") => {
+            let receipt = run_report_determinism_default(&root)?;
+            println!("{}", serde_json::to_string_pretty(&receipt)?);
+            ensure_ok(receipt.ok, "report-determinism failed")?;
+        }
+        Some("report-fanout") => {
+            let receipt = run_report_fanout(&root)?;
+            println!("{}", serde_json::to_string_pretty(&receipt)?);
+            ensure_ok(receipt.ok, "report-fanout failed")?;
+        }
+        Some(other) => anyhow::bail!("unknown subcommand: {other}"),
+        None => {
+            let report = run(&root)?;
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+    }
+    Ok(())
+}
+
+fn parse_root(args: &[std::ffi::OsString]) -> Result<PathBuf> {
+    let mut root = None;
+    let mut index = 0;
+    while index < args.len() {
+        if args[index] == "--root" {
+            let value = args
+                .get(index + 1)
+                .cloned()
+                .context("--root requires a path")?;
+            root = Some(PathBuf::from(value));
+            index += 2;
+            continue;
+        }
+        if root.is_none() && index == 0 {
+            root = Some(PathBuf::from(&args[index]));
+            index += 1;
+            continue;
+        }
+        anyhow::bail!("unexpected argument: {}", args[index].to_string_lossy());
+    }
+    Ok(root.unwrap_or_else(repo_root))
+}
+
+fn ensure_ok(ok: bool, message: &str) -> Result<()> {
+    ensure!(ok, "{message}");
     Ok(())
 }
 

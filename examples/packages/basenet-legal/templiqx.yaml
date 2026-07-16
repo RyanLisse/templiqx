@@ -6,6 +6,8 @@ contracts:
   - legal-matter-extraction
   - legal-document-drafting
 components: []
+definitions:
+  - definitions/dunning-letter-v1.yaml
 evals:
   - evals/legal-extraction-request.json
   - evals/legal-extraction-output.json

@@ -94,6 +94,8 @@ messages:
       - kind: interpolate
         expression: { kind: ref, path: inputs.extracted_facts }
         filters: [json]
+      - kind: text
+        value: "\nBeschikbaar mergeveld voor het rechtsgebied: ${customFields.rechtsgebied.value}"
 output_schema:
   type: object
   additionalProperties: false
@@ -104,7 +106,7 @@ output_schema:
     merge_data:
       type: object
       additionalProperties: false
-      required: [client, parties, claims, financials, department, optional_clauses, attachment_slot, signature_slot]
+      required: [client, parties, claims, financials, customFields, department, optional_clauses, attachment_slot, signature_slot]
       properties:
         client:
           type: object
@@ -140,6 +142,26 @@ output_schema:
             outstanding_total: { type: number }
             currency: { type: string }
             formatted_total: { type: string }
+        customFields:
+          type: object
+          additionalProperties: false
+          required: [rechtsgebied, behandelend_advocaat]
+          properties:
+            rechtsgebied:
+              type: object
+              additionalProperties: false
+              required: [type, value]
+              properties:
+                type: { type: string, enum: [text] }
+                value: { type: string, minLength: 1 }
+            behandelend_advocaat:
+              type: object
+              additionalProperties: false
+              required: [type, display, ref]
+              properties:
+                type: { type: string, enum: [relation_link] }
+                display: { type: string, minLength: 1 }
+                ref: { type: string, minLength: 1 }
         department:
           type: object
           additionalProperties: false
@@ -228,6 +250,14 @@ evals:
           outstanding_total: 45750
           currency: EUR
           formatted_total: "EUR 45.750,00"
+        customFields:
+          rechtsgebied:
+            type: text
+            value: Handelsrecht
+          behandelend_advocaat:
+            type: relation_link
+            display: mr. Eva de Vries
+            ref: SYN-REL-LAWYER-0001
         department:
           name: Basenet Legal Corporate
           logo_slot: department-logo-slot

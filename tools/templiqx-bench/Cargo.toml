@@ -6,6 +6,10 @@ license.workspace = true
 description = "Deterministic local benchmark harness for Templiqx compile and document paths"
 publish = false
 
+[lib]
+name = "templiqx_bench"
+path = "src/lib.rs"
+
 [[bin]]
 name = "templiqx-bench"
 path = "src/main.rs"
@@ -20,6 +24,7 @@ templiqx-docx-v5 = { path = "../../adapters/templiqx-docx-v5" }
 templiqx-local = { path = "../../crates/templiqx-local" }
 templiqx-ports = { path = "../../crates/templiqx-ports" }
 tempfile.workspace = true
+zip = { version = "8.6", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 
