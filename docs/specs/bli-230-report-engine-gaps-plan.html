@@ -153,7 +153,7 @@ flowchart TB
       <li><code>customFields</code> merge namespace + <code>basenet-legal</code> fixture extension; locale/number/date formatting (R11)</li>
       <li>100× determinism and 1,000-record fan-out benches</li>
       <li>Typed data-access ports with synthetic fixtures only</li>
-      <li><strong>Format-renderer adapters behind the conversion seam:</strong> Typst (reports + native charts + pagination → PDF), XLSX (<code>rust_xlsxwriter</code>, native charts), CSV/XML (thin) — each with renderer-identity + fingerprint evidence</li>
+      <li><strong>Format-renderer adapters behind the conversion seam:</strong> Typst (reports + native charts + pagination → PDF), XLSX (<code>rust_xlsxwriter</code>, native charts), CSV/XML (thin), and a bounded <strong>Markdown text adapter</strong> (<code>markdown-rs</code> → safe HTML/plain, declarative, no embedded code) — each with renderer-identity + fingerprint evidence</li>
       <li>Receipt fingerprint == host <code>document_version.checksum</code> (SHA-256) shape (R10)</li>
       <li>v5 compatibility matrix documentation</li>
     </ul>
@@ -161,6 +161,7 @@ flowchart TB
     <ul>
       <li><strong>Gated on measured legacy need:</strong> RTF (<code>scrivener-rtf</code>) — build only if evidenced (U10)</li>
       <li><strong>Dropped (no demand):</strong> standalone chart engine (charts are native to Typst / <code>rust_xlsxwriter</code>); v5 report-XML output (accounting XML is a separate connector)</li>
+      <li><strong>Rejected (architectural):</strong> <code>mdxjs-rs</code> — MDX→JS is component execution; moves logic into the content layer and is the template-language creep the definition model prevents. Markdown enters only as a declarative output dialect (<code>markdown-rs</code>, R13)</li>
     </ul>
     <h3>Out of Scope (host-owned)</h3>
     <ul>
@@ -244,6 +245,12 @@ flowchart TB
           <td>Phase 3 / U7</td>
           <td><code>compileToFilter</code> + version-race flagged as tracked deps</td>
         </tr>
+        <tr>
+          <td>R13 Bounded Markdown text adapter</td>
+          <td>BLI-230, <code>markdown-rs</code></td>
+          <td>Phase 4 / U9</td>
+          <td>Memo → Markdown → safe HTML/plain golden; script in merge values escaped</td>
+        </tr>
       </tbody>
     </table>
   </section>
@@ -291,6 +298,11 @@ flowchart TB
       <summary>Formats via specialized Rust crates behind the conversion seam</summary>
       <p><strong>Typst</strong> (reports + native charts + pagination → PDF) is the primary report-style path — leapfrogs deferred DOCX-floor work. <strong><code>rust_xlsxwriter</code></strong> for XLSX with native Excel charts (deterministic; model never emits binary). CSV/XML thin. Charts are native to these crates, not a separate power.</p>
       <p><strong>Alternatives considered:</strong> <code>docxide-template</code> (rejected — compile-time macro model can't render runtime AI-authored definitions); a standalone chart engine (rejected — no demand); <code>docx-rust</code> noted as an option to harden <code>docx-v5</code> (BLI-256).</p>
+    </details>
+    <details>
+      <summary>Markdown as a third bounded text dialect (<code>markdown-rs</code>)</summary>
+      <p>A declarative Markdown output surface alongside <code>docx-v5</code> (measured DOCX) and <code>html-plain</code> (safe HTML/plain): definition + approved <code>merge_data</code> → Markdown → <strong>safe HTML/plain only</strong>. The <code>markdown-rs</code> AST fits inspection/linting/deterministic transforms and its default-safe posture matches fail-closed. <strong>Declarative, no embedded code.</strong></p>
+      <p><strong>Alternatives considered:</strong> <code>mdxjs-rs</code> (rejected — MDX→JS is component execution / template-language creep; moves logic into the content layer and weakens determinism).</p>
     </details>
     <details>
       <summary>Aggregation in the query layer; billing math upstream</summary>
@@ -396,10 +408,11 @@ flowchart TB
         <li><code class="status">[]</code> Renderer-identity + fingerprint evidence in the receipt; golden-pinned</li>
         <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test typst_render</code></li>
       </ul>
-      <h4>2. XLSX + CSV/XML (U9)</h4>
+      <h4>2. XLSX + CSV/XML + Markdown (U9)</h4>
       <ul class="checklist">
         <li><code class="status">[]</code> New <code>adapters/templiqx-xlsx/</code> via <code>rust_xlsxwriter</code> (native charts); thin CSV/XML</li>
-        <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test xlsx_render</code></li>
+        <li><code class="status">[]</code> New <code>adapters/templiqx-markdown/</code> via <code>markdown-rs</code> → safe HTML/plain (declarative, no embedded code; escape/strip raw HTML in merge values)</li>
+        <li><code class="status">[]</code> <code>cargo test -p templiqx-conformance --test xlsx_render --test markdown_render</code></li>
       </ul>
       <h4>3. RTF gate + format-scope decision (U10)</h4>
       <ul class="checklist">
@@ -503,6 +516,7 @@ flowchart TB
     <ul>
       <li><strong>2026-07-16 — Report-engine ambition + format strategy.</strong> Brought the v5 format surface into scope as deterministic Rust adapters behind the conversion seam: <strong>Typst</strong> (reports + native charts + pagination → PDF, U8), <strong>XLSX</strong> via <code>rust_xlsxwriter</code> (native charts, U9), CSV/XML thin, <strong>RTF</strong> via <code>scrivener-rtf</code> gated on legacy usage (U10). Rejected <code>docxide-template</code> (compile-time vs runtime-authored mismatch); noted <code>docx-rust</code> for <code>docx-v5</code> hardening. Dropped standalone chart engine + v5 report-XML. Added Phase 4 and R9–R12.</li>
       <li><strong>2026-07-16 — Research synthesis (BLI-60/63/64/66/68, ADR-0002/0016/0018).</strong> Flagged <code>compileToFilter</code> (ADR-0002) as unbuilt = #1 host prerequisite; pushed aggregation to the query layer with billing math upstream; bound the receipt fingerprint to <code>document_version.checksum</code> (R10); added locale formatting (R11); recorded host prerequisites (query interface, version-race, authoring agent) and reuse hooks (<code>@blinqx/reports</code>, api-contract, "productions" consumer).</li>
+      <li><strong>2026-07-16 — Markdown text adapter (R13).</strong> Added a bounded <code>markdown-rs</code> adapter (memo/report/email → safe HTML/plain, declarative, no embedded code) as a third bounded text surface alongside <code>docx-v5</code> + <code>html-plain</code> (U9). Rejected <code>mdxjs-rs</code> (MDX→JS = code execution / template-language creep).</li>
     </ul>
   </section>
 
