@@ -18,17 +18,34 @@ The codebase exists to keep the Templiqx core provider-neutral while letting hos
 
 The current workspace is a Rust monorepo with supporting docs, examples, Docker/Kubernetes readiness assets, and conformance fixtures. The main package graph is declared in the workspace `Cargo.toml` and is organized into:
 
+Portable core:
+
 - `templiqx-contracts` — stable DTOs, fingerprints, envelopes, and other serializable types.
 - `templiqx-ports` — host-facing adapter traits and port errors.
 - `templiqx-core` — parsing, validation, rendering, compilation, and deterministic contract logic.
 - `templiqx-application` — actor-neutral operations exposed by the service.
+
+Composition and transports:
+
 - `templiqx-local` — filesystem-backed composition and deterministic fake adapters.
-- `templiqx-mock` — mock runtime support.
 - `templiqx-cli` — the user-facing command-line entrypoint.
 - `templiqx-mcp` — the MCP server surface over the same operations.
+- `templiqx-http` — production-shaped northbound HTTP transport over the same service.
+- `templiqx-http-server` — the runnable server binary that serves `/operations/v1` and the local Swagger UI.
+
+Document render adapters (host-constructed, deterministic, out of default composition):
+
+- `adapters/templiqx-docx-v5` — DOCX V5 compatibility for the CRM3 and report-engine fixtures.
+- `adapters/templiqx-html-plain`, `adapters/templiqx-markdown`, `adapters/templiqx-rtf` — bounded HTML/plain, Markdown, and RTF text renderers.
+- `adapters/templiqx-typst` — portable Typst (`.typ`) source renderer (does not compile PDF).
+- `adapters/templiqx-xlsx`, `adapters/templiqx-tabular` — XLSX and CSV/XML renderers over frozen tabular bindings.
+
+Runtime adapters and tooling:
+
+- `templiqx-mock` and `adapters/templiqx-runtime-http-mock` — deterministic/conformance runtime support.
+- `adapters/templiqx-runtime-langfuse` — host-owned production runtime that runs a real chat completion and traces to Langfuse (never in default composition).
 - `templiqx-conformance` — CRM3 trace and boundary verification.
-- `adapters/templiqx-docx-v5` and `adapters/templiqx-runtime-http-mock` — compatibility and mock runtime adapters.
-- `tools/templiqx-mock-gateway` and `tools/templiqx-http-conformance` — operational tooling for the readiness and conformance flows.
+- `tools/templiqx-mock-gateway`, `tools/templiqx-http-conformance`, `tools/templiqx-bench`, `tools/templiqx-legacy-docx-fixtures` — operational tooling for readiness, conformance, benches, and fixture generation.
 
 ## High-level map
 
