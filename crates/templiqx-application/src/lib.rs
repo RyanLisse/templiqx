@@ -1,6 +1,7 @@
 //! Actor-neutral atomic Templiqx capabilities used by Rust, CLI and MCP.
 
 mod authorized_context;
+mod quality;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Serialize};
@@ -203,6 +204,7 @@ pub const CAPABILITY_CATALOG: &[&str] = &[
     "test_package",
     "list_evals",
     "run_eval",
+    "assess_quality_proposals",
     "diff_contract",
     "explain_contract",
 ];

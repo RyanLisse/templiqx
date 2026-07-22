@@ -1788,7 +1788,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-application"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "base64",
@@ -1808,7 +1808,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-bench"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -1824,7 +1824,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -1839,9 +1839,10 @@ dependencies = [
 
 [[package]]
 name = "templiqx-conformance"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
+ "axum",
  "hex",
  "rmcp",
  "serde",
@@ -1854,6 +1855,7 @@ dependencies = [
  "templiqx-contracts",
  "templiqx-docx-v5",
  "templiqx-html-plain",
+ "templiqx-http",
  "templiqx-local",
  "templiqx-markdown",
  "templiqx-mcp",
@@ -1865,12 +1867,13 @@ dependencies = [
  "templiqx-typst",
  "templiqx-xlsx",
  "tokio",
+ "tower",
  "zip 8.6.0",
 ]
 
 [[package]]
 name = "templiqx-contracts"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hex",
  "serde",
@@ -1881,7 +1884,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "jsonschema",
  "semver",
@@ -1893,7 +1896,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-docx-v5"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quick-xml",
  "serde",
@@ -1906,7 +1909,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-html-plain"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
  "templiqx-ports",
@@ -1915,7 +1918,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-http"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axum",
  "serde",
@@ -1933,7 +1936,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-http-conformance"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "serde_json",
@@ -1945,7 +1948,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-http-server"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axum",
  "templiqx-application",
@@ -1960,7 +1963,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-legacy-docx-fixtures"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
  "tempfile",
@@ -1969,7 +1972,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-local"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fs2",
  "serde",
@@ -1985,7 +1988,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-markdown"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "markdown",
  "serde_json",
@@ -1997,7 +2000,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-mcp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "rmcp",
@@ -2013,7 +2016,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-mock"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2025,7 +2028,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-mock-gateway"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2038,7 +2041,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-ports"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
  "templiqx-contracts",
@@ -2047,7 +2050,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-rtf"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
  "sha2",
@@ -2080,7 +2083,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-tabular"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
  "sha2",
@@ -2090,7 +2093,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-typst"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
  "templiqx-ports",
@@ -2099,7 +2102,7 @@ dependencies = [
 
 [[package]]
 name = "templiqx-xlsx"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rust_xlsxwriter",
  "serde_json",

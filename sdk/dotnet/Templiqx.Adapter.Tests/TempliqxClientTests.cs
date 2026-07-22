@@ -1,4 +1,5 @@
 using System.Net;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.Json;
 using Templiqx.Adapter.Generated;
@@ -75,12 +76,113 @@ public sealed class TempliqxClientTests
     }
 
     [Fact]
+    public async Task AssessQualityProposalsUsesTypedPackageScopedRoute()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? capturedBody = null;
+        var handler = new StubHttpMessageHandler(async (request, cancellationToken) =>
+        {
+            capturedRequest = request;
+            capturedBody = await request.Content!.ReadAsStringAsync(cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {
+                      "api_version": "templiqx/v1alpha1",
+                      "operation": "assess_quality_proposals",
+                      "ok": true,
+                      "diagnostics": [],
+                      "fingerprints": {}
+                    }
+                    """,
+                    Encoding.UTF8,
+                    "application/json"),
+            };
+        });
+        using var httpClient = new HttpClient(handler);
+        using var client = new TempliqxClient("https://templiqx.example/", httpClient);
+        var fingerprint = new string('a', 64);
+        var request = new QualityProposalRequest(
+            "demo package",
+            "greeting",
+            fingerprint,
+            fingerprint,
+            fingerprint,
+            new QualityPolicy(
+                "quality-policy",
+                1,
+                1,
+                0,
+                fingerprint,
+                fingerprint,
+                [],
+                [],
+                []),
+            []);
+
+        var response = await client.AssessQualityProposalsAsync("demo package", request);
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(HttpMethod.Post, capturedRequest.Method);
+        Assert.Equal(
+            "https://templiqx.example/operations/v1/packages/demo%20package/quality/proposals:assess",
+            capturedRequest.RequestUri!.AbsoluteUri);
+        using var body = JsonDocument.Parse(capturedBody!);
+        Assert.Equal("greeting", body.RootElement.GetProperty("contract_id").GetString());
+        Assert.Equal("assess_quality_proposals", response.Operation);
+    }
+
+    [Fact]
+    public void GeneratedQualityIntegersUseInt64AndRejectValuesAboveThePublicCeiling()
+    {
+        const long maxPublicInteger = 9_007_199_254_740_991;
+        var fingerprint = new string('a', 64);
+        var atLimit = new MetricObservation(
+            "total_tokens",
+            MetricUnit.TokenCount,
+            maxPublicInteger,
+            fingerprint);
+        var validationResults = new List<ValidationResult>();
+
+        Assert.Equal(typeof(long), typeof(MetricObservation).GetProperty(nameof(MetricObservation.Value))!.PropertyType);
+        Assert.True(
+            Validator.TryValidateObject(
+                atLimit,
+                new ValidationContext(atLimit),
+                validationResults,
+                validateAllProperties: true));
+
+        var aboveLimit = new MetricObservation(
+            "total_tokens",
+            MetricUnit.TokenCount,
+            maxPublicInteger + 1,
+            fingerprint);
+        validationResults.Clear();
+        Assert.False(
+            Validator.TryValidateObject(
+                aboveLimit,
+                new ValidationContext(aboveLimit),
+                validationResults,
+                validateAllProperties: true));
+        Assert.Contains(validationResults, result => result.MemberNames.Contains(nameof(MetricObservation.Value)));
+
+        var invalidAssessment = new CandidateAssessment(
+            new EligibilityAssessment(false, 0, 0, 0, 0, 0, []),
+            [],
+            [],
+            [],
+            []);
+        Assert.Null(invalidAssessment.ClaimedIdentities);
+    }
+
+    [Fact]
     public void GeneratedCompatibilityMarkerPassesSelfCheck()
     {
         Compat.AssertCompatibility();
         Assert.StartsWith("sha256:", Compat.Current.OpenApiDigest, StringComparison.Ordinal);
-        Assert.Equal("0.1", Compat.Current.EngineApiVersion);
-        Assert.Equal("0.1.0", Compat.Current.EngineVersion);
+        Assert.Equal("0.2", Compat.Current.EngineApiVersion);
+        Assert.Equal("0.2.0", Compat.Current.EngineVersion);
         Assert.Equal("templiqx/v1alpha1", Compat.Current.ContractFormat);
     }
 

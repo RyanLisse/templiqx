@@ -1,5 +1,8 @@
 //! Deterministic, provider-neutral contract validation, rendering and compilation.
 
+pub mod quality;
+pub use quality::*;
+
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use templiqx_contracts::{

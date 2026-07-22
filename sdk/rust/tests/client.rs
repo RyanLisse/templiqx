@@ -1,6 +1,11 @@
 use std::time::Duration;
 
-use templiqx_adapter_rust::{CallOptions, Client, ClientOptions, TempliqxError};
+use templiqx_adapter_rust::{
+    CallOptions, Client, ClientOptions, TempliqxError,
+    generated::{
+        CandidateAssessment, ClaimedQualityIdentities, MetricObservation, QualityProposalRequest,
+    },
+};
 use wiremock::{
     Mock, MockServer, ResponseTemplate,
     matchers::{header, method, path, query_param},
@@ -63,6 +68,101 @@ async fn encodes_artifact_path_query_and_headers() {
 
     assert!(response.data.ok);
     assert_eq!(response.request_id, "server-request");
+}
+
+#[tokio::test]
+async fn posts_typed_quality_evidence_to_the_package_scoped_route() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path(
+            "/operations/v1/packages/demo%20package/quality/proposals:assess",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(envelope(
+            "assess_quality_proposals",
+            serde_json::Value::Null,
+        )))
+        .mount(&server)
+        .await;
+
+    let fingerprint = "a".repeat(64);
+    let request: QualityProposalRequest = serde_json::from_value(serde_json::json!({
+        "package": "demo package",
+        "contract_id": "greeting",
+        "expected_package_fingerprint": fingerprint,
+        "expected_base_contract_fingerprint": fingerprint,
+        "expected_fixture_set_fingerprint": fingerprint,
+        "policy": {
+            "id": "quality-policy",
+            "replicates_per_fixture": 1,
+            "minimum_semantic_cases": 1,
+            "maximum_infrastructure_failure_ppm": 0,
+            "claimed_evaluator_profile_fingerprint": fingerprint,
+            "claimed_model_profile_fingerprint": fingerprint,
+            "binary_scorers": [],
+            "objectives": [],
+            "eligibility_rules": []
+        },
+        "candidates": []
+    }))
+    .expect("typed quality request");
+
+    let response = client(&server, Duration::from_secs(2))
+        .assess_quality_proposals("demo package", &request, CallOptions::default())
+        .await
+        .expect("response");
+
+    assert_eq!(response.data.operation, "assess_quality_proposals");
+}
+
+#[test]
+fn generated_quality_integers_round_trip_at_the_public_ceiling_and_claims_stay_explicit() {
+    let fingerprint = "a".repeat(64);
+    let observation: MetricObservation = serde_json::from_value(serde_json::json!({
+        "metric_id": "total_tokens",
+        "unit": "token_count",
+        "value": 9_007_199_254_740_991_i64,
+        "claimed_measurement_profile_fingerprint": fingerprint,
+        "token_kind": "total"
+    }))
+    .expect("maximum public integer should deserialize");
+    assert_eq!(observation.value, 9_007_199_254_740_991_i64);
+
+    let identities: ClaimedQualityIdentities = serde_json::from_value(serde_json::json!({
+        "claimed_candidate_contract_fingerprint": fingerprint,
+        "claimed_evaluator_profile_fingerprint": fingerprint,
+        "claimed_model_profile_fingerprint": fingerprint,
+        "claimed_scorer_fingerprints": {"grounded": fingerprint},
+        "claimed_measurement_profile_fingerprints": {"total_tokens": fingerprint}
+    }))
+    .expect("explicit claimed identity fields should deserialize");
+    let encoded = serde_json::to_value(identities).expect("claimed identities should serialize");
+    assert!(
+        encoded
+            .get("claimed_candidate_contract_fingerprint")
+            .is_some()
+    );
+    assert!(encoded.get("candidate_contract_fingerprint").is_none());
+
+    let invalid_assessment: CandidateAssessment = serde_json::from_value(serde_json::json!({
+        "eligibility": {
+            "eligible": false,
+            "total_trial_count": 0,
+            "semantic_trial_count": 0,
+            "infrastructure_trial_count": 0,
+            "semantic_coverage_ppm": 0,
+            "infrastructure_failure_ppm": 0,
+            "gates": []
+        },
+        "aggregates": [],
+        "trial_summaries": [],
+        "proposal_change_paths": [],
+        "diagnostics": []
+    }))
+    .expect("assessment without valid claims should deserialize");
+    assert!(invalid_assessment.claimed_identities.is_none());
+    let encoded = serde_json::to_value(invalid_assessment)
+        .expect("assessment without valid claims should serialize");
+    assert!(encoded.get("claimed_identities").is_none());
 }
 
 #[tokio::test]

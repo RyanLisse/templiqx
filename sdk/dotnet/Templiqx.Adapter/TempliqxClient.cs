@@ -237,6 +237,20 @@ public sealed class TempliqxClient : IDisposable
         CancellationToken cancellationToken = default) =>
         SendAsync<JsonValueEnvelope>(HttpMethod.Post, $"{PackagePath(package)}/evals/run", requestId, timeout, cancellationToken, body);
 
+    public Task<QualityProposalReportEnvelope> AssessQualityProposalsAsync(
+        string package,
+        QualityProposalRequest body,
+        string? requestId = null,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<QualityProposalReportEnvelope>(
+            HttpMethod.Post,
+            $"{PackagePath(package)}/quality/proposals:assess",
+            requestId,
+            timeout,
+            cancellationToken,
+            body);
+
     public Task<JsonValueEnvelope> RenderContractAsync(
         string package,
         string contract,

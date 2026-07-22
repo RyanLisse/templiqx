@@ -58,6 +58,244 @@ class SourceSpan(BaseModel):
     end_column: Annotated[int, Field(ge=0)]
 
 
+class QualityIdentifier(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description='Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.',
+            max_length=128,
+            min_length=1,
+            pattern='^[A-Za-z0-9._:-]+$',
+        ),
+    ]
+
+
+class QualityFingerprint(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description='Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.',
+            max_length=64,
+            min_length=64,
+            pattern='^[A-Fa-f0-9]{64}$',
+        ),
+    ]
+
+
+class MetricUnit(StrEnum):
+    ratio_ppm = 'ratio_ppm'
+    milliseconds = 'milliseconds'
+    token_count = 'token_count'
+    currency_microunits = 'currency_microunits'
+
+
+class MetricAggregation(StrEnum):
+    binary_ratio_ppm = 'binary_ratio_ppm'
+    mean = 'mean'
+    sum = 'sum'
+    p95_nearest_rank = 'p95_nearest_rank'
+
+
+class ObjectiveDirection(StrEnum):
+    maximize = 'maximize'
+    minimize = 'minimize'
+
+
+class EligibilityComparator(StrEnum):
+    gte = 'gte'
+    lte = 'lte'
+
+
+class TokenKind(StrEnum):
+    prompt = 'prompt'
+    completion = 'completion'
+    total = 'total'
+
+
+class CandidateQualityFailureReason(StrEnum):
+    schema = 'schema'
+    assertion = 'assertion'
+    invalid_output = 'invalid_output'
+
+
+class InfrastructureFailureReason(StrEnum):
+    transport = 'transport'
+    timeout = 'timeout'
+    rate_limit = 'rate_limit'
+    provider_unavailable = 'provider_unavailable'
+    provider_internal = 'provider_internal'
+    cancellation = 'cancellation'
+    budget = 'budget'
+    evaluator_infrastructure = 'evaluator_infrastructure'
+
+
+class BinaryScorer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: QualityIdentifier
+    metric_id: QualityIdentifier
+    claimed_scorer_fingerprint: QualityFingerprint
+
+
+class QualityObjective(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: QualityIdentifier
+    metric_id: QualityIdentifier
+    unit: MetricUnit
+    aggregation: MetricAggregation
+    direction: ObjectiveDirection
+    claimed_measurement_profile_fingerprint: QualityFingerprint
+    currency_code: Annotated[str | None, Field(pattern='^[A-Z]{3}$')] = None
+    token_kind: TokenKind | None = None
+
+
+class EligibilityRule(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: QualityIdentifier
+    metric_id: QualityIdentifier
+    comparator: EligibilityComparator
+    unit: MetricUnit
+    threshold: Annotated[int, Field(ge=0, le=9007199254740991)]
+
+
+class QualityPolicy(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: QualityIdentifier
+    replicates_per_fixture: Annotated[int, Field(ge=1, le=20)]
+    minimum_semantic_cases: Annotated[int, Field(ge=0, le=9007199254740991)]
+    maximum_infrastructure_failure_ppm: Annotated[int, Field(ge=0, le=1000000)]
+    claimed_evaluator_profile_fingerprint: QualityFingerprint
+    claimed_model_profile_fingerprint: QualityFingerprint
+    binary_scorers: Annotated[list[BinaryScorer], Field(max_length=16, min_length=1)]
+    objectives: Annotated[list[QualityObjective], Field(max_length=16, min_length=1)]
+    eligibility_rules: Annotated[list[EligibilityRule], Field(min_length=1)]
+
+
+class TrialOutcome1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['scored']
+
+
+class TrialOutcome2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['candidate_quality_failure']
+    reason: CandidateQualityFailureReason
+
+
+class TrialOutcome3(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['infrastructure_failure']
+    reason: InfrastructureFailureReason
+
+
+class TrialOutcome(RootModel[TrialOutcome1 | TrialOutcome2 | TrialOutcome3]):
+    root: TrialOutcome1 | TrialOutcome2 | TrialOutcome3
+
+
+class MetricObservation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    metric_id: QualityIdentifier
+    unit: MetricUnit
+    value: Annotated[int, Field(ge=0, le=9007199254740991)]
+    claimed_measurement_profile_fingerprint: QualityFingerprint
+    currency_code: Annotated[str | None, Field(pattern='^[A-Z]{3}$')] = None
+    token_kind: TokenKind | None = None
+
+
+class ComputedQualityIdentities(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    package_fingerprint: QualityFingerprint
+    base_contract_fingerprint: QualityFingerprint
+    fixture_set_fingerprint: QualityFingerprint
+    quality_policy_fingerprint: QualityFingerprint
+    request_fingerprint: QualityFingerprint
+
+
+class ClaimedQualityIdentities(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    claimed_candidate_contract_fingerprint: QualityFingerprint
+    claimed_evaluator_profile_fingerprint: QualityFingerprint
+    claimed_model_profile_fingerprint: QualityFingerprint
+    claimed_scorer_fingerprints: dict[str, QualityFingerprint]
+    claimed_measurement_profile_fingerprints: dict[str, QualityFingerprint]
+
+
+class MetricAggregate(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    metric_id: QualityIdentifier
+    unit: MetricUnit
+    aggregation: MetricAggregation
+    direction: ObjectiveDirection
+    value: Annotated[int, Field(ge=0, le=9007199254740991)]
+
+
+class EligibilityGate(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    rule_id: QualityIdentifier
+    passed: bool
+    actual: Annotated[int | None, Field(ge=0, le=9007199254740991)] = None
+    comparator: EligibilityComparator
+    threshold: Annotated[int, Field(ge=0, le=9007199254740991)]
+    unit: MetricUnit
+
+
+class EligibilityAssessment(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    eligible: bool
+    total_trial_count: Annotated[int, Field(ge=0, le=9007199254740991)]
+    semantic_trial_count: Annotated[int, Field(ge=0, le=9007199254740991)]
+    infrastructure_trial_count: Annotated[int, Field(ge=0, le=9007199254740991)]
+    semantic_coverage_ppm: Annotated[int, Field(ge=0, le=1000000)]
+    infrastructure_failure_ppm: Annotated[int, Field(ge=0, le=1000000)]
+    gates: list[EligibilityGate]
+
+
+class QualityTrialSummary(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    fixture_id: QualityIdentifier
+    replicate_index: Annotated[int, Field(ge=0, le=65535)]
+    provider_attempt_count: Annotated[int, Field(ge=0, le=4294967295)]
+    outcome: TrialOutcome
+    passed_scorers: list[QualityIdentifier]
+    failed_scorers: list[QualityIdentifier]
+    observations: list[MetricObservation]
+
+
+class ParetoFront(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    rank: Annotated[int, Field(ge=0, le=4294967295)]
+    candidate_fingerprints: list[QualityFingerprint]
+
+
 class PackageSignature(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -270,6 +508,51 @@ class Diagnostic(BaseModel):
     help: str | None = None
 
 
+class TrialEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    fixture_id: QualityIdentifier
+    replicate_index: Annotated[int, Field(ge=0, le=65535)]
+    provider_attempt_count: Annotated[int, Field(ge=1, le=4294967295)]
+    outcome: TrialOutcome
+    passed_scorers: Annotated[
+        list[QualityIdentifier] | None, Field(max_length=16, validate_default=True)
+    ] = []
+    failed_scorers: Annotated[
+        list[QualityIdentifier] | None, Field(max_length=16, validate_default=True)
+    ] = []
+    observations: Annotated[list[MetricObservation], Field(max_length=16)]
+
+
+class CandidateAssessment(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    candidate_fingerprint: QualityFingerprint | None = None
+    claimed_identities: Annotated[
+        ClaimedQualityIdentities | None,
+        Field(
+            description='Host-attested identities, omitted unless every returned claim is syntactically valid and consistent with the validated protocol profile.'
+        ),
+    ] = None
+    eligibility: EligibilityAssessment
+    aggregates: list[MetricAggregate]
+    trial_summaries: list[QualityTrialSummary]
+    proposal_change_paths: list[str]
+    diagnostics: Annotated[list[Diagnostic], Field(max_length=256)]
+
+
+class QualityProposalReport(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    computed_identities: ComputedQualityIdentities
+    candidate_assessments: Annotated[list[CandidateAssessment], Field(max_length=32)]
+    pareto_fronts: Annotated[list[ParetoFront], Field(max_length=32)]
+    report_fingerprint: QualityFingerprint
+
+
 class PackageManifest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -399,10 +682,64 @@ class ExecutionReceiptEnvelope(OperationEnvelopeBase):
 class InspectDocumentEnvelope(OperationEnvelopeBase):
     result: InspectDocumentResult | None = None
 
+
+class QualityProposalReportEnvelope(OperationEnvelopeBase):
+    result: QualityProposalReport | None = None
+
+
+class CandidateEvidence(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    claimed_package_fingerprint: QualityFingerprint
+    claimed_base_contract_fingerprint: QualityFingerprint
+    claimed_fixture_set_fingerprint: QualityFingerprint
+    claimed_candidate_contract_fingerprint: QualityFingerprint
+    claimed_quality_policy_fingerprint: QualityFingerprint
+    claimed_evaluator_profile_fingerprint: QualityFingerprint
+    claimed_model_profile_fingerprint: QualityFingerprint
+    claimed_scorer_fingerprints: Annotated[
+        dict[str, QualityFingerprint], Field(max_length=16)
+    ]
+    claimed_measurement_profile_fingerprints: Annotated[
+        dict[str, QualityFingerprint], Field(max_length=16)
+    ]
+    trials: Annotated[list[TrialEvidence], Field(max_length=10240)]
+
+
+class QualityCandidateSubmission(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    candidate_source: Annotated[
+        str,
+        Field(
+            description='Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.',
+            max_length=524288,
+        ),
+    ]
+    synthetic_or_sanitized_data_attestation: bool
+    evidence: CandidateEvidence
+
+
+class QualityProposalRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    package: str
+    contract_id: str
+    expected_package_fingerprint: QualityFingerprint
+    expected_base_contract_fingerprint: QualityFingerprint
+    expected_fixture_set_fingerprint: QualityFingerprint
+    policy: QualityPolicy
+    candidates: Annotated[
+        list[QualityCandidateSubmission], Field(max_length=32, min_length=1)
+    ]
+
 # Codegen metadata used by the compatibility self-check.
-GENERATED_OPENAPI_VERSION = '1.0.0-alpha.1'
-GENERATED_OPENAPI_DIGEST = 'sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914'
+GENERATED_OPENAPI_VERSION = '1.0.0-alpha.2'
+GENERATED_OPENAPI_DIGEST = 'sha256:f9aa381dee153007e3298afb7ab85f00ff114dd93a056ea6f54cef7d280432d4'
 GENERATED_CONTRACT_FORMAT = 'templiqx/v1alpha1'
-GENERATED_ENGINE_API_VERSION = '0.1'
-GENERATED_ENGINE_VERSION = '0.1.0'
-GENERATED_SDK_VERSION = '0.1.0'
+GENERATED_ENGINE_API_VERSION = '0.2'
+GENERATED_ENGINE_VERSION = '0.2.0'
+GENERATED_SDK_VERSION = '0.2.0'

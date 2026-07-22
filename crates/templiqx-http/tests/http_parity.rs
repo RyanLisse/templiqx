@@ -11,7 +11,7 @@ use templiqx_application::{
     ReadArtifactRequest, RenderDocumentRequest, SignPackageRequest, UpdatePackageRequest,
     VerifyPackageTrustRequest,
 };
-use templiqx_contracts::{OperationEnvelope, RenderRequest};
+use templiqx_contracts::{OperationEnvelope, QualityPolicy, QualityProposalRequest, RenderRequest};
 use tower::ServiceExt;
 
 const INTERACTION_BODY: &str = r#"{"render":{"inputs":{"name":"Ryan"},"context":{"organization":"Blinqx"}},"capabilities":["structured_output"]}"#;
@@ -584,6 +584,41 @@ async fn run_eval_envelope_matches_direct_service_call() {
     )
     .await;
     assert_happy_http_matches_service(&direct, &http);
+}
+
+#[tokio::test]
+async fn quality_assessment_envelope_matches_direct_service_call() {
+    let service = templiqx_local::compose(packages_root()).expect("compose service");
+    let request = QualityProposalRequest {
+        package: "demo".into(),
+        contract_id: "greeting".into(),
+        expected_package_fingerprint: "package-fingerprint".into(),
+        expected_base_contract_fingerprint: "contract-fingerprint".into(),
+        expected_fixture_set_fingerprint: "fixture-fingerprint".into(),
+        policy: QualityPolicy {
+            id: "policy".into(),
+            replicates_per_fixture: 1,
+            minimum_semantic_cases: 1,
+            maximum_infrastructure_failure_ppm: 0,
+            claimed_evaluator_profile_fingerprint: "evaluator-fingerprint".into(),
+            claimed_model_profile_fingerprint: "model-fingerprint".into(),
+            binary_scorers: vec![],
+            objectives: vec![],
+            eligibility_rules: vec![],
+        },
+        candidates: vec![],
+    };
+    let direct = service.assess_quality_proposals(&request);
+    let body = serde_json::to_string(&request).expect("request JSON");
+    let http = http_envelope(
+        service,
+        Method::POST,
+        "/operations/v1/packages/demo/quality/proposals:assess",
+        &body,
+        &[],
+    )
+    .await;
+    assert_http_matches_service(&direct, &http);
 }
 
 #[tokio::test]

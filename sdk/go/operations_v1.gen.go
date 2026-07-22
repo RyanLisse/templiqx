@@ -8,6 +8,27 @@ import (
 	"fmt"
 )
 
+// Defines values for CandidateQualityFailureReason.
+const (
+	Assertion     CandidateQualityFailureReason = "assertion"
+	InvalidOutput CandidateQualityFailureReason = "invalid_output"
+	Schema        CandidateQualityFailureReason = "schema"
+)
+
+// Valid indicates whether the value is a known member of the CandidateQualityFailureReason enum.
+func (e CandidateQualityFailureReason) Valid() bool {
+	switch e {
+	case Assertion:
+		return true
+	case InvalidOutput:
+		return true
+	case Schema:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DiagnosticSeverity.
 const (
 	Error   DiagnosticSeverity = "error"
@@ -23,6 +44,24 @@ func (e DiagnosticSeverity) Valid() bool {
 	case Info:
 		return true
 	case Warning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EligibilityComparator.
+const (
+	Gte EligibilityComparator = "gte"
+	Lte EligibilityComparator = "lte"
+)
+
+// Valid indicates whether the value is a known member of the EligibilityComparator enum.
+func (e EligibilityComparator) Valid() bool {
+	switch e {
+	case Gte:
+		return true
+	case Lte:
 		return true
 	default:
 		return false
@@ -50,12 +89,190 @@ func (e HealthStatusStatus) Valid() bool {
 	}
 }
 
+// Defines values for InfrastructureFailureReason.
+const (
+	Budget                  InfrastructureFailureReason = "budget"
+	Cancellation            InfrastructureFailureReason = "cancellation"
+	EvaluatorInfrastructure InfrastructureFailureReason = "evaluator_infrastructure"
+	ProviderInternal        InfrastructureFailureReason = "provider_internal"
+	ProviderUnavailable     InfrastructureFailureReason = "provider_unavailable"
+	RateLimit               InfrastructureFailureReason = "rate_limit"
+	Timeout                 InfrastructureFailureReason = "timeout"
+	Transport               InfrastructureFailureReason = "transport"
+)
+
+// Valid indicates whether the value is a known member of the InfrastructureFailureReason enum.
+func (e InfrastructureFailureReason) Valid() bool {
+	switch e {
+	case Budget:
+		return true
+	case Cancellation:
+		return true
+	case EvaluatorInfrastructure:
+		return true
+	case ProviderInternal:
+		return true
+	case ProviderUnavailable:
+		return true
+	case RateLimit:
+		return true
+	case Timeout:
+		return true
+	case Transport:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MetricAggregation.
+const (
+	BinaryRatioPpm MetricAggregation = "binary_ratio_ppm"
+	Mean           MetricAggregation = "mean"
+	P95NearestRank MetricAggregation = "p95_nearest_rank"
+	Sum            MetricAggregation = "sum"
+)
+
+// Valid indicates whether the value is a known member of the MetricAggregation enum.
+func (e MetricAggregation) Valid() bool {
+	switch e {
+	case BinaryRatioPpm:
+		return true
+	case Mean:
+		return true
+	case P95NearestRank:
+		return true
+	case Sum:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MetricUnit.
+const (
+	CurrencyMicrounits MetricUnit = "currency_microunits"
+	Milliseconds       MetricUnit = "milliseconds"
+	RatioPpm           MetricUnit = "ratio_ppm"
+	TokenCount         MetricUnit = "token_count"
+)
+
+// Valid indicates whether the value is a known member of the MetricUnit enum.
+func (e MetricUnit) Valid() bool {
+	switch e {
+	case CurrencyMicrounits:
+		return true
+	case Milliseconds:
+		return true
+	case RatioPpm:
+		return true
+	case TokenCount:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ObjectiveDirection.
+const (
+	Maximize ObjectiveDirection = "maximize"
+	Minimize ObjectiveDirection = "minimize"
+)
+
+// Valid indicates whether the value is a known member of the ObjectiveDirection enum.
+func (e ObjectiveDirection) Valid() bool {
+	switch e {
+	case Maximize:
+		return true
+	case Minimize:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TokenKind.
+const (
+	Completion TokenKind = "completion"
+	Prompt     TokenKind = "prompt"
+	Total      TokenKind = "total"
+)
+
+// Valid indicates whether the value is a known member of the TokenKind enum.
+func (e TokenKind) Valid() bool {
+	switch e {
+	case Completion:
+		return true
+	case Prompt:
+		return true
+	case Total:
+		return true
+	default:
+		return false
+	}
+}
+
 // AdapterDescriptor defines model for AdapterDescriptor.
 type AdapterDescriptor struct {
 	Capabilities []string `json:"capabilities"`
 	Id           string   `json:"id"`
 	Version      string   `json:"version"`
 }
+
+// BinaryScorer defines model for BinaryScorer.
+type BinaryScorer struct {
+	// ClaimedScorerFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedScorerFingerprint QualityFingerprint `json:"claimed_scorer_fingerprint"`
+
+	// Id Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	Id QualityIdentifier `json:"id"`
+
+	// MetricId Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	MetricId QualityIdentifier `json:"metric_id"`
+}
+
+// CandidateAssessment defines model for CandidateAssessment.
+type CandidateAssessment struct {
+	Aggregates []MetricAggregate `json:"aggregates"`
+
+	// CandidateFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	CandidateFingerprint *QualityFingerprint       `json:"candidate_fingerprint,omitempty"`
+	ClaimedIdentities    *ClaimedQualityIdentities `json:"claimed_identities,omitempty"`
+	Diagnostics          []Diagnostic              `json:"diagnostics"`
+	Eligibility          EligibilityAssessment     `json:"eligibility"`
+	ProposalChangePaths  []string                  `json:"proposal_change_paths"`
+	TrialSummaries       []QualityTrialSummary     `json:"trial_summaries"`
+}
+
+// CandidateEvidence defines model for CandidateEvidence.
+type CandidateEvidence struct {
+	// ClaimedBaseContractFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedBaseContractFingerprint QualityFingerprint `json:"claimed_base_contract_fingerprint"`
+
+	// ClaimedCandidateContractFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedCandidateContractFingerprint QualityFingerprint `json:"claimed_candidate_contract_fingerprint"`
+
+	// ClaimedEvaluatorProfileFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedEvaluatorProfileFingerprint QualityFingerprint `json:"claimed_evaluator_profile_fingerprint"`
+
+	// ClaimedFixtureSetFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedFixtureSetFingerprint          QualityFingerprint            `json:"claimed_fixture_set_fingerprint"`
+	ClaimedMeasurementProfileFingerprints map[string]QualityFingerprint `json:"claimed_measurement_profile_fingerprints"`
+
+	// ClaimedModelProfileFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedModelProfileFingerprint QualityFingerprint `json:"claimed_model_profile_fingerprint"`
+
+	// ClaimedPackageFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedPackageFingerprint QualityFingerprint `json:"claimed_package_fingerprint"`
+
+	// ClaimedQualityPolicyFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedQualityPolicyFingerprint QualityFingerprint            `json:"claimed_quality_policy_fingerprint"`
+	ClaimedScorerFingerprints       map[string]QualityFingerprint `json:"claimed_scorer_fingerprints"`
+	Trials                          []TrialEvidence               `json:"trials"`
+}
+
+// CandidateQualityFailureReason defines model for CandidateQualityFailureReason.
+type CandidateQualityFailureReason string
 
 // CapabilitiesRequest defines model for CapabilitiesRequest.
 type CapabilitiesRequest struct {
@@ -72,6 +289,20 @@ type CatalogEnvelope struct {
 	Result               *[]string              `json:"result,omitempty"`
 	StreamEvents         *[]StreamEvent         `json:"stream_events,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// ClaimedQualityIdentities defines model for ClaimedQualityIdentities.
+type ClaimedQualityIdentities struct {
+	// ClaimedCandidateContractFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedCandidateContractFingerprint QualityFingerprint `json:"claimed_candidate_contract_fingerprint"`
+
+	// ClaimedEvaluatorProfileFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedEvaluatorProfileFingerprint    QualityFingerprint            `json:"claimed_evaluator_profile_fingerprint"`
+	ClaimedMeasurementProfileFingerprints map[string]QualityFingerprint `json:"claimed_measurement_profile_fingerprints"`
+
+	// ClaimedModelProfileFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedModelProfileFingerprint QualityFingerprint            `json:"claimed_model_profile_fingerprint"`
+	ClaimedScorerFingerprints      map[string]QualityFingerprint `json:"claimed_scorer_fingerprints"`
 }
 
 // CompileRequest defines model for CompileRequest.
@@ -105,6 +336,24 @@ type CompiledInteractionEnvelope struct {
 	Result               *CompiledInteraction   `json:"result,omitempty"`
 	StreamEvents         *[]StreamEvent         `json:"stream_events,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// ComputedQualityIdentities defines model for ComputedQualityIdentities.
+type ComputedQualityIdentities struct {
+	// BaseContractFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	BaseContractFingerprint QualityFingerprint `json:"base_contract_fingerprint"`
+
+	// FixtureSetFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	FixtureSetFingerprint QualityFingerprint `json:"fixture_set_fingerprint"`
+
+	// PackageFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	PackageFingerprint QualityFingerprint `json:"package_fingerprint"`
+
+	// QualityPolicyFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	QualityPolicyFingerprint QualityFingerprint `json:"quality_policy_fingerprint"`
+
+	// RequestFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	RequestFingerprint QualityFingerprint `json:"request_fingerprint"`
 }
 
 // Contract defines model for Contract.
@@ -181,6 +430,45 @@ type DiffContractRequest struct {
 	RightPackage  string `json:"right_package"`
 }
 
+// EligibilityAssessment defines model for EligibilityAssessment.
+type EligibilityAssessment struct {
+	Eligible                 bool              `json:"eligible"`
+	Gates                    []EligibilityGate `json:"gates"`
+	InfrastructureFailurePpm int64             `json:"infrastructure_failure_ppm"`
+	InfrastructureTrialCount int64             `json:"infrastructure_trial_count"`
+	SemanticCoveragePpm      int64             `json:"semantic_coverage_ppm"`
+	SemanticTrialCount       int64             `json:"semantic_trial_count"`
+	TotalTrialCount          int64             `json:"total_trial_count"`
+}
+
+// EligibilityComparator defines model for EligibilityComparator.
+type EligibilityComparator string
+
+// EligibilityGate defines model for EligibilityGate.
+type EligibilityGate struct {
+	Actual     *int64                `json:"actual,omitempty"`
+	Comparator EligibilityComparator `json:"comparator"`
+	Passed     bool                  `json:"passed"`
+
+	// RuleId Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	RuleId    QualityIdentifier `json:"rule_id"`
+	Threshold int64             `json:"threshold"`
+	Unit      MetricUnit        `json:"unit"`
+}
+
+// EligibilityRule defines model for EligibilityRule.
+type EligibilityRule struct {
+	Comparator EligibilityComparator `json:"comparator"`
+
+	// Id Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	Id QualityIdentifier `json:"id"`
+
+	// MetricId Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	MetricId  QualityIdentifier `json:"metric_id"`
+	Threshold int64             `json:"threshold"`
+	Unit      MetricUnit        `json:"unit"`
+}
+
 // ExecuteRequest defines model for ExecuteRequest.
 type ExecuteRequest struct {
 	Capabilities *[]string `json:"capabilities,omitempty"`
@@ -233,6 +521,9 @@ type HealthStatus struct {
 // HealthStatusStatus defines model for HealthStatus.Status.
 type HealthStatusStatus string
 
+// InfrastructureFailureReason defines model for InfrastructureFailureReason.
+type InfrastructureFailureReason string
+
 // InspectDocumentEnvelope defines model for InspectDocumentEnvelope.
 type InspectDocumentEnvelope struct {
 	ApiVersion           string                 `json:"api_version"`
@@ -277,6 +568,36 @@ type JsonValueEnvelope struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// MetricAggregate defines model for MetricAggregate.
+type MetricAggregate struct {
+	Aggregation MetricAggregation  `json:"aggregation"`
+	Direction   ObjectiveDirection `json:"direction"`
+
+	// MetricId Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	MetricId QualityIdentifier `json:"metric_id"`
+	Unit     MetricUnit        `json:"unit"`
+	Value    int64             `json:"value"`
+}
+
+// MetricAggregation defines model for MetricAggregation.
+type MetricAggregation string
+
+// MetricObservation defines model for MetricObservation.
+type MetricObservation struct {
+	// ClaimedMeasurementProfileFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedMeasurementProfileFingerprint QualityFingerprint `json:"claimed_measurement_profile_fingerprint"`
+	CurrencyCode                         *string            `json:"currency_code,omitempty"`
+
+	// MetricId Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	MetricId  QualityIdentifier `json:"metric_id"`
+	TokenKind *TokenKind        `json:"token_kind,omitempty"`
+	Unit      MetricUnit        `json:"unit"`
+	Value     int64             `json:"value"`
+}
+
+// MetricUnit defines model for MetricUnit.
+type MetricUnit string
+
 // MigrateLegacyRequest defines model for MigrateLegacyRequest.
 type MigrateLegacyRequest struct {
 	// Aliases Arbitrary JSON value owned by Templiqx contract schemas or runtime output.
@@ -285,6 +606,9 @@ type MigrateLegacyRequest struct {
 	Package string    `json:"package"`
 	Source  string    `json:"source"`
 }
+
+// ObjectiveDirection defines model for ObjectiveDirection.
+type ObjectiveDirection string
 
 // OperationEnvelopeBase defines model for OperationEnvelopeBase.
 type OperationEnvelopeBase struct {
@@ -341,6 +665,115 @@ type PackageSignature struct {
 	Algorithm string `json:"algorithm"`
 	KeyId     string `json:"key_id"`
 	Value     string `json:"value"`
+}
+
+// ParetoFront defines model for ParetoFront.
+type ParetoFront struct {
+	CandidateFingerprints []QualityFingerprint `json:"candidate_fingerprints"`
+	Rank                  int64                `json:"rank"`
+}
+
+// QualityCandidateSubmission defines model for QualityCandidateSubmission.
+type QualityCandidateSubmission struct {
+	// CandidateSource Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.
+	CandidateSource                     string            `json:"candidate_source"`
+	Evidence                            CandidateEvidence `json:"evidence"`
+	SyntheticOrSanitizedDataAttestation bool              `json:"synthetic_or_sanitized_data_attestation"`
+}
+
+// QualityFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+type QualityFingerprint = string
+
+// QualityIdentifier Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+type QualityIdentifier = string
+
+// QualityObjective defines model for QualityObjective.
+type QualityObjective struct {
+	Aggregation MetricAggregation `json:"aggregation"`
+
+	// ClaimedMeasurementProfileFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedMeasurementProfileFingerprint QualityFingerprint `json:"claimed_measurement_profile_fingerprint"`
+	CurrencyCode                         *string            `json:"currency_code,omitempty"`
+	Direction                            ObjectiveDirection `json:"direction"`
+
+	// Id Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	Id QualityIdentifier `json:"id"`
+
+	// MetricId Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	MetricId  QualityIdentifier `json:"metric_id"`
+	TokenKind *TokenKind        `json:"token_kind,omitempty"`
+	Unit      MetricUnit        `json:"unit"`
+}
+
+// QualityPolicy defines model for QualityPolicy.
+type QualityPolicy struct {
+	BinaryScorers []BinaryScorer `json:"binary_scorers"`
+
+	// ClaimedEvaluatorProfileFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedEvaluatorProfileFingerprint QualityFingerprint `json:"claimed_evaluator_profile_fingerprint"`
+
+	// ClaimedModelProfileFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ClaimedModelProfileFingerprint QualityFingerprint `json:"claimed_model_profile_fingerprint"`
+	EligibilityRules               []EligibilityRule  `json:"eligibility_rules"`
+
+	// Id Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	Id                              QualityIdentifier  `json:"id"`
+	MaximumInfrastructureFailurePpm int64              `json:"maximum_infrastructure_failure_ppm"`
+	MinimumSemanticCases            int64              `json:"minimum_semantic_cases"`
+	Objectives                      []QualityObjective `json:"objectives"`
+	ReplicatesPerFixture            int64              `json:"replicates_per_fixture"`
+}
+
+// QualityProposalReport defines model for QualityProposalReport.
+type QualityProposalReport struct {
+	CandidateAssessments []CandidateAssessment     `json:"candidate_assessments"`
+	ComputedIdentities   ComputedQualityIdentities `json:"computed_identities"`
+	ParetoFronts         []ParetoFront             `json:"pareto_fronts"`
+
+	// ReportFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ReportFingerprint QualityFingerprint `json:"report_fingerprint"`
+}
+
+// QualityProposalReportEnvelope defines model for QualityProposalReportEnvelope.
+type QualityProposalReportEnvelope struct {
+	ApiVersion           string                 `json:"api_version"`
+	Diagnostics          []Diagnostic           `json:"diagnostics"`
+	Fingerprints         map[string]string      `json:"fingerprints"`
+	Ok                   bool                   `json:"ok"`
+	Operation            string                 `json:"operation"`
+	Result               *QualityProposalReport `json:"result,omitempty"`
+	StreamEvents         *[]StreamEvent         `json:"stream_events,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// QualityProposalRequest defines model for QualityProposalRequest.
+type QualityProposalRequest struct {
+	Candidates []QualityCandidateSubmission `json:"candidates"`
+	ContractId string                       `json:"contract_id"`
+
+	// ExpectedBaseContractFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ExpectedBaseContractFingerprint QualityFingerprint `json:"expected_base_contract_fingerprint"`
+
+	// ExpectedFixtureSetFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ExpectedFixtureSetFingerprint QualityFingerprint `json:"expected_fixture_set_fingerprint"`
+
+	// ExpectedPackageFingerprint Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+	ExpectedPackageFingerprint QualityFingerprint `json:"expected_package_fingerprint"`
+	Package                    string             `json:"package"`
+	Policy                     QualityPolicy      `json:"policy"`
+}
+
+// QualityTrialSummary defines model for QualityTrialSummary.
+type QualityTrialSummary struct {
+	FailedScorers []QualityIdentifier `json:"failed_scorers"`
+
+	// FixtureId Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	FixtureId            QualityIdentifier   `json:"fixture_id"`
+	Observations         []MetricObservation `json:"observations"`
+	Outcome              TrialOutcome        `json:"outcome"`
+	PassedScorers        []QualityIdentifier `json:"passed_scorers"`
+	ProviderAttemptCount int64               `json:"provider_attempt_count"`
+	ReplicateIndex       int64               `json:"replicate_index"`
 }
 
 // RenderDocumentRequest defines model for RenderDocumentRequest.
@@ -422,11 +855,49 @@ type SummaryEnvelope struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// TokenKind defines model for TokenKind.
+type TokenKind string
+
 // TransportError defines model for TransportError.
 type TransportError struct {
 	Code      string  `json:"code"`
 	Message   string  `json:"message"`
 	RequestId *string `json:"request_id,omitempty"`
+}
+
+// TrialEvidence defines model for TrialEvidence.
+type TrialEvidence struct {
+	FailedScorers *[]QualityIdentifier `json:"failed_scorers,omitempty"`
+
+	// FixtureId Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+	FixtureId            QualityIdentifier    `json:"fixture_id"`
+	Observations         []MetricObservation  `json:"observations"`
+	Outcome              TrialOutcome         `json:"outcome"`
+	PassedScorers        *[]QualityIdentifier `json:"passed_scorers,omitempty"`
+	ProviderAttemptCount int64                `json:"provider_attempt_count"`
+	ReplicateIndex       int64                `json:"replicate_index"`
+}
+
+// TrialOutcome defines model for TrialOutcome.
+type TrialOutcome struct {
+	union json.RawMessage
+}
+
+// TrialOutcome0 defines model for .
+type TrialOutcome0 struct {
+	Kind interface{} `json:"kind"`
+}
+
+// TrialOutcome1 defines model for .
+type TrialOutcome1 struct {
+	Kind   interface{}                   `json:"kind"`
+	Reason CandidateQualityFailureReason `json:"reason"`
+}
+
+// TrialOutcome2 defines model for .
+type TrialOutcome2 struct {
+	Kind   interface{}                 `json:"kind"`
+	Reason InfrastructureFailureReason `json:"reason"`
 }
 
 // UpdatePackageRequest defines model for UpdatePackageRequest.
@@ -585,6 +1056,15 @@ type ValidateContractParams struct {
 	XTenantId *TenantId `json:"X-Tenant-Id,omitempty"`
 }
 
+// AssessQualityProposalsParams defines parameters for AssessQualityProposals.
+type AssessQualityProposalsParams struct {
+	// XRequestId Caller-provided correlation ID. The transport echoes or generates one.
+	XRequestId *RequestId `json:"X-Request-Id,omitempty"`
+
+	// XTenantId Host-owned tenant correlation metadata. Templiqx does not authorize tenants.
+	XTenantId *TenantId `json:"X-Tenant-Id,omitempty"`
+}
+
 // SignPackageParams defines parameters for SignPackage.
 type SignPackageParams struct {
 	// IfMatch Current content fingerprint required for CAS mutation.
@@ -623,6 +1103,9 @@ type RenderContractJSONRequestBody = CompileRequest
 
 // RunEvalJSONRequestBody defines body for RunEval for application/json ContentType.
 type RunEvalJSONRequestBody = RunEvalRequest
+
+// AssessQualityProposalsJSONRequestBody defines body for AssessQualityProposals for application/json ContentType.
+type AssessQualityProposalsJSONRequestBody = QualityProposalRequest
 
 // SignPackageJSONRequestBody defines body for SignPackage for application/json ContentType.
 type SignPackageJSONRequestBody = SignPackageRequest
@@ -2110,6 +2593,158 @@ func (a PackageListEnvelope) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for QualityProposalReportEnvelope. Returns the specified
+// element and whether it was found
+func (a QualityProposalReportEnvelope) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for QualityProposalReportEnvelope
+func (a *QualityProposalReportEnvelope) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for QualityProposalReportEnvelope to handle AdditionalProperties
+func (a *QualityProposalReportEnvelope) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["api_version"]; found {
+		err = json.Unmarshal(raw, &a.ApiVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'api_version': %w", err)
+		}
+		delete(object, "api_version")
+	}
+
+	if raw, found := object["diagnostics"]; found {
+		err = json.Unmarshal(raw, &a.Diagnostics)
+		if err != nil {
+			return fmt.Errorf("error reading 'diagnostics': %w", err)
+		}
+		delete(object, "diagnostics")
+	}
+
+	if raw, found := object["fingerprints"]; found {
+		err = json.Unmarshal(raw, &a.Fingerprints)
+		if err != nil {
+			return fmt.Errorf("error reading 'fingerprints': %w", err)
+		}
+		delete(object, "fingerprints")
+	}
+
+	if raw, found := object["ok"]; found {
+		err = json.Unmarshal(raw, &a.Ok)
+		if err != nil {
+			return fmt.Errorf("error reading 'ok': %w", err)
+		}
+		delete(object, "ok")
+	}
+
+	if raw, found := object["operation"]; found {
+		err = json.Unmarshal(raw, &a.Operation)
+		if err != nil {
+			return fmt.Errorf("error reading 'operation': %w", err)
+		}
+		delete(object, "operation")
+	}
+
+	if raw, found := object["result"]; found {
+		err = json.Unmarshal(raw, &a.Result)
+		if err != nil {
+			return fmt.Errorf("error reading 'result': %w", err)
+		}
+		delete(object, "result")
+	}
+
+	if raw, found := object["stream_events"]; found {
+		err = json.Unmarshal(raw, &a.StreamEvents)
+		if err != nil {
+			return fmt.Errorf("error reading 'stream_events': %w", err)
+		}
+		delete(object, "stream_events")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for QualityProposalReportEnvelope to handle AdditionalProperties
+func (a QualityProposalReportEnvelope) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["api_version"], err = json.Marshal(a.ApiVersion)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'api_version': %w", err)
+	}
+
+	if a.Diagnostics != nil {
+		object["diagnostics"], err = json.Marshal(a.Diagnostics)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'diagnostics': %w", err)
+		}
+	}
+
+	if a.Fingerprints != nil {
+		object["fingerprints"], err = json.Marshal(a.Fingerprints)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fingerprints': %w", err)
+		}
+	}
+
+	object["ok"], err = json.Marshal(a.Ok)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ok': %w", err)
+	}
+
+	object["operation"], err = json.Marshal(a.Operation)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'operation': %w", err)
+	}
+
+	if a.Result != nil {
+		object["result"], err = json.Marshal(a.Result)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'result': %w", err)
+		}
+	}
+
+	if a.StreamEvents != nil {
+		object["stream_events"], err = json.Marshal(a.StreamEvents)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stream_events': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for SummaryEnvelope. Returns the specified
 // element and whether it was found
 func (a SummaryEnvelope) Get(fieldName string) (value interface{}, found bool) {
@@ -2372,6 +3007,94 @@ func (t StreamEvent) MarshalJSON() ([]byte, error) {
 }
 
 func (t *StreamEvent) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsTrialOutcome0 returns the union data inside the TrialOutcome as a TrialOutcome0
+func (t TrialOutcome) AsTrialOutcome0() (TrialOutcome0, error) {
+	var body TrialOutcome0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTrialOutcome0 overwrites any union data inside the TrialOutcome as the provided TrialOutcome0
+func (t *TrialOutcome) FromTrialOutcome0(v TrialOutcome0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTrialOutcome0 performs a merge with any union data inside the TrialOutcome, using the provided TrialOutcome0
+func (t *TrialOutcome) MergeTrialOutcome0(v TrialOutcome0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := generatedJSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTrialOutcome1 returns the union data inside the TrialOutcome as a TrialOutcome1
+func (t TrialOutcome) AsTrialOutcome1() (TrialOutcome1, error) {
+	var body TrialOutcome1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTrialOutcome1 overwrites any union data inside the TrialOutcome as the provided TrialOutcome1
+func (t *TrialOutcome) FromTrialOutcome1(v TrialOutcome1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTrialOutcome1 performs a merge with any union data inside the TrialOutcome, using the provided TrialOutcome1
+func (t *TrialOutcome) MergeTrialOutcome1(v TrialOutcome1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := generatedJSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTrialOutcome2 returns the union data inside the TrialOutcome as a TrialOutcome2
+func (t TrialOutcome) AsTrialOutcome2() (TrialOutcome2, error) {
+	var body TrialOutcome2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTrialOutcome2 overwrites any union data inside the TrialOutcome as the provided TrialOutcome2
+func (t *TrialOutcome) FromTrialOutcome2(v TrialOutcome2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTrialOutcome2 performs a merge with any union data inside the TrialOutcome, using the provided TrialOutcome2
+func (t *TrialOutcome) MergeTrialOutcome2(v TrialOutcome2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := generatedJSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t TrialOutcome) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *TrialOutcome) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

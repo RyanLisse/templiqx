@@ -185,3 +185,99 @@ fn package_lifecycle_commands_preserve_structured_cas_envelopes() -> Result<()> 
     ensure!(!packages.path().join("demo").exists());
     Ok(())
 }
+
+fn quality_request() -> Value {
+    serde_json::json!({
+        "package": "demo",
+        "contract_id": "contract",
+        "expected_package_fingerprint": "package-fingerprint",
+        "expected_base_contract_fingerprint": "contract-fingerprint",
+        "expected_fixture_set_fingerprint": "fixture-fingerprint",
+        "policy": {
+            "id": "policy",
+            "replicates_per_fixture": 1,
+            "minimum_semantic_cases": 1,
+            "maximum_infrastructure_failure_ppm": 0,
+            "claimed_evaluator_profile_fingerprint": "evaluator-fingerprint",
+            "claimed_model_profile_fingerprint": "model-fingerprint",
+            "binary_scorers": [],
+            "objectives": [],
+            "eligibility_rules": []
+        },
+        "candidates": []
+    })
+}
+
+fn run_quality_request(root: &Path, request: &Path) -> Result<Output> {
+    run_templiqx_in(
+        &[
+            "--root",
+            root.to_str().context("packages root")?,
+            "assess-quality-proposals",
+            "--request",
+            request.to_str().context("request path")?,
+        ],
+        root,
+    )
+}
+
+#[test]
+fn quality_assessment_command_rejects_private_invalid_json_without_reflection() -> Result<()> {
+    let packages = tempfile::tempdir()?;
+    let request = packages.path().join("quality-request.json");
+    let email = "ryan.sensitive@example.invalid";
+    let ssn = "123-45-6789";
+
+    let mut nested_unknown = quality_request();
+    nested_unknown["policy"][format!("customer_{email}_ssn_{ssn}")] = Value::Bool(true);
+    let cases = [
+        serde_json::to_vec(&serde_json::json!({
+            format!("customer_{email}_ssn_{ssn}"): true
+        }))?,
+        serde_json::to_vec(&nested_unknown)?,
+        format!(r#"{{"package":"demo","candidate_{email}_ssn_{ssn}":"unterminated"#).into_bytes(),
+    ];
+
+    for contents in cases {
+        fs::write(&request, contents)?;
+        let output = run_quality_request(packages.path(), &request)?;
+        ensure!(!output.status.success(), "invalid JSON must fail closed");
+        ensure!(
+            output.stdout.is_empty(),
+            "invalid quality request emitted stdout: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        ensure!(
+            output.stderr == b"templiqx: quality assessment request body is invalid\n",
+            "quality rejection reflected private decode details: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        ensure!(
+            !stderr.contains(email)
+                && !stderr.contains(ssn)
+                && !stderr.contains("unknown field")
+                && !stderr.contains("EOF"),
+            "quality rejection reflected a canary: {stderr}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn quality_assessment_command_redacts_request_file_read_failures() -> Result<()> {
+    let packages = tempfile::tempdir()?;
+    let missing = packages
+        .path()
+        .join("ryan.sensitive@example.invalid-123-45-6789.json");
+
+    let output = run_quality_request(packages.path(), &missing)?;
+    ensure!(!output.status.success(), "missing request must fail closed");
+    ensure!(output.stdout.is_empty(), "missing request emitted stdout");
+    ensure!(
+        output.stderr == b"templiqx: quality assessment request file could not be read\n",
+        "quality file rejection reflected private path details: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(())
+}

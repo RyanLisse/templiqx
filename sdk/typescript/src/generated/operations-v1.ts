@@ -314,6 +314,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/operations/v1/packages/{package}/quality/proposals:assess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assess host-evaluated contract proposals without mutation or winner selection
+         * @description Validates complete candidate contract sources and structurally validates host-attested evaluation evidence. Applies policy safety floors and returns deterministic fixed-point aggregates and Pareto fronts. The response never echoes candidate source or raw evaluator payloads.
+         */
+        post: operations["assessQualityProposals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/operations/v1/packages/{package}/contracts/{contract}/render": {
         parameters: {
             query?: never;
@@ -527,6 +547,211 @@ export interface components {
         };
         InspectDocumentEnvelope: components["schemas"]["OperationEnvelopeBase"] & {
             result?: components["schemas"]["InspectDocumentResult"];
+        };
+        QualityProposalReportEnvelope: components["schemas"]["OperationEnvelopeBase"] & {
+            result?: components["schemas"]["QualityProposalReport"];
+        };
+        /** @description Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx. */
+        QualityIdentifier: string;
+        /** @description Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint. */
+        QualityFingerprint: string;
+        /** @enum {string} */
+        MetricUnit: "ratio_ppm" | "milliseconds" | "token_count" | "currency_microunits";
+        /** @enum {string} */
+        MetricAggregation: "binary_ratio_ppm" | "mean" | "sum" | "p95_nearest_rank";
+        /** @enum {string} */
+        ObjectiveDirection: "maximize" | "minimize";
+        /** @enum {string} */
+        EligibilityComparator: "gte" | "lte";
+        /** @enum {string} */
+        TokenKind: "prompt" | "completion" | "total";
+        /** @enum {string} */
+        CandidateQualityFailureReason: "schema" | "assertion" | "invalid_output";
+        /** @enum {string} */
+        InfrastructureFailureReason: "transport" | "timeout" | "rate_limit" | "provider_unavailable" | "provider_internal" | "cancellation" | "budget" | "evaluator_infrastructure";
+        BinaryScorer: {
+            id: components["schemas"]["QualityIdentifier"];
+            metric_id: components["schemas"]["QualityIdentifier"];
+            claimed_scorer_fingerprint: components["schemas"]["QualityFingerprint"];
+        };
+        QualityObjective: {
+            id: components["schemas"]["QualityIdentifier"];
+            metric_id: components["schemas"]["QualityIdentifier"];
+            unit: components["schemas"]["MetricUnit"];
+            aggregation: components["schemas"]["MetricAggregation"];
+            direction: components["schemas"]["ObjectiveDirection"];
+            claimed_measurement_profile_fingerprint: components["schemas"]["QualityFingerprint"];
+            currency_code?: string;
+            token_kind?: components["schemas"]["TokenKind"];
+        };
+        EligibilityRule: {
+            id: components["schemas"]["QualityIdentifier"];
+            metric_id: components["schemas"]["QualityIdentifier"];
+            comparator: components["schemas"]["EligibilityComparator"];
+            unit: components["schemas"]["MetricUnit"];
+            /** Format: int64 */
+            threshold: number;
+        };
+        QualityPolicy: {
+            id: components["schemas"]["QualityIdentifier"];
+            /** Format: int64 */
+            replicates_per_fixture: number;
+            /** Format: int64 */
+            minimum_semantic_cases: number;
+            /** Format: int64 */
+            maximum_infrastructure_failure_ppm: number;
+            claimed_evaluator_profile_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_model_profile_fingerprint: components["schemas"]["QualityFingerprint"];
+            binary_scorers: components["schemas"]["BinaryScorer"][];
+            objectives: components["schemas"]["QualityObjective"][];
+            eligibility_rules: components["schemas"]["EligibilityRule"][];
+        };
+        QualityProposalRequest: {
+            package: string;
+            contract_id: string;
+            expected_package_fingerprint: components["schemas"]["QualityFingerprint"];
+            expected_base_contract_fingerprint: components["schemas"]["QualityFingerprint"];
+            expected_fixture_set_fingerprint: components["schemas"]["QualityFingerprint"];
+            policy: components["schemas"]["QualityPolicy"];
+            candidates: components["schemas"]["QualityCandidateSubmission"][];
+        };
+        QualityCandidateSubmission: {
+            /** @description Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller. */
+            candidate_source: string;
+            synthetic_or_sanitized_data_attestation: boolean;
+            evidence: components["schemas"]["CandidateEvidence"];
+        };
+        CandidateEvidence: {
+            claimed_package_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_base_contract_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_fixture_set_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_candidate_contract_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_quality_policy_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_evaluator_profile_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_model_profile_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_scorer_fingerprints: {
+                [key: string]: components["schemas"]["QualityFingerprint"];
+            };
+            claimed_measurement_profile_fingerprints: {
+                [key: string]: components["schemas"]["QualityFingerprint"];
+            };
+            trials: components["schemas"]["TrialEvidence"][];
+        };
+        TrialEvidence: {
+            fixture_id: components["schemas"]["QualityIdentifier"];
+            /** Format: int64 */
+            replicate_index: number;
+            /** Format: int64 */
+            provider_attempt_count: number;
+            outcome: components["schemas"]["TrialOutcome"];
+            /** @default [] */
+            passed_scorers: components["schemas"]["QualityIdentifier"][];
+            /** @default [] */
+            failed_scorers: components["schemas"]["QualityIdentifier"][];
+            observations: components["schemas"]["MetricObservation"][];
+        };
+        TrialOutcome: {
+            /** @constant */
+            kind: "scored";
+        } | {
+            /** @constant */
+            kind: "candidate_quality_failure";
+            reason: components["schemas"]["CandidateQualityFailureReason"];
+        } | {
+            /** @constant */
+            kind: "infrastructure_failure";
+            reason: components["schemas"]["InfrastructureFailureReason"];
+        };
+        MetricObservation: {
+            metric_id: components["schemas"]["QualityIdentifier"];
+            unit: components["schemas"]["MetricUnit"];
+            /** Format: int64 */
+            value: number;
+            claimed_measurement_profile_fingerprint: components["schemas"]["QualityFingerprint"];
+            currency_code?: string;
+            token_kind?: components["schemas"]["TokenKind"];
+        };
+        ComputedQualityIdentities: {
+            package_fingerprint: components["schemas"]["QualityFingerprint"];
+            base_contract_fingerprint: components["schemas"]["QualityFingerprint"];
+            fixture_set_fingerprint: components["schemas"]["QualityFingerprint"];
+            quality_policy_fingerprint: components["schemas"]["QualityFingerprint"];
+            request_fingerprint: components["schemas"]["QualityFingerprint"];
+        };
+        ClaimedQualityIdentities: {
+            claimed_candidate_contract_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_evaluator_profile_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_model_profile_fingerprint: components["schemas"]["QualityFingerprint"];
+            claimed_scorer_fingerprints: {
+                [key: string]: components["schemas"]["QualityFingerprint"];
+            };
+            claimed_measurement_profile_fingerprints: {
+                [key: string]: components["schemas"]["QualityFingerprint"];
+            };
+        };
+        MetricAggregate: {
+            metric_id: components["schemas"]["QualityIdentifier"];
+            unit: components["schemas"]["MetricUnit"];
+            aggregation: components["schemas"]["MetricAggregation"];
+            direction: components["schemas"]["ObjectiveDirection"];
+            /** Format: int64 */
+            value: number;
+        };
+        EligibilityGate: {
+            rule_id: components["schemas"]["QualityIdentifier"];
+            passed: boolean;
+            /** Format: int64 */
+            actual?: number;
+            comparator: components["schemas"]["EligibilityComparator"];
+            /** Format: int64 */
+            threshold: number;
+            unit: components["schemas"]["MetricUnit"];
+        };
+        EligibilityAssessment: {
+            eligible: boolean;
+            /** Format: int64 */
+            total_trial_count: number;
+            /** Format: int64 */
+            semantic_trial_count: number;
+            /** Format: int64 */
+            infrastructure_trial_count: number;
+            /** Format: int64 */
+            semantic_coverage_ppm: number;
+            /** Format: int64 */
+            infrastructure_failure_ppm: number;
+            gates: components["schemas"]["EligibilityGate"][];
+        };
+        QualityTrialSummary: {
+            fixture_id: components["schemas"]["QualityIdentifier"];
+            /** Format: int64 */
+            replicate_index: number;
+            /** Format: int64 */
+            provider_attempt_count: number;
+            outcome: components["schemas"]["TrialOutcome"];
+            passed_scorers: components["schemas"]["QualityIdentifier"][];
+            failed_scorers: components["schemas"]["QualityIdentifier"][];
+            observations: components["schemas"]["MetricObservation"][];
+        };
+        CandidateAssessment: {
+            candidate_fingerprint?: components["schemas"]["QualityFingerprint"];
+            /** @description Host-attested identities, omitted unless every returned claim is syntactically valid and consistent with the validated protocol profile. */
+            claimed_identities?: components["schemas"]["ClaimedQualityIdentities"];
+            eligibility: components["schemas"]["EligibilityAssessment"];
+            aggregates: components["schemas"]["MetricAggregate"][];
+            trial_summaries: components["schemas"]["QualityTrialSummary"][];
+            proposal_change_paths: string[];
+            diagnostics: components["schemas"]["Diagnostic"][];
+        };
+        ParetoFront: {
+            /** Format: int64 */
+            rank: number;
+            candidate_fingerprints: components["schemas"]["QualityFingerprint"][];
+        };
+        QualityProposalReport: {
+            computed_identities: components["schemas"]["ComputedQualityIdentities"];
+            candidate_assessments: components["schemas"]["CandidateAssessment"][];
+            pareto_fronts: components["schemas"]["ParetoFront"][];
+            report_fingerprint: components["schemas"]["QualityFingerprint"];
         };
         PackageManifest: {
             api_version: string;
@@ -1300,6 +1525,39 @@ export interface operations {
             200: components["responses"]["OperationEnvelope"];
         };
     };
+    assessQualityProposals: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-provided correlation ID. The transport echoes or generates one. */
+                "X-Request-Id"?: components["parameters"]["RequestId"];
+                /** @description Host-owned tenant correlation metadata. Templiqx does not authorize tenants. */
+                "X-Tenant-Id"?: components["parameters"]["TenantId"];
+            };
+            path: {
+                package: components["parameters"]["PackageName"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualityProposalRequest"];
+            };
+        };
+        responses: {
+            /** @description Proposal assessment envelope. Invalid proposals and failed safety floors are represented by deterministic diagnostics and eligibility results rather than transport-level errors. */
+            200: {
+                headers: {
+                    "X-Request-Id": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityProposalReportEnvelope"];
+                };
+            };
+            413: components["responses"]["TransportFailure"];
+        };
+    };
     renderContract: {
         parameters: {
             query?: never;
@@ -1459,9 +1717,9 @@ export interface operations {
 }
 
 /** Codegen metadata used by the compatibility self-check. */
-export const GENERATED_OPENAPI_VERSION = "1.0.0-alpha.1";
-export const GENERATED_OPENAPI_DIGEST = "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914";
+export const GENERATED_OPENAPI_VERSION = "1.0.0-alpha.2";
+export const GENERATED_OPENAPI_DIGEST = "sha256:f9aa381dee153007e3298afb7ab85f00ff114dd93a056ea6f54cef7d280432d4";
 export const GENERATED_CONTRACT_FORMAT = "templiqx/v1alpha1";
-export const GENERATED_ENGINE_API_VERSION = "0.1";
-export const GENERATED_ENGINE_VERSION = "0.1.0";
-export const GENERATED_SDK_VERSION = "0.1.0";
+export const GENERATED_ENGINE_API_VERSION = "0.2";
+export const GENERATED_ENGINE_VERSION = "0.2.0";
+export const GENERATED_SDK_VERSION = "0.2.0";

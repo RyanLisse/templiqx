@@ -5,6 +5,9 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+pub mod quality;
+pub use quality::*;
+
 pub const API_VERSION: &str = "templiqx/v1alpha1";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

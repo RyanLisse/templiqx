@@ -1,7 +1,7 @@
 {
   "source_artifact": "fixtures/recorded-typst.pdf",
   "renderer_id": "templiqx-typst",
-  "renderer_version": "0.1.0",
+  "renderer_version": "0.2.0",
   "environment_id": "recorded-typst-pdf-v1",
   "artifact_fingerprint": "24ee610320594b58e9f961613af865a964cf4113080669c2a4cea289706958f6",
   "artifact_bytes": 579,

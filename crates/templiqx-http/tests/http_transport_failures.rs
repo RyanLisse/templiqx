@@ -40,6 +40,49 @@ async fn request_json(
     (status, headers, body)
 }
 
+fn quality_request(package: &str) -> Value {
+    json!({
+        "package": package,
+        "contract_id": "contract",
+        "expected_package_fingerprint": "package-fingerprint",
+        "expected_base_contract_fingerprint": "contract-fingerprint",
+        "expected_fixture_set_fingerprint": "fixture-fingerprint",
+        "policy": {
+            "id": "policy",
+            "replicates_per_fixture": 1,
+            "minimum_semantic_cases": 1,
+            "maximum_infrastructure_failure_ppm": 0,
+            "claimed_evaluator_profile_fingerprint": "evaluator-fingerprint",
+            "claimed_model_profile_fingerprint": "model-fingerprint",
+            "binary_scorers": [],
+            "objectives": [],
+            "eligibility_rules": []
+        },
+        "candidates": []
+    })
+}
+
+fn assert_fixed_quality_json_rejection(body: &Value) {
+    assert_eq!(body["operation"], "assess_quality_proposals");
+    assert_eq!(body["ok"], false);
+    assert_eq!(body["diagnostics"][0]["code"], "TQX_HTTP_QUALITY_JSON");
+    assert_eq!(
+        body["diagnostics"][0]["message"],
+        "quality assessment request body is invalid"
+    );
+    assert_eq!(body["diagnostics"][0]["json_pointer"], "/");
+}
+
+fn assert_fixed_payload_too_large(body: &Value) {
+    assert_eq!(
+        body,
+        &json!({
+            "code": "TQX_TRANSPORT_PAYLOAD_TOO_LARGE",
+            "message": "request body exceeds the maximum allowed size"
+        })
+    );
+}
+
 #[tokio::test]
 async fn rejects_unknown_json_fields_on_strict_request_bodies() {
     let root = tempfile::tempdir().expect("temp root");
@@ -61,6 +104,12 @@ async fn rejects_unknown_json_fields_on_strict_request_bodies() {
             .expect("diagnostics")
             .iter()
             .any(|diagnostic| diagnostic["code"] == "TQX_HTTP_JSON")
+    );
+    assert!(
+        body["diagnostics"][0]["message"]
+            .as_str()
+            .is_some_and(|message| message.contains("unexpected")),
+        "legacy routes must retain detailed JSON rejection messages: {body}"
     );
 }
 
@@ -111,6 +160,129 @@ async fn rejects_oversized_request_bodies() {
             || response.status() == StatusCode::BAD_REQUEST,
         "oversized payloads must be rejected, got {}",
         response.status()
+    );
+}
+
+#[tokio::test]
+async fn quality_assessment_rejects_unknown_fields_fail_closed() {
+    let root = tempfile::tempdir().expect("temp root");
+    let app = templiqx_http::router_from_root(root.path()).expect("compose router");
+    let (status, _headers, body) = request_json(
+        app,
+        Method::POST,
+        "/operations/v1/packages/demo/quality/proposals:assess",
+        Some(r#"{"customer_ryan.sensitive@example.invalid_ssn_123-45-6789":true}"#),
+        &[],
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_fixed_quality_json_rejection(&body);
+    let encoded = serde_json::to_string(&body).expect("response JSON");
+    assert!(
+        !encoded.contains("ryan.sensitive@example.invalid")
+            && !encoded.contains("123-45-6789")
+            && !encoded.contains("unknown field"),
+        "quality rejection must not echo candidate-controlled field names: {body}"
+    );
+}
+
+#[tokio::test]
+async fn quality_assessment_redacts_malformed_json_parser_details() {
+    let root = tempfile::tempdir().expect("temp root");
+    let app = templiqx_http::router_from_root(root.path()).expect("compose router");
+    let malformed = r#"{"package":"demo","candidate_ryan.sensitive@example.invalid_ssn_123-45-6789":"unterminated"#;
+    let (status, _headers, body) = request_json(
+        app,
+        Method::POST,
+        "/operations/v1/packages/demo/quality/proposals:assess",
+        Some(malformed),
+        &[],
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_fixed_quality_json_rejection(&body);
+    let encoded = serde_json::to_string(&body).expect("response JSON");
+    assert!(
+        !encoded.contains("ryan.sensitive@example.invalid")
+            && !encoded.contains("123-45-6789")
+            && !encoded.contains("unterminated")
+            && !encoded.contains("EOF"),
+        "quality rejection must not echo submitted values or parser details: {body}"
+    );
+}
+
+#[tokio::test]
+async fn quality_assessment_requires_body_and_route_package_to_match() {
+    let root = tempfile::tempdir().expect("temp root");
+    let app = templiqx_http::router_from_root(root.path()).expect("compose router");
+    let request = quality_request("other");
+    let encoded = serde_json::to_string(&request).expect("request JSON");
+    let (status, _headers, body) = request_json(
+        app,
+        Method::POST,
+        "/operations/v1/packages/demo/quality/proposals:assess",
+        Some(&encoded),
+        &[],
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(body["operation"], "assess_quality_proposals");
+    assert_eq!(
+        body["diagnostics"][0]["code"],
+        "TQX_QUALITY_BINDING_MISMATCH"
+    );
+    assert_eq!(body["diagnostics"][0]["json_pointer"], "/package");
+}
+
+#[tokio::test]
+async fn quality_assessment_has_a_route_scoped_four_mib_body_limit() {
+    let root = tempfile::tempdir().expect("temp root");
+    let app = templiqx_http::router_from_root(root.path()).expect("compose router");
+
+    // More than the default 1 MiB must reach application validation on this route.
+    let mut within_quality_limit = quality_request("demo");
+    within_quality_limit["policy"]["id"] = Value::String("x".repeat(1024 * 1024 + 1));
+    let within_quality_limit =
+        serde_json::to_string(&within_quality_limit).expect("within-limit request JSON");
+    let (status, _headers, body) = request_json(
+        app.clone(),
+        Method::POST,
+        "/operations/v1/packages/demo/quality/proposals:assess",
+        Some(&within_quality_limit),
+        &[],
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(
+        body["diagnostics"]
+            .as_array()
+            .expect("diagnostics")
+            .iter()
+            .all(|diagnostic| diagnostic["code"] != "TQX_HTTP_QUALITY_JSON"),
+        "the quality route must not retain the default 1 MiB limit: {body}"
+    );
+
+    let email = "ryan.sensitive@example.invalid";
+    let ssn = "123-45-6789";
+    let mut over_quality_limit = quality_request("demo");
+    over_quality_limit["policy"]["id"] =
+        Value::String(format!("{email}_{ssn}_{}", "x".repeat(4 * 1024 * 1024 + 1)));
+    let over_quality_limit =
+        serde_json::to_string(&over_quality_limit).expect("over-limit request JSON");
+    let (status, _headers, body) = request_json(
+        app,
+        Method::POST,
+        "/operations/v1/packages/demo/quality/proposals:assess",
+        Some(&over_quality_limit),
+        &[],
+    )
+    .await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+    assert_fixed_payload_too_large(&body);
+    let encoded = serde_json::to_string(&body).expect("response JSON");
+    assert!(
+        !encoded.contains(email) && !encoded.contains(ssn),
+        "payload-too-large rejection reflected request data: {body}"
     );
 }
 

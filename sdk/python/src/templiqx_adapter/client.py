@@ -30,6 +30,8 @@ from ._generated.operations_v1 import (
     OperationEnvelopeBase,
     PackageEnvelope,
     PackageListEnvelope,
+    QualityProposalReportEnvelope,
+    QualityProposalRequest,
     RenderDocumentRequest,
     RunEvalRequest,
     SignPackageRequest,
@@ -478,6 +480,23 @@ class TempliqxClient:
             request_id=request_id,
         )
 
+    def assess_quality_proposals(
+        self,
+        package: str,
+        body: QualityProposalRequest,
+        *,
+        timeout: float | None = None,
+        request_id: str | None = None,
+    ) -> TempliqxResponse[QualityProposalReportEnvelope]:
+        return self._dispatch(
+            "POST",
+            f"{self._package_path(package)}/quality/proposals:assess",
+            _model_decoder(QualityProposalReportEnvelope),
+            body=body,
+            timeout=timeout,
+            request_id=request_id,
+        )
+
     def render_contract(
         self,
         package: str,
@@ -634,4 +653,3 @@ class TempliqxClient:
             request_id=request_id,
             if_match=if_match,
         )
-

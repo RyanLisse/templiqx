@@ -76,8 +76,8 @@ func main() {
 	if count := bytes.Count(dto, runtimeImport); count != 1 {
 		fatalf("expected exactly one generated runtime import, got %d", count)
 	}
-	if count := bytes.Count(dto, []byte("runtime.JSONMerge")); count != 4 {
-		fatalf("expected exactly four generated runtime.JSONMerge calls, got %d", count)
+	if count := bytes.Count(dto, []byte("runtime.JSONMerge")); count != 7 {
+		fatalf("expected exactly seven generated runtime.JSONMerge calls, got %d", count)
 	}
 	dto = bytes.Replace(dto, runtimeImport, nil, 1)
 	dto = bytes.ReplaceAll(dto, []byte("runtime.JSONMerge"), []byte("generatedJSONMerge"))

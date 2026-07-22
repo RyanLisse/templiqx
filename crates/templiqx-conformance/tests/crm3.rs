@@ -453,6 +453,7 @@ const BEHAVIOR_PARITY_CASES: &[&str] = &[
     "test_package",
     "list_evals",
     "run_eval",
+    "assess_quality_proposals",
     "diff_contract",
     "explain_contract",
 ];

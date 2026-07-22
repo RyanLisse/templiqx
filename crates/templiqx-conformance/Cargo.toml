@@ -31,7 +31,10 @@ templiqx-typst = { path = "../../adapters/templiqx-typst" }
 templiqx-xlsx = { path = "../../adapters/templiqx-xlsx" }
 templiqx-bench = { path = "../../tools/templiqx-bench" }
 templiqx-mcp = { path = "../templiqx-mcp" }
+templiqx-http = { path = "../templiqx-http" }
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
+axum.workspace = true
+tower.workspace = true
 zip = { version = "8.6", default-features = false, features = ["deflate"] }
 
 [lints]

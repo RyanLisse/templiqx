@@ -18,8 +18,9 @@ use crate::{
         ContractEnvelope, CreatePackageRequest, DiffContractRequest, ExecuteRequest,
         ExecutionReceiptEnvelope, HealthStatus, InspectDocumentEnvelope, InspectDocumentRequest,
         JsonValueEnvelope, MigrateLegacyRequest, PackageEnvelope, PackageListEnvelope,
-        RenderDocumentRequest, RunEvalRequest, SignPackageRequest, SummaryEnvelope,
-        UpdatePackageRequest, VerifyPackageTrustRequest,
+        QualityProposalReportEnvelope, QualityProposalRequest, RenderDocumentRequest,
+        RunEvalRequest, SignPackageRequest, SummaryEnvelope, UpdatePackageRequest,
+        VerifyPackageTrustRequest,
     },
 };
 
@@ -353,6 +354,17 @@ impl Client {
         options: CallOptions,
     ) -> Result<TempliqxResponse<JsonValueEnvelope>, TempliqxError> {
         let path = format!("{}/evals/run", package_path(package));
+        self.send_json(Method::POST, &path, Some(body), options, false)
+            .await
+    }
+
+    pub async fn assess_quality_proposals(
+        &self,
+        package: &str,
+        body: &QualityProposalRequest,
+        options: CallOptions,
+    ) -> Result<TempliqxResponse<QualityProposalReportEnvelope>, TempliqxError> {
+        let path = format!("{}/quality/proposals:assess", package_path(package));
         self.send_json(Method::POST, &path, Some(body), options, false)
             .await
     }

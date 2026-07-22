@@ -13,6 +13,7 @@ Published docs site: [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/
 - [Operations HTTP API](guides/operations-api.md) — includes `/swagger-ui` over the checked-in OpenAPI
 - [Operations OpenAPI v1](https://github.com/RyanLisse/templiqx/blob/main/openapi/templiqx-operations-v1.yaml)
 - [Contract format](contracts/v1alpha1.md)
+- [Quality proposal assessment v1alpha1](contracts/quality-proposals-v1alpha1.md)
 - [Evidence fragment v1alpha1](contracts/evidence-fragment-v1alpha1.md)
 - [Merge data v1alpha1 (customFields)](contracts/merge-data-v1alpha1.md)
 - [Report definition v1alpha1](contracts/report-definition-v1alpha1.md)
@@ -23,10 +24,12 @@ Published docs site: [ryanlisse.github.io/templiqx](https://ryanlisse.github.io/
 - [Engine and SDK versioning](guides/versioning.md)
 - [Pre-CRM3 readiness](guides/pre-crm3-readiness.md)
 - [Host integration handoff](guides/host-integration.md)
+- [Quality evidence host integration](guides/quality-evidence-host-integration.md)
 - [Report engine compatibility (BLI-230)](guides/report-engine-compatibility.md)
 - [Release procedure and artifact verification](guides/releasing.md)
 - [HTTP server is not a signed release artifact (ADR)](adr/http-server-release-artifact.md)
 - [High-complexity Rust module backlog (ADR)](adr/high-complexity-rust-modules.md)
+- [Proposal-only quality evidence protocol (proposed ADR)](adr/quality-evidence-protocol.md)
 
 Decisions (ADR):
 
@@ -35,6 +38,7 @@ Decisions (ADR):
 - [ADR: Tool-contract references](adr/tool-contract-refs.md)
 - [ADR: Streaming RuntimeAdapter port](adr/streaming-runtime-port.md)
 - [ADR: ODT compatibility](adr/odt-compatibility.md)
+- [ADR: Proposal-only quality evidence protocol](adr/quality-evidence-protocol.md)
 
 Agent skills:
 
@@ -46,6 +50,7 @@ Agent skills:
 - [Qlty smells findings (2026-07-15)](audits/2026-07-15-qlty-smells-findings.md)
 - [Qlty smells refactor / optimize plan](plans/2026-07-15-002-chore-qlty-smells-refactor-optimize-plan.md)
 - [BLI-230 report-engine gaps plan](plans/2026-07-16-001-feat-bli-230-report-engine-gaps-plan.md)
+- [Quality evidence proposal protocol delivery plan](plans/2026-07-22-001-feat-quality-evidence-protocol.md)
 - [BLI-230 report-engine gaps plan (HTML)](specs/bli-230-report-engine-gaps-plan.html)
 - [Production release and conformance plan](plans/2026-07-13-001-feat-production-release-and-conformance-plan.md)
 - [Deferred / host-blocked work log](plans/2026-07-13-deferred-work-log.md)

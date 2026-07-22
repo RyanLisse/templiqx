@@ -1,6 +1,6 @@
-use anyhow::{Context, Result, ensure};
+use anyhow::{Context, Result, anyhow, ensure};
 use clap::{Parser, Subcommand};
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{
     fs,
@@ -13,7 +13,12 @@ use templiqx_application::{
     MigrateLegacyRequest, ReadArtifactRequest, RenderDocumentRequest, SignPackageRequest,
     UpdatePackageRequest, VerifyPackageTrustRequest,
 };
-use templiqx_contracts::{OperationEnvelope, RenderRequest, fingerprint, fingerprint_bytes};
+use templiqx_contracts::{
+    OperationEnvelope, QualityProposalRequest, RenderRequest, fingerprint, fingerprint_bytes,
+};
+
+const QUALITY_REQUEST_READ_MESSAGE: &str = "quality assessment request file could not be read";
+const QUALITY_REQUEST_DECODE_MESSAGE: &str = "quality assessment request body is invalid";
 
 #[derive(Parser)]
 #[command(
@@ -192,6 +197,12 @@ enum Command {
         fixture_id: String,
         #[arg(long = "capability")]
         capabilities: Vec<String>,
+    },
+    /// Assess host-evaluated contract proposals without selecting or promoting one.
+    AssessQualityProposals {
+        /// JSON file containing the complete quality proposal request.
+        #[arg(long)]
+        request: PathBuf,
     },
     /// Run the synthetic CRM3 conformance workload used by Docker and kind smoke.
     Crm3Conformance {
@@ -453,6 +464,10 @@ fn run() -> Result<bool> {
             fixture_id,
             capabilities,
         } => output!(service.run_eval(&package, &contract, &fixture_id, &capabilities)),
+        Command::AssessQualityProposals { request } => {
+            let request = read_quality_request(&request)?;
+            output!(service.assess_quality_proposals(&request))
+        }
         Command::Crm3Conformance {
             package,
             workspace,
@@ -489,7 +504,7 @@ fn crm3_conformance(
     let package_root = root.join(package);
     let capabilities = vec!["structured_output".to_owned()];
     let extraction_request = read_request(Some(package_root.join("evals/bli-61-request.json")))?;
-    let extraction_output = read_json(&package_root.join("evals/bli-61-output.json"))?;
+    let extraction_output: Value = read_json(&package_root.join("evals/bli-61-output.json"))?;
     let extraction = service.execute_contract(
         package,
         "bli-61-date-term-extraction",
@@ -509,7 +524,7 @@ fn crm3_conformance(
     drafting_request
         .inputs
         .insert("extracted_facts".into(), extraction_output);
-    let drafting_output = read_json(&package_root.join("evals/bli-62-output.json"))?;
+    let drafting_output: Value = read_json(&package_root.join("evals/bli-62-output.json"))?;
     let drafting = service.execute_contract(
         package,
         "bli-62-document-drafting",
@@ -574,10 +589,16 @@ fn read_request(path: Option<PathBuf>) -> Result<RenderRequest> {
         },
     )
 }
-fn read_json(path: &Path) -> Result<Value> {
+fn read_json<T: DeserializeOwned>(path: &Path) -> Result<T> {
     serde_json::from_slice(&fs::read(path).with_context(|| format!("read {}", path.display()))?)
         .with_context(|| format!("decode JSON from {}", path.display()))
 }
+
+fn read_quality_request(path: &Path) -> Result<QualityProposalRequest> {
+    let bytes = fs::read(path).map_err(|_| anyhow!(QUALITY_REQUEST_READ_MESSAGE))?;
+    serde_json::from_slice(&bytes).map_err(|_| anyhow!(QUALITY_REQUEST_DECODE_MESSAGE))
+}
+
 fn workspace_string(path: Option<PathBuf>) -> Result<Option<String>> {
     path.map(|path| {
         let absolute = if path.is_absolute() {

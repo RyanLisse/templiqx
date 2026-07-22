@@ -3,10 +3,10 @@ namespace Templiqx.Adapter.Generated;
 
 public static class GeneratedMeta
 {
-    public const string GeneratedOpenApiVersion = "1.0.0-alpha.1";
-    public const string GeneratedOpenApiDigest = "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914";
+    public const string GeneratedOpenApiVersion = "1.0.0-alpha.2";
+    public const string GeneratedOpenApiDigest = "sha256:f9aa381dee153007e3298afb7ab85f00ff114dd93a056ea6f54cef7d280432d4";
     public const string GeneratedContractFormat = "templiqx/v1alpha1";
-    public const string GeneratedEngineApiVersion = "0.1";
-    public const string GeneratedEngineVersion = "0.1.0";
-    public const string GeneratedSdkVersion = "0.1.0";
+    public const string GeneratedEngineApiVersion = "0.2";
+    public const string GeneratedEngineVersion = "0.2.0";
+    public const string GeneratedSdkVersion = "0.2.0";
 }

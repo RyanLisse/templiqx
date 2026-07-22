@@ -128,6 +128,11 @@ export interface TempliqxClient {
     body: OperationBody<"runEval">,
     options?: CallOptions,
   ): Result<"runEval">;
+  assessQualityProposals(
+    path: OperationParameters<"assessQualityProposals", "path">,
+    body: OperationBody<"assessQualityProposals">,
+    options?: CallOptions,
+  ): Result<"assessQualityProposals">;
   renderContract(
     path: OperationParameters<"renderContract", "path">,
     body: OperationBody<"renderContract">,
@@ -366,6 +371,13 @@ export function createTempliqxClient(config: CreateTempliqxClientOptions): Templ
       dispatch<"listEvals">({ method: "GET", path: `${packagePath(path.package)}/evals`, options }),
     runEval: (path, body, options) =>
       dispatch<"runEval">({ method: "POST", path: `${packagePath(path.package)}/evals/run`, body, options }),
+    assessQualityProposals: (path, body, options) =>
+      dispatch<"assessQualityProposals">({
+        method: "POST",
+        path: `${packagePath(path.package)}/quality/proposals:assess`,
+        body,
+        options,
+      }),
     renderContract: (path, body, options) =>
       dispatch<"renderContract">({
         method: "POST",

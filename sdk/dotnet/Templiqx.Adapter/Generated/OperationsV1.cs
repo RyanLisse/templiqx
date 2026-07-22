@@ -106,6 +106,8 @@ namespace Templiqx.Adapter.Client
                 return boolean
                     ? "true"
                     : "false";
+            if (obj is CandidateQualityFailureReason candidateQualityFailureReason)
+                return CandidateQualityFailureReasonValueConverter.ToJsonValue(candidateQualityFailureReason);
             if (obj is CatalogEnvelope.ApiVersionEnum catalogEnvelopeApiVersionEnum)
                 return CatalogEnvelope.ApiVersionEnumToJsonValue(catalogEnvelopeApiVersionEnum);
             if (obj is CompiledInteractionEnvelope.ApiVersionEnum compiledInteractionEnvelopeApiVersionEnum)
@@ -114,24 +116,38 @@ namespace Templiqx.Adapter.Client
                 return ContractEnvelope.ApiVersionEnumToJsonValue(contractEnvelopeApiVersionEnum);
             if (obj is Diagnostic.SeverityEnum diagnosticSeverityEnum)
                 return Diagnostic.SeverityEnumToJsonValue(diagnosticSeverityEnum);
+            if (obj is EligibilityComparator eligibilityComparator)
+                return EligibilityComparatorValueConverter.ToJsonValue(eligibilityComparator);
             if (obj is ExecutionReceiptEnvelope.ApiVersionEnum executionReceiptEnvelopeApiVersionEnum)
                 return ExecutionReceiptEnvelope.ApiVersionEnumToJsonValue(executionReceiptEnvelopeApiVersionEnum);
             if (obj is HealthStatus.StatusEnum healthStatusStatusEnum)
                 return HealthStatus.StatusEnumToJsonValue(healthStatusStatusEnum);
+            if (obj is InfrastructureFailureReason infrastructureFailureReason)
+                return InfrastructureFailureReasonValueConverter.ToJsonValue(infrastructureFailureReason);
             if (obj is InspectDocumentEnvelope.ApiVersionEnum inspectDocumentEnvelopeApiVersionEnum)
                 return InspectDocumentEnvelope.ApiVersionEnumToJsonValue(inspectDocumentEnvelopeApiVersionEnum);
             if (obj is JsonValueEnvelope.ApiVersionEnum jsonValueEnvelopeApiVersionEnum)
                 return JsonValueEnvelope.ApiVersionEnumToJsonValue(jsonValueEnvelopeApiVersionEnum);
+            if (obj is MetricAggregation metricAggregation)
+                return MetricAggregationValueConverter.ToJsonValue(metricAggregation);
+            if (obj is MetricUnit metricUnit)
+                return MetricUnitValueConverter.ToJsonValue(metricUnit);
+            if (obj is ObjectiveDirection objectiveDirection)
+                return ObjectiveDirectionValueConverter.ToJsonValue(objectiveDirection);
             if (obj is OperationEnvelopeBase.ApiVersionEnum operationEnvelopeBaseApiVersionEnum)
                 return OperationEnvelopeBase.ApiVersionEnumToJsonValue(operationEnvelopeBaseApiVersionEnum);
             if (obj is PackageEnvelope.ApiVersionEnum packageEnvelopeApiVersionEnum)
                 return PackageEnvelope.ApiVersionEnumToJsonValue(packageEnvelopeApiVersionEnum);
             if (obj is PackageListEnvelope.ApiVersionEnum packageListEnvelopeApiVersionEnum)
                 return PackageListEnvelope.ApiVersionEnumToJsonValue(packageListEnvelopeApiVersionEnum);
+            if (obj is QualityProposalReportEnvelope.ApiVersionEnum qualityProposalReportEnvelopeApiVersionEnum)
+                return QualityProposalReportEnvelope.ApiVersionEnumToJsonValue(qualityProposalReportEnvelopeApiVersionEnum);
             if (obj is StringListEnvelope.ApiVersionEnum stringListEnvelopeApiVersionEnum)
                 return StringListEnvelope.ApiVersionEnumToJsonValue(stringListEnvelopeApiVersionEnum);
             if (obj is SummaryEnvelope.ApiVersionEnum summaryEnvelopeApiVersionEnum)
                 return SummaryEnvelope.ApiVersionEnumToJsonValue(summaryEnvelopeApiVersionEnum);
+            if (obj is TokenKind tokenKind)
+                return TokenKindValueConverter.ToJsonValue(tokenKind);
             if (obj is ICollection collection)
             {
                 List<string?> entries = new();
@@ -552,6 +568,1264 @@ namespace Templiqx.Adapter.Generated
 
             writer.WritePropertyName("capabilities");
             JsonSerializer.Serialize(writer, adapterDescriptor.Capabilities, jsonSerializerOptions);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// BinaryScorer
+    /// </summary>
+    public partial class BinaryScorer : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryScorer" /> class.
+        /// </summary>
+        /// <param name="id">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="metricId">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="claimedScorerFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        [JsonConstructor]
+        public BinaryScorer(string id, string metricId, string claimedScorerFingerprint)
+        {
+            Id = id;
+            MetricId = metricId;
+            ClaimedScorerFingerprint = claimedScorerFingerprint;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("metric_id")]
+        public string MetricId { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_scorer_fingerprint")]
+        public string ClaimedScorerFingerprint { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class BinaryScorer {\n");
+            sb.Append("  Id: ").Append(Id).Append("\n");
+            sb.Append("  MetricId: ").Append(MetricId).Append("\n");
+            sb.Append("  ClaimedScorerFingerprint: ").Append(ClaimedScorerFingerprint).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // Id (string) maxLength
+            if (this.Id != null && this.Id.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for Id, length must be less than 128.", new [] { "Id" });
+            }
+
+            // Id (string) minLength
+            if (this.Id != null && this.Id.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for Id, length must be greater than 1.", new [] { "Id" });
+            }
+
+            if (this.Id != null) {
+                // Id (string) pattern
+                Regex regexId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexId.Match(this.Id).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for Id, must match a pattern of " + regexId, new [] { "Id" });
+                }
+            }
+
+            // MetricId (string) maxLength
+            if (this.MetricId != null && this.MetricId.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be less than 128.", new [] { "MetricId" });
+            }
+
+            // MetricId (string) minLength
+            if (this.MetricId != null && this.MetricId.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be greater than 1.", new [] { "MetricId" });
+            }
+
+            if (this.MetricId != null) {
+                // MetricId (string) pattern
+                Regex regexMetricId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexMetricId.Match(this.MetricId).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MetricId, must match a pattern of " + regexMetricId, new [] { "MetricId" });
+                }
+            }
+
+            // ClaimedScorerFingerprint (string) maxLength
+            if (this.ClaimedScorerFingerprint != null && this.ClaimedScorerFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedScorerFingerprint, length must be less than 64.", new [] { "ClaimedScorerFingerprint" });
+            }
+
+            // ClaimedScorerFingerprint (string) minLength
+            if (this.ClaimedScorerFingerprint != null && this.ClaimedScorerFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedScorerFingerprint, length must be greater than 64.", new [] { "ClaimedScorerFingerprint" });
+            }
+
+            if (this.ClaimedScorerFingerprint != null) {
+                // ClaimedScorerFingerprint (string) pattern
+                Regex regexClaimedScorerFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedScorerFingerprint.Match(this.ClaimedScorerFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedScorerFingerprint, must match a pattern of " + regexClaimedScorerFingerprint, new [] { "ClaimedScorerFingerprint" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="BinaryScorer" />
+    /// </summary>
+    public class BinaryScorerJsonConverter : JsonConverter<BinaryScorer>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="BinaryScorer" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override BinaryScorer Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> id = default;
+            Option<string?> metricId = default;
+            Option<string?> claimedScorerFingerprint = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "id":
+                            id = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "metric_id":
+                            metricId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_scorer_fingerprint":
+                            claimedScorerFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!id.IsSet)
+                throw new ArgumentException("Property is required for class BinaryScorer.", nameof(id));
+
+            if (!metricId.IsSet)
+                throw new ArgumentException("Property is required for class BinaryScorer.", nameof(metricId));
+
+            if (!claimedScorerFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class BinaryScorer.", nameof(claimedScorerFingerprint));
+
+            if (id.IsSet && id.Value == null)
+                throw new ArgumentNullException(nameof(id), "Property is not nullable for class BinaryScorer.");
+
+            if (metricId.IsSet && metricId.Value == null)
+                throw new ArgumentNullException(nameof(metricId), "Property is not nullable for class BinaryScorer.");
+
+            if (claimedScorerFingerprint.IsSet && claimedScorerFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedScorerFingerprint), "Property is not nullable for class BinaryScorer.");
+
+            return new BinaryScorer(id.Value!, metricId.Value!, claimedScorerFingerprint.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="BinaryScorer" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="binaryScorer"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, BinaryScorer binaryScorer, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, binaryScorer, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="BinaryScorer" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="binaryScorer"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, BinaryScorer binaryScorer, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (binaryScorer.Id == null)
+                throw new ArgumentNullException(nameof(binaryScorer.Id), "Property is required for class BinaryScorer.");
+
+            if (binaryScorer.MetricId == null)
+                throw new ArgumentNullException(nameof(binaryScorer.MetricId), "Property is required for class BinaryScorer.");
+
+            if (binaryScorer.ClaimedScorerFingerprint == null)
+                throw new ArgumentNullException(nameof(binaryScorer.ClaimedScorerFingerprint), "Property is required for class BinaryScorer.");
+
+            writer.WriteString("id", binaryScorer.Id);
+
+            writer.WriteString("metric_id", binaryScorer.MetricId);
+
+            writer.WriteString("claimed_scorer_fingerprint", binaryScorer.ClaimedScorerFingerprint);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// CandidateAssessment
+    /// </summary>
+    public partial class CandidateAssessment : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CandidateAssessment" /> class.
+        /// </summary>
+        /// <param name="eligibility">eligibility</param>
+        /// <param name="aggregates">aggregates</param>
+        /// <param name="trialSummaries">trialSummaries</param>
+        /// <param name="proposalChangePaths">proposalChangePaths</param>
+        /// <param name="diagnostics">diagnostics</param>
+        /// <param name="candidateFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedIdentities">Host-attested identities, omitted unless every returned claim is syntactically valid and consistent with the validated protocol profile.</param>
+        [JsonConstructor]
+        public CandidateAssessment(EligibilityAssessment eligibility, List<MetricAggregate> aggregates, List<QualityTrialSummary> trialSummaries, List<string> proposalChangePaths, List<Diagnostic> diagnostics, Option<string?> candidateFingerprint = default, Option<ClaimedQualityIdentities?> claimedIdentities = default)
+        {
+            Eligibility = eligibility;
+            Aggregates = aggregates;
+            TrialSummaries = trialSummaries;
+            ProposalChangePaths = proposalChangePaths;
+            Diagnostics = diagnostics;
+            CandidateFingerprintOption = candidateFingerprint;
+            ClaimedIdentitiesOption = claimedIdentities;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Eligibility
+        /// </summary>
+        [JsonPropertyName("eligibility")]
+        public EligibilityAssessment Eligibility { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Aggregates
+        /// </summary>
+        [JsonPropertyName("aggregates")]
+        public List<MetricAggregate> Aggregates { get; set; }
+
+        /// <summary>
+        /// Gets or Sets TrialSummaries
+        /// </summary>
+        [JsonPropertyName("trial_summaries")]
+        public List<QualityTrialSummary> TrialSummaries { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ProposalChangePaths
+        /// </summary>
+        [JsonPropertyName("proposal_change_paths")]
+        public List<string> ProposalChangePaths { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Diagnostics
+        /// </summary>
+        [JsonPropertyName("diagnostics")]
+        public List<Diagnostic> Diagnostics { get; set; }
+
+        /// <summary>
+        /// Used to track the state of CandidateFingerprint
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<string?> CandidateFingerprintOption { get; private set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("candidate_fingerprint")]
+        public string? CandidateFingerprint { get { return this.CandidateFingerprintOption; } set { this.CandidateFingerprintOption = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of ClaimedIdentities
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<ClaimedQualityIdentities?> ClaimedIdentitiesOption { get; private set; }
+
+        /// <summary>
+        /// Host-attested identities, omitted unless every returned claim is syntactically valid and consistent with the validated protocol profile.
+        /// </summary>
+        /// <value>Host-attested identities, omitted unless every returned claim is syntactically valid and consistent with the validated protocol profile.</value>
+        [JsonPropertyName("claimed_identities")]
+        public ClaimedQualityIdentities? ClaimedIdentities { get { return this.ClaimedIdentitiesOption; } set { this.ClaimedIdentitiesOption = new(value); } }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class CandidateAssessment {\n");
+            sb.Append("  Eligibility: ").Append(Eligibility).Append("\n");
+            sb.Append("  Aggregates: ").Append(Aggregates).Append("\n");
+            sb.Append("  TrialSummaries: ").Append(TrialSummaries).Append("\n");
+            sb.Append("  ProposalChangePaths: ").Append(ProposalChangePaths).Append("\n");
+            sb.Append("  Diagnostics: ").Append(Diagnostics).Append("\n");
+            sb.Append("  CandidateFingerprint: ").Append(CandidateFingerprint).Append("\n");
+            sb.Append("  ClaimedIdentities: ").Append(ClaimedIdentities).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // CandidateFingerprint (string) maxLength
+            if (this.CandidateFingerprint != null && this.CandidateFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for CandidateFingerprint, length must be less than 64.", new [] { "CandidateFingerprint" });
+            }
+
+            // CandidateFingerprint (string) minLength
+            if (this.CandidateFingerprint != null && this.CandidateFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for CandidateFingerprint, length must be greater than 64.", new [] { "CandidateFingerprint" });
+            }
+
+            if (this.CandidateFingerprintOption.Value != null) {
+                // CandidateFingerprint (string) pattern
+                Regex regexCandidateFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (this.CandidateFingerprintOption.Value != null &&!regexCandidateFingerprint.Match(this.CandidateFingerprintOption.Value).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for CandidateFingerprint, must match a pattern of " + regexCandidateFingerprint, new [] { "CandidateFingerprint" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="CandidateAssessment" />
+    /// </summary>
+    public class CandidateAssessmentJsonConverter : JsonConverter<CandidateAssessment>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="CandidateAssessment" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override CandidateAssessment Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<EligibilityAssessment?> eligibility = default;
+            Option<List<MetricAggregate>?> aggregates = default;
+            Option<List<QualityTrialSummary>?> trialSummaries = default;
+            Option<List<string>?> proposalChangePaths = default;
+            Option<List<Diagnostic>?> diagnostics = default;
+            Option<string?> candidateFingerprint = default;
+            Option<ClaimedQualityIdentities?> claimedIdentities = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "eligibility":
+                            eligibility = new Option<EligibilityAssessment?>(JsonSerializer.Deserialize<EligibilityAssessment>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "aggregates":
+                            aggregates = new Option<List<MetricAggregate>?>(JsonSerializer.Deserialize<List<MetricAggregate>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "trial_summaries":
+                            trialSummaries = new Option<List<QualityTrialSummary>?>(JsonSerializer.Deserialize<List<QualityTrialSummary>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "proposal_change_paths":
+                            proposalChangePaths = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "diagnostics":
+                            diagnostics = new Option<List<Diagnostic>?>(JsonSerializer.Deserialize<List<Diagnostic>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "candidate_fingerprint":
+                            candidateFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_identities":
+                            claimedIdentities = new Option<ClaimedQualityIdentities?>(JsonSerializer.Deserialize<ClaimedQualityIdentities>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!eligibility.IsSet)
+                throw new ArgumentException("Property is required for class CandidateAssessment.", nameof(eligibility));
+
+            if (!aggregates.IsSet)
+                throw new ArgumentException("Property is required for class CandidateAssessment.", nameof(aggregates));
+
+            if (!trialSummaries.IsSet)
+                throw new ArgumentException("Property is required for class CandidateAssessment.", nameof(trialSummaries));
+
+            if (!proposalChangePaths.IsSet)
+                throw new ArgumentException("Property is required for class CandidateAssessment.", nameof(proposalChangePaths));
+
+            if (!diagnostics.IsSet)
+                throw new ArgumentException("Property is required for class CandidateAssessment.", nameof(diagnostics));
+
+            if (eligibility.IsSet && eligibility.Value == null)
+                throw new ArgumentNullException(nameof(eligibility), "Property is not nullable for class CandidateAssessment.");
+
+            if (aggregates.IsSet && aggregates.Value == null)
+                throw new ArgumentNullException(nameof(aggregates), "Property is not nullable for class CandidateAssessment.");
+
+            if (trialSummaries.IsSet && trialSummaries.Value == null)
+                throw new ArgumentNullException(nameof(trialSummaries), "Property is not nullable for class CandidateAssessment.");
+
+            if (proposalChangePaths.IsSet && proposalChangePaths.Value == null)
+                throw new ArgumentNullException(nameof(proposalChangePaths), "Property is not nullable for class CandidateAssessment.");
+
+            if (diagnostics.IsSet && diagnostics.Value == null)
+                throw new ArgumentNullException(nameof(diagnostics), "Property is not nullable for class CandidateAssessment.");
+
+            if (candidateFingerprint.IsSet && candidateFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(candidateFingerprint), "Property is not nullable for class CandidateAssessment.");
+
+            if (claimedIdentities.IsSet && claimedIdentities.Value == null)
+                throw new ArgumentNullException(nameof(claimedIdentities), "Property is not nullable for class CandidateAssessment.");
+
+            return new CandidateAssessment(eligibility.Value!, aggregates.Value!, trialSummaries.Value!, proposalChangePaths.Value!, diagnostics.Value!, candidateFingerprint, claimedIdentities);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="CandidateAssessment" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="candidateAssessment"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, CandidateAssessment candidateAssessment, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, candidateAssessment, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="CandidateAssessment" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="candidateAssessment"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, CandidateAssessment candidateAssessment, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (candidateAssessment.Eligibility == null)
+                throw new ArgumentNullException(nameof(candidateAssessment.Eligibility), "Property is required for class CandidateAssessment.");
+
+            if (candidateAssessment.Aggregates == null)
+                throw new ArgumentNullException(nameof(candidateAssessment.Aggregates), "Property is required for class CandidateAssessment.");
+
+            if (candidateAssessment.TrialSummaries == null)
+                throw new ArgumentNullException(nameof(candidateAssessment.TrialSummaries), "Property is required for class CandidateAssessment.");
+
+            if (candidateAssessment.ProposalChangePaths == null)
+                throw new ArgumentNullException(nameof(candidateAssessment.ProposalChangePaths), "Property is required for class CandidateAssessment.");
+
+            if (candidateAssessment.Diagnostics == null)
+                throw new ArgumentNullException(nameof(candidateAssessment.Diagnostics), "Property is required for class CandidateAssessment.");
+
+            if (candidateAssessment.CandidateFingerprintOption.IsSet && candidateAssessment.CandidateFingerprint == null)
+                throw new ArgumentNullException(nameof(candidateAssessment.CandidateFingerprint), "Property is required for class CandidateAssessment.");
+
+            if (candidateAssessment.ClaimedIdentitiesOption.IsSet && candidateAssessment.ClaimedIdentities == null)
+                throw new ArgumentNullException(nameof(candidateAssessment.ClaimedIdentities), "Property is required for class CandidateAssessment.");
+
+            writer.WritePropertyName("eligibility");
+            JsonSerializer.Serialize(writer, candidateAssessment.Eligibility, jsonSerializerOptions);
+            writer.WritePropertyName("aggregates");
+            JsonSerializer.Serialize(writer, candidateAssessment.Aggregates, jsonSerializerOptions);
+            writer.WritePropertyName("trial_summaries");
+            JsonSerializer.Serialize(writer, candidateAssessment.TrialSummaries, jsonSerializerOptions);
+            writer.WritePropertyName("proposal_change_paths");
+            JsonSerializer.Serialize(writer, candidateAssessment.ProposalChangePaths, jsonSerializerOptions);
+            writer.WritePropertyName("diagnostics");
+            JsonSerializer.Serialize(writer, candidateAssessment.Diagnostics, jsonSerializerOptions);
+            if (candidateAssessment.CandidateFingerprintOption.IsSet)
+                writer.WriteString("candidate_fingerprint", candidateAssessment.CandidateFingerprint);
+
+            if (candidateAssessment.ClaimedIdentitiesOption.IsSet)
+            {
+                writer.WritePropertyName("claimed_identities");
+                JsonSerializer.Serialize(writer, candidateAssessment.ClaimedIdentities, jsonSerializerOptions);
+            }
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// CandidateEvidence
+    /// </summary>
+    public partial class CandidateEvidence : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CandidateEvidence" /> class.
+        /// </summary>
+        /// <param name="claimedPackageFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedBaseContractFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedFixtureSetFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedCandidateContractFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedQualityPolicyFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedEvaluatorProfileFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedModelProfileFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedScorerFingerprints">claimedScorerFingerprints</param>
+        /// <param name="claimedMeasurementProfileFingerprints">claimedMeasurementProfileFingerprints</param>
+        /// <param name="trials">trials</param>
+        [JsonConstructor]
+        public CandidateEvidence(string claimedPackageFingerprint, string claimedBaseContractFingerprint, string claimedFixtureSetFingerprint, string claimedCandidateContractFingerprint, string claimedQualityPolicyFingerprint, string claimedEvaluatorProfileFingerprint, string claimedModelProfileFingerprint, Dictionary<string, string> claimedScorerFingerprints, Dictionary<string, string> claimedMeasurementProfileFingerprints, List<TrialEvidence> trials)
+        {
+            ClaimedPackageFingerprint = claimedPackageFingerprint;
+            ClaimedBaseContractFingerprint = claimedBaseContractFingerprint;
+            ClaimedFixtureSetFingerprint = claimedFixtureSetFingerprint;
+            ClaimedCandidateContractFingerprint = claimedCandidateContractFingerprint;
+            ClaimedQualityPolicyFingerprint = claimedQualityPolicyFingerprint;
+            ClaimedEvaluatorProfileFingerprint = claimedEvaluatorProfileFingerprint;
+            ClaimedModelProfileFingerprint = claimedModelProfileFingerprint;
+            ClaimedScorerFingerprints = claimedScorerFingerprints;
+            ClaimedMeasurementProfileFingerprints = claimedMeasurementProfileFingerprints;
+            Trials = trials;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_package_fingerprint")]
+        public string ClaimedPackageFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_base_contract_fingerprint")]
+        public string ClaimedBaseContractFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_fixture_set_fingerprint")]
+        public string ClaimedFixtureSetFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_candidate_contract_fingerprint")]
+        public string ClaimedCandidateContractFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_quality_policy_fingerprint")]
+        public string ClaimedQualityPolicyFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_evaluator_profile_fingerprint")]
+        public string ClaimedEvaluatorProfileFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_model_profile_fingerprint")]
+        public string ClaimedModelProfileFingerprint { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ClaimedScorerFingerprints
+        /// </summary>
+        [JsonPropertyName("claimed_scorer_fingerprints")]
+        public Dictionary<string, string> ClaimedScorerFingerprints { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ClaimedMeasurementProfileFingerprints
+        /// </summary>
+        [JsonPropertyName("claimed_measurement_profile_fingerprints")]
+        public Dictionary<string, string> ClaimedMeasurementProfileFingerprints { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Trials
+        /// </summary>
+        [JsonPropertyName("trials")]
+        public List<TrialEvidence> Trials { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class CandidateEvidence {\n");
+            sb.Append("  ClaimedPackageFingerprint: ").Append(ClaimedPackageFingerprint).Append("\n");
+            sb.Append("  ClaimedBaseContractFingerprint: ").Append(ClaimedBaseContractFingerprint).Append("\n");
+            sb.Append("  ClaimedFixtureSetFingerprint: ").Append(ClaimedFixtureSetFingerprint).Append("\n");
+            sb.Append("  ClaimedCandidateContractFingerprint: ").Append(ClaimedCandidateContractFingerprint).Append("\n");
+            sb.Append("  ClaimedQualityPolicyFingerprint: ").Append(ClaimedQualityPolicyFingerprint).Append("\n");
+            sb.Append("  ClaimedEvaluatorProfileFingerprint: ").Append(ClaimedEvaluatorProfileFingerprint).Append("\n");
+            sb.Append("  ClaimedModelProfileFingerprint: ").Append(ClaimedModelProfileFingerprint).Append("\n");
+            sb.Append("  ClaimedScorerFingerprints: ").Append(ClaimedScorerFingerprints).Append("\n");
+            sb.Append("  ClaimedMeasurementProfileFingerprints: ").Append(ClaimedMeasurementProfileFingerprints).Append("\n");
+            sb.Append("  Trials: ").Append(Trials).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // ClaimedPackageFingerprint (string) maxLength
+            if (this.ClaimedPackageFingerprint != null && this.ClaimedPackageFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedPackageFingerprint, length must be less than 64.", new [] { "ClaimedPackageFingerprint" });
+            }
+
+            // ClaimedPackageFingerprint (string) minLength
+            if (this.ClaimedPackageFingerprint != null && this.ClaimedPackageFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedPackageFingerprint, length must be greater than 64.", new [] { "ClaimedPackageFingerprint" });
+            }
+
+            if (this.ClaimedPackageFingerprint != null) {
+                // ClaimedPackageFingerprint (string) pattern
+                Regex regexClaimedPackageFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedPackageFingerprint.Match(this.ClaimedPackageFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedPackageFingerprint, must match a pattern of " + regexClaimedPackageFingerprint, new [] { "ClaimedPackageFingerprint" });
+                }
+            }
+
+            // ClaimedBaseContractFingerprint (string) maxLength
+            if (this.ClaimedBaseContractFingerprint != null && this.ClaimedBaseContractFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedBaseContractFingerprint, length must be less than 64.", new [] { "ClaimedBaseContractFingerprint" });
+            }
+
+            // ClaimedBaseContractFingerprint (string) minLength
+            if (this.ClaimedBaseContractFingerprint != null && this.ClaimedBaseContractFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedBaseContractFingerprint, length must be greater than 64.", new [] { "ClaimedBaseContractFingerprint" });
+            }
+
+            if (this.ClaimedBaseContractFingerprint != null) {
+                // ClaimedBaseContractFingerprint (string) pattern
+                Regex regexClaimedBaseContractFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedBaseContractFingerprint.Match(this.ClaimedBaseContractFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedBaseContractFingerprint, must match a pattern of " + regexClaimedBaseContractFingerprint, new [] { "ClaimedBaseContractFingerprint" });
+                }
+            }
+
+            // ClaimedFixtureSetFingerprint (string) maxLength
+            if (this.ClaimedFixtureSetFingerprint != null && this.ClaimedFixtureSetFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedFixtureSetFingerprint, length must be less than 64.", new [] { "ClaimedFixtureSetFingerprint" });
+            }
+
+            // ClaimedFixtureSetFingerprint (string) minLength
+            if (this.ClaimedFixtureSetFingerprint != null && this.ClaimedFixtureSetFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedFixtureSetFingerprint, length must be greater than 64.", new [] { "ClaimedFixtureSetFingerprint" });
+            }
+
+            if (this.ClaimedFixtureSetFingerprint != null) {
+                // ClaimedFixtureSetFingerprint (string) pattern
+                Regex regexClaimedFixtureSetFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedFixtureSetFingerprint.Match(this.ClaimedFixtureSetFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedFixtureSetFingerprint, must match a pattern of " + regexClaimedFixtureSetFingerprint, new [] { "ClaimedFixtureSetFingerprint" });
+                }
+            }
+
+            // ClaimedCandidateContractFingerprint (string) maxLength
+            if (this.ClaimedCandidateContractFingerprint != null && this.ClaimedCandidateContractFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedCandidateContractFingerprint, length must be less than 64.", new [] { "ClaimedCandidateContractFingerprint" });
+            }
+
+            // ClaimedCandidateContractFingerprint (string) minLength
+            if (this.ClaimedCandidateContractFingerprint != null && this.ClaimedCandidateContractFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedCandidateContractFingerprint, length must be greater than 64.", new [] { "ClaimedCandidateContractFingerprint" });
+            }
+
+            if (this.ClaimedCandidateContractFingerprint != null) {
+                // ClaimedCandidateContractFingerprint (string) pattern
+                Regex regexClaimedCandidateContractFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedCandidateContractFingerprint.Match(this.ClaimedCandidateContractFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedCandidateContractFingerprint, must match a pattern of " + regexClaimedCandidateContractFingerprint, new [] { "ClaimedCandidateContractFingerprint" });
+                }
+            }
+
+            // ClaimedQualityPolicyFingerprint (string) maxLength
+            if (this.ClaimedQualityPolicyFingerprint != null && this.ClaimedQualityPolicyFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedQualityPolicyFingerprint, length must be less than 64.", new [] { "ClaimedQualityPolicyFingerprint" });
+            }
+
+            // ClaimedQualityPolicyFingerprint (string) minLength
+            if (this.ClaimedQualityPolicyFingerprint != null && this.ClaimedQualityPolicyFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedQualityPolicyFingerprint, length must be greater than 64.", new [] { "ClaimedQualityPolicyFingerprint" });
+            }
+
+            if (this.ClaimedQualityPolicyFingerprint != null) {
+                // ClaimedQualityPolicyFingerprint (string) pattern
+                Regex regexClaimedQualityPolicyFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedQualityPolicyFingerprint.Match(this.ClaimedQualityPolicyFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedQualityPolicyFingerprint, must match a pattern of " + regexClaimedQualityPolicyFingerprint, new [] { "ClaimedQualityPolicyFingerprint" });
+                }
+            }
+
+            // ClaimedEvaluatorProfileFingerprint (string) maxLength
+            if (this.ClaimedEvaluatorProfileFingerprint != null && this.ClaimedEvaluatorProfileFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, length must be less than 64.", new [] { "ClaimedEvaluatorProfileFingerprint" });
+            }
+
+            // ClaimedEvaluatorProfileFingerprint (string) minLength
+            if (this.ClaimedEvaluatorProfileFingerprint != null && this.ClaimedEvaluatorProfileFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, length must be greater than 64.", new [] { "ClaimedEvaluatorProfileFingerprint" });
+            }
+
+            if (this.ClaimedEvaluatorProfileFingerprint != null) {
+                // ClaimedEvaluatorProfileFingerprint (string) pattern
+                Regex regexClaimedEvaluatorProfileFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedEvaluatorProfileFingerprint.Match(this.ClaimedEvaluatorProfileFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, must match a pattern of " + regexClaimedEvaluatorProfileFingerprint, new [] { "ClaimedEvaluatorProfileFingerprint" });
+                }
+            }
+
+            // ClaimedModelProfileFingerprint (string) maxLength
+            if (this.ClaimedModelProfileFingerprint != null && this.ClaimedModelProfileFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedModelProfileFingerprint, length must be less than 64.", new [] { "ClaimedModelProfileFingerprint" });
+            }
+
+            // ClaimedModelProfileFingerprint (string) minLength
+            if (this.ClaimedModelProfileFingerprint != null && this.ClaimedModelProfileFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedModelProfileFingerprint, length must be greater than 64.", new [] { "ClaimedModelProfileFingerprint" });
+            }
+
+            if (this.ClaimedModelProfileFingerprint != null) {
+                // ClaimedModelProfileFingerprint (string) pattern
+                Regex regexClaimedModelProfileFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedModelProfileFingerprint.Match(this.ClaimedModelProfileFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedModelProfileFingerprint, must match a pattern of " + regexClaimedModelProfileFingerprint, new [] { "ClaimedModelProfileFingerprint" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="CandidateEvidence" />
+    /// </summary>
+    public class CandidateEvidenceJsonConverter : JsonConverter<CandidateEvidence>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="CandidateEvidence" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override CandidateEvidence Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> claimedPackageFingerprint = default;
+            Option<string?> claimedBaseContractFingerprint = default;
+            Option<string?> claimedFixtureSetFingerprint = default;
+            Option<string?> claimedCandidateContractFingerprint = default;
+            Option<string?> claimedQualityPolicyFingerprint = default;
+            Option<string?> claimedEvaluatorProfileFingerprint = default;
+            Option<string?> claimedModelProfileFingerprint = default;
+            Option<Dictionary<string, string>?> claimedScorerFingerprints = default;
+            Option<Dictionary<string, string>?> claimedMeasurementProfileFingerprints = default;
+            Option<List<TrialEvidence>?> trials = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "claimed_package_fingerprint":
+                            claimedPackageFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_base_contract_fingerprint":
+                            claimedBaseContractFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_fixture_set_fingerprint":
+                            claimedFixtureSetFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_candidate_contract_fingerprint":
+                            claimedCandidateContractFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_quality_policy_fingerprint":
+                            claimedQualityPolicyFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_evaluator_profile_fingerprint":
+                            claimedEvaluatorProfileFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_model_profile_fingerprint":
+                            claimedModelProfileFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_scorer_fingerprints":
+                            claimedScorerFingerprints = new Option<Dictionary<string, string>?>(JsonSerializer.Deserialize<Dictionary<string, string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "claimed_measurement_profile_fingerprints":
+                            claimedMeasurementProfileFingerprints = new Option<Dictionary<string, string>?>(JsonSerializer.Deserialize<Dictionary<string, string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "trials":
+                            trials = new Option<List<TrialEvidence>?>(JsonSerializer.Deserialize<List<TrialEvidence>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!claimedPackageFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedPackageFingerprint));
+
+            if (!claimedBaseContractFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedBaseContractFingerprint));
+
+            if (!claimedFixtureSetFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedFixtureSetFingerprint));
+
+            if (!claimedCandidateContractFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedCandidateContractFingerprint));
+
+            if (!claimedQualityPolicyFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedQualityPolicyFingerprint));
+
+            if (!claimedEvaluatorProfileFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedEvaluatorProfileFingerprint));
+
+            if (!claimedModelProfileFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedModelProfileFingerprint));
+
+            if (!claimedScorerFingerprints.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedScorerFingerprints));
+
+            if (!claimedMeasurementProfileFingerprints.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(claimedMeasurementProfileFingerprints));
+
+            if (!trials.IsSet)
+                throw new ArgumentException("Property is required for class CandidateEvidence.", nameof(trials));
+
+            if (claimedPackageFingerprint.IsSet && claimedPackageFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedPackageFingerprint), "Property is not nullable for class CandidateEvidence.");
+
+            if (claimedBaseContractFingerprint.IsSet && claimedBaseContractFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedBaseContractFingerprint), "Property is not nullable for class CandidateEvidence.");
+
+            if (claimedFixtureSetFingerprint.IsSet && claimedFixtureSetFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedFixtureSetFingerprint), "Property is not nullable for class CandidateEvidence.");
+
+            if (claimedCandidateContractFingerprint.IsSet && claimedCandidateContractFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedCandidateContractFingerprint), "Property is not nullable for class CandidateEvidence.");
+
+            if (claimedQualityPolicyFingerprint.IsSet && claimedQualityPolicyFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedQualityPolicyFingerprint), "Property is not nullable for class CandidateEvidence.");
+
+            if (claimedEvaluatorProfileFingerprint.IsSet && claimedEvaluatorProfileFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedEvaluatorProfileFingerprint), "Property is not nullable for class CandidateEvidence.");
+
+            if (claimedModelProfileFingerprint.IsSet && claimedModelProfileFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedModelProfileFingerprint), "Property is not nullable for class CandidateEvidence.");
+
+            if (claimedScorerFingerprints.IsSet && claimedScorerFingerprints.Value == null)
+                throw new ArgumentNullException(nameof(claimedScorerFingerprints), "Property is not nullable for class CandidateEvidence.");
+
+            if (claimedMeasurementProfileFingerprints.IsSet && claimedMeasurementProfileFingerprints.Value == null)
+                throw new ArgumentNullException(nameof(claimedMeasurementProfileFingerprints), "Property is not nullable for class CandidateEvidence.");
+
+            if (trials.IsSet && trials.Value == null)
+                throw new ArgumentNullException(nameof(trials), "Property is not nullable for class CandidateEvidence.");
+
+            return new CandidateEvidence(claimedPackageFingerprint.Value!, claimedBaseContractFingerprint.Value!, claimedFixtureSetFingerprint.Value!, claimedCandidateContractFingerprint.Value!, claimedQualityPolicyFingerprint.Value!, claimedEvaluatorProfileFingerprint.Value!, claimedModelProfileFingerprint.Value!, claimedScorerFingerprints.Value!, claimedMeasurementProfileFingerprints.Value!, trials.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="CandidateEvidence" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="candidateEvidence"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, CandidateEvidence candidateEvidence, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, candidateEvidence, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="CandidateEvidence" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="candidateEvidence"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, CandidateEvidence candidateEvidence, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (candidateEvidence.ClaimedPackageFingerprint == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedPackageFingerprint), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.ClaimedBaseContractFingerprint == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedBaseContractFingerprint), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.ClaimedFixtureSetFingerprint == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedFixtureSetFingerprint), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.ClaimedCandidateContractFingerprint == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedCandidateContractFingerprint), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.ClaimedQualityPolicyFingerprint == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedQualityPolicyFingerprint), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.ClaimedEvaluatorProfileFingerprint == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedEvaluatorProfileFingerprint), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.ClaimedModelProfileFingerprint == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedModelProfileFingerprint), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.ClaimedScorerFingerprints == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedScorerFingerprints), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.ClaimedMeasurementProfileFingerprints == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.ClaimedMeasurementProfileFingerprints), "Property is required for class CandidateEvidence.");
+
+            if (candidateEvidence.Trials == null)
+                throw new ArgumentNullException(nameof(candidateEvidence.Trials), "Property is required for class CandidateEvidence.");
+
+            writer.WriteString("claimed_package_fingerprint", candidateEvidence.ClaimedPackageFingerprint);
+
+            writer.WriteString("claimed_base_contract_fingerprint", candidateEvidence.ClaimedBaseContractFingerprint);
+
+            writer.WriteString("claimed_fixture_set_fingerprint", candidateEvidence.ClaimedFixtureSetFingerprint);
+
+            writer.WriteString("claimed_candidate_contract_fingerprint", candidateEvidence.ClaimedCandidateContractFingerprint);
+
+            writer.WriteString("claimed_quality_policy_fingerprint", candidateEvidence.ClaimedQualityPolicyFingerprint);
+
+            writer.WriteString("claimed_evaluator_profile_fingerprint", candidateEvidence.ClaimedEvaluatorProfileFingerprint);
+
+            writer.WriteString("claimed_model_profile_fingerprint", candidateEvidence.ClaimedModelProfileFingerprint);
+
+            writer.WritePropertyName("claimed_scorer_fingerprints");
+            JsonSerializer.Serialize(writer, candidateEvidence.ClaimedScorerFingerprints, jsonSerializerOptions);
+            writer.WritePropertyName("claimed_measurement_profile_fingerprints");
+            JsonSerializer.Serialize(writer, candidateEvidence.ClaimedMeasurementProfileFingerprints, jsonSerializerOptions);
+            writer.WritePropertyName("trials");
+            JsonSerializer.Serialize(writer, candidateEvidence.Trials, jsonSerializerOptions);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// Defines CandidateQualityFailureReason
+    /// </summary>
+    public enum CandidateQualityFailureReason
+    {
+        /// <summary>
+        /// Enum Schema for value: schema
+        /// </summary>
+        Schema = 1,
+
+        /// <summary>
+        /// Enum Assertion for value: assertion
+        /// </summary>
+        Assertion = 2,
+
+        /// <summary>
+        /// Enum InvalidOutput for value: invalid_output
+        /// </summary>
+        InvalidOutput = 3
+    }
+
+    /// <summary>
+    /// Converts <see cref="CandidateQualityFailureReason"/> to and from the JSON value
+    /// </summary>
+    public static class CandidateQualityFailureReasonValueConverter
+    {
+        /// <summary>
+        /// Parses a given value to <see cref="CandidateQualityFailureReason"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static CandidateQualityFailureReason FromString(string value)
+        {
+            if (value.Equals("schema"))
+                return CandidateQualityFailureReason.Schema;
+
+            if (value.Equals("assertion"))
+                return CandidateQualityFailureReason.Assertion;
+
+            if (value.Equals("invalid_output"))
+                return CandidateQualityFailureReason.InvalidOutput;
+
+            throw new NotImplementedException($"Could not convert value to type CandidateQualityFailureReason: '{value}'");
+        }
+
+        /// <summary>
+        /// Parses a given value to <see cref="CandidateQualityFailureReason"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static CandidateQualityFailureReason? FromStringOrDefault(string value)
+        {
+            if (value.Equals("schema"))
+                return CandidateQualityFailureReason.Schema;
+
+            if (value.Equals("assertion"))
+                return CandidateQualityFailureReason.Assertion;
+
+            if (value.Equals("invalid_output"))
+                return CandidateQualityFailureReason.InvalidOutput;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="CandidateQualityFailureReason"/> to the json value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static string ToJsonValue(CandidateQualityFailureReason value)
+        {
+            if (value == CandidateQualityFailureReason.Schema)
+                return "schema";
+
+            if (value == CandidateQualityFailureReason.Assertion)
+                return "assertion";
+
+            if (value == CandidateQualityFailureReason.InvalidOutput)
+                return "invalid_output";
+
+            throw new NotImplementedException($"Value could not be handled: '{value}'");
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="CandidateQualityFailureReason"/>
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public class CandidateQualityFailureReasonJsonConverter : JsonConverter<CandidateQualityFailureReason>
+    {
+        /// <summary>
+        /// Returns a  from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override CandidateQualityFailureReason Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            CandidateQualityFailureReason? result = rawValue == null
+                ? null
+                : CandidateQualityFailureReasonValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the CandidateQualityFailureReason to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="candidateQualityFailureReason"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, CandidateQualityFailureReason candidateQualityFailureReason, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(CandidateQualityFailureReasonValueConverter.ToJsonValue(candidateQualityFailureReason).ToString());
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="CandidateQualityFailureReason"/>
+    /// </summary>
+    public class CandidateQualityFailureReasonNullableJsonConverter : JsonConverter<CandidateQualityFailureReason?>
+    {
+        /// <summary>
+        /// Returns a CandidateQualityFailureReason from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override CandidateQualityFailureReason? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            CandidateQualityFailureReason? result = rawValue == null
+                ? null
+                : CandidateQualityFailureReasonValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the CandidateQualityFailureReason to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="candidateQualityFailureReason"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, CandidateQualityFailureReason? candidateQualityFailureReason, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(candidateQualityFailureReason.HasValue ? CandidateQualityFailureReasonValueConverter.ToJsonValue(candidateQualityFailureReason.Value).ToString() : "null");
         }
     }
 }
@@ -1191,6 +2465,489 @@ namespace Templiqx.Adapter.Generated
             {
                 writer.WritePropertyName("result");
                 JsonSerializer.Serialize(writer, catalogEnvelope.Result, jsonSerializerOptions);
+            }
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// ClaimedQualityIdentities
+    /// </summary>
+    public partial class ClaimedQualityIdentities : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClaimedQualityIdentities" /> class.
+        /// </summary>
+        /// <param name="claimedCandidateContractFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedEvaluatorProfileFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedModelProfileFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedScorerFingerprints">claimedScorerFingerprints</param>
+        /// <param name="claimedMeasurementProfileFingerprints">claimedMeasurementProfileFingerprints</param>
+        [JsonConstructor]
+        public ClaimedQualityIdentities(string claimedCandidateContractFingerprint, string claimedEvaluatorProfileFingerprint, string claimedModelProfileFingerprint, Dictionary<string, string> claimedScorerFingerprints, Dictionary<string, string> claimedMeasurementProfileFingerprints)
+        {
+            ClaimedCandidateContractFingerprint = claimedCandidateContractFingerprint;
+            ClaimedEvaluatorProfileFingerprint = claimedEvaluatorProfileFingerprint;
+            ClaimedModelProfileFingerprint = claimedModelProfileFingerprint;
+            ClaimedScorerFingerprints = claimedScorerFingerprints;
+            ClaimedMeasurementProfileFingerprints = claimedMeasurementProfileFingerprints;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_candidate_contract_fingerprint")]
+        public string ClaimedCandidateContractFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_evaluator_profile_fingerprint")]
+        public string ClaimedEvaluatorProfileFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_model_profile_fingerprint")]
+        public string ClaimedModelProfileFingerprint { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ClaimedScorerFingerprints
+        /// </summary>
+        [JsonPropertyName("claimed_scorer_fingerprints")]
+        public Dictionary<string, string> ClaimedScorerFingerprints { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ClaimedMeasurementProfileFingerprints
+        /// </summary>
+        [JsonPropertyName("claimed_measurement_profile_fingerprints")]
+        public Dictionary<string, string> ClaimedMeasurementProfileFingerprints { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class ClaimedQualityIdentities {\n");
+            sb.Append("  ClaimedCandidateContractFingerprint: ").Append(ClaimedCandidateContractFingerprint).Append("\n");
+            sb.Append("  ClaimedEvaluatorProfileFingerprint: ").Append(ClaimedEvaluatorProfileFingerprint).Append("\n");
+            sb.Append("  ClaimedModelProfileFingerprint: ").Append(ClaimedModelProfileFingerprint).Append("\n");
+            sb.Append("  ClaimedScorerFingerprints: ").Append(ClaimedScorerFingerprints).Append("\n");
+            sb.Append("  ClaimedMeasurementProfileFingerprints: ").Append(ClaimedMeasurementProfileFingerprints).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // ClaimedCandidateContractFingerprint (string) maxLength
+            if (this.ClaimedCandidateContractFingerprint != null && this.ClaimedCandidateContractFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedCandidateContractFingerprint, length must be less than 64.", new [] { "ClaimedCandidateContractFingerprint" });
+            }
+
+            // ClaimedCandidateContractFingerprint (string) minLength
+            if (this.ClaimedCandidateContractFingerprint != null && this.ClaimedCandidateContractFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedCandidateContractFingerprint, length must be greater than 64.", new [] { "ClaimedCandidateContractFingerprint" });
+            }
+
+            if (this.ClaimedCandidateContractFingerprint != null) {
+                // ClaimedCandidateContractFingerprint (string) pattern
+                Regex regexClaimedCandidateContractFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedCandidateContractFingerprint.Match(this.ClaimedCandidateContractFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedCandidateContractFingerprint, must match a pattern of " + regexClaimedCandidateContractFingerprint, new [] { "ClaimedCandidateContractFingerprint" });
+                }
+            }
+
+            // ClaimedEvaluatorProfileFingerprint (string) maxLength
+            if (this.ClaimedEvaluatorProfileFingerprint != null && this.ClaimedEvaluatorProfileFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, length must be less than 64.", new [] { "ClaimedEvaluatorProfileFingerprint" });
+            }
+
+            // ClaimedEvaluatorProfileFingerprint (string) minLength
+            if (this.ClaimedEvaluatorProfileFingerprint != null && this.ClaimedEvaluatorProfileFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, length must be greater than 64.", new [] { "ClaimedEvaluatorProfileFingerprint" });
+            }
+
+            if (this.ClaimedEvaluatorProfileFingerprint != null) {
+                // ClaimedEvaluatorProfileFingerprint (string) pattern
+                Regex regexClaimedEvaluatorProfileFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedEvaluatorProfileFingerprint.Match(this.ClaimedEvaluatorProfileFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, must match a pattern of " + regexClaimedEvaluatorProfileFingerprint, new [] { "ClaimedEvaluatorProfileFingerprint" });
+                }
+            }
+
+            // ClaimedModelProfileFingerprint (string) maxLength
+            if (this.ClaimedModelProfileFingerprint != null && this.ClaimedModelProfileFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedModelProfileFingerprint, length must be less than 64.", new [] { "ClaimedModelProfileFingerprint" });
+            }
+
+            // ClaimedModelProfileFingerprint (string) minLength
+            if (this.ClaimedModelProfileFingerprint != null && this.ClaimedModelProfileFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedModelProfileFingerprint, length must be greater than 64.", new [] { "ClaimedModelProfileFingerprint" });
+            }
+
+            if (this.ClaimedModelProfileFingerprint != null) {
+                // ClaimedModelProfileFingerprint (string) pattern
+                Regex regexClaimedModelProfileFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedModelProfileFingerprint.Match(this.ClaimedModelProfileFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedModelProfileFingerprint, must match a pattern of " + regexClaimedModelProfileFingerprint, new [] { "ClaimedModelProfileFingerprint" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="ClaimedQualityIdentities" />
+    /// </summary>
+    public class ClaimedQualityIdentitiesJsonConverter : JsonConverter<ClaimedQualityIdentities>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="ClaimedQualityIdentities" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override ClaimedQualityIdentities Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> claimedCandidateContractFingerprint = default;
+            Option<string?> claimedEvaluatorProfileFingerprint = default;
+            Option<string?> claimedModelProfileFingerprint = default;
+            Option<Dictionary<string, string>?> claimedScorerFingerprints = default;
+            Option<Dictionary<string, string>?> claimedMeasurementProfileFingerprints = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "claimed_candidate_contract_fingerprint":
+                            claimedCandidateContractFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_evaluator_profile_fingerprint":
+                            claimedEvaluatorProfileFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_model_profile_fingerprint":
+                            claimedModelProfileFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_scorer_fingerprints":
+                            claimedScorerFingerprints = new Option<Dictionary<string, string>?>(JsonSerializer.Deserialize<Dictionary<string, string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "claimed_measurement_profile_fingerprints":
+                            claimedMeasurementProfileFingerprints = new Option<Dictionary<string, string>?>(JsonSerializer.Deserialize<Dictionary<string, string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!claimedCandidateContractFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class ClaimedQualityIdentities.", nameof(claimedCandidateContractFingerprint));
+
+            if (!claimedEvaluatorProfileFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class ClaimedQualityIdentities.", nameof(claimedEvaluatorProfileFingerprint));
+
+            if (!claimedModelProfileFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class ClaimedQualityIdentities.", nameof(claimedModelProfileFingerprint));
+
+            if (!claimedScorerFingerprints.IsSet)
+                throw new ArgumentException("Property is required for class ClaimedQualityIdentities.", nameof(claimedScorerFingerprints));
+
+            if (!claimedMeasurementProfileFingerprints.IsSet)
+                throw new ArgumentException("Property is required for class ClaimedQualityIdentities.", nameof(claimedMeasurementProfileFingerprints));
+
+            if (claimedCandidateContractFingerprint.IsSet && claimedCandidateContractFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedCandidateContractFingerprint), "Property is not nullable for class ClaimedQualityIdentities.");
+
+            if (claimedEvaluatorProfileFingerprint.IsSet && claimedEvaluatorProfileFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedEvaluatorProfileFingerprint), "Property is not nullable for class ClaimedQualityIdentities.");
+
+            if (claimedModelProfileFingerprint.IsSet && claimedModelProfileFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedModelProfileFingerprint), "Property is not nullable for class ClaimedQualityIdentities.");
+
+            if (claimedScorerFingerprints.IsSet && claimedScorerFingerprints.Value == null)
+                throw new ArgumentNullException(nameof(claimedScorerFingerprints), "Property is not nullable for class ClaimedQualityIdentities.");
+
+            if (claimedMeasurementProfileFingerprints.IsSet && claimedMeasurementProfileFingerprints.Value == null)
+                throw new ArgumentNullException(nameof(claimedMeasurementProfileFingerprints), "Property is not nullable for class ClaimedQualityIdentities.");
+
+            return new ClaimedQualityIdentities(claimedCandidateContractFingerprint.Value!, claimedEvaluatorProfileFingerprint.Value!, claimedModelProfileFingerprint.Value!, claimedScorerFingerprints.Value!, claimedMeasurementProfileFingerprints.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="ClaimedQualityIdentities" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="claimedQualityIdentities"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, ClaimedQualityIdentities claimedQualityIdentities, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, claimedQualityIdentities, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="ClaimedQualityIdentities" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="claimedQualityIdentities"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, ClaimedQualityIdentities claimedQualityIdentities, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (claimedQualityIdentities.ClaimedCandidateContractFingerprint == null)
+                throw new ArgumentNullException(nameof(claimedQualityIdentities.ClaimedCandidateContractFingerprint), "Property is required for class ClaimedQualityIdentities.");
+
+            if (claimedQualityIdentities.ClaimedEvaluatorProfileFingerprint == null)
+                throw new ArgumentNullException(nameof(claimedQualityIdentities.ClaimedEvaluatorProfileFingerprint), "Property is required for class ClaimedQualityIdentities.");
+
+            if (claimedQualityIdentities.ClaimedModelProfileFingerprint == null)
+                throw new ArgumentNullException(nameof(claimedQualityIdentities.ClaimedModelProfileFingerprint), "Property is required for class ClaimedQualityIdentities.");
+
+            if (claimedQualityIdentities.ClaimedScorerFingerprints == null)
+                throw new ArgumentNullException(nameof(claimedQualityIdentities.ClaimedScorerFingerprints), "Property is required for class ClaimedQualityIdentities.");
+
+            if (claimedQualityIdentities.ClaimedMeasurementProfileFingerprints == null)
+                throw new ArgumentNullException(nameof(claimedQualityIdentities.ClaimedMeasurementProfileFingerprints), "Property is required for class ClaimedQualityIdentities.");
+
+            writer.WriteString("claimed_candidate_contract_fingerprint", claimedQualityIdentities.ClaimedCandidateContractFingerprint);
+
+            writer.WriteString("claimed_evaluator_profile_fingerprint", claimedQualityIdentities.ClaimedEvaluatorProfileFingerprint);
+
+            writer.WriteString("claimed_model_profile_fingerprint", claimedQualityIdentities.ClaimedModelProfileFingerprint);
+
+            writer.WritePropertyName("claimed_scorer_fingerprints");
+            JsonSerializer.Serialize(writer, claimedQualityIdentities.ClaimedScorerFingerprints, jsonSerializerOptions);
+            writer.WritePropertyName("claimed_measurement_profile_fingerprints");
+            JsonSerializer.Serialize(writer, claimedQualityIdentities.ClaimedMeasurementProfileFingerprints, jsonSerializerOptions);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// CompileRequest
+    /// </summary>
+    public partial class CompileRequest : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CompileRequest" /> class.
+        /// </summary>
+        /// <param name="render">render</param>
+        /// <param name="capabilities">capabilities</param>
+        [JsonConstructor]
+        public CompileRequest(Option<RenderRequest?> render = default, Option<List<string>?> capabilities = default)
+        {
+            RenderOption = render;
+            CapabilitiesOption = capabilities;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Used to track the state of Render
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<RenderRequest?> RenderOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Render
+        /// </summary>
+        [JsonPropertyName("render")]
+        public RenderRequest? Render { get { return this.RenderOption; } set { this.RenderOption = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of Capabilities
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<List<string>?> CapabilitiesOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Capabilities
+        /// </summary>
+        [JsonPropertyName("capabilities")]
+        public List<string>? Capabilities { get { return this.CapabilitiesOption; } set { this.CapabilitiesOption = new(value); } }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class CompileRequest {\n");
+            sb.Append("  Render: ").Append(Render).Append("\n");
+            sb.Append("  Capabilities: ").Append(Capabilities).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="CompileRequest" />
+    /// </summary>
+    public class CompileRequestJsonConverter : JsonConverter<CompileRequest>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="CompileRequest" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override CompileRequest Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<RenderRequest?> render = default;
+            Option<List<string>?> capabilities = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "render":
+                            render = new Option<RenderRequest?>(JsonSerializer.Deserialize<RenderRequest>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "capabilities":
+                            capabilities = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (render.IsSet && render.Value == null)
+                throw new ArgumentNullException(nameof(render), "Property is not nullable for class CompileRequest.");
+
+            if (capabilities.IsSet && capabilities.Value == null)
+                throw new ArgumentNullException(nameof(capabilities), "Property is not nullable for class CompileRequest.");
+
+            return new CompileRequest(render, capabilities);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="CompileRequest" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="compileRequest"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, CompileRequest compileRequest, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, compileRequest, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="CompileRequest" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="compileRequest"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, CompileRequest compileRequest, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (compileRequest.RenderOption.IsSet && compileRequest.Render == null)
+                throw new ArgumentNullException(nameof(compileRequest.Render), "Property is required for class CompileRequest.");
+
+            if (compileRequest.CapabilitiesOption.IsSet && compileRequest.Capabilities == null)
+                throw new ArgumentNullException(nameof(compileRequest.Capabilities), "Property is required for class CompileRequest.");
+
+            if (compileRequest.RenderOption.IsSet)
+            {
+                writer.WritePropertyName("render");
+                JsonSerializer.Serialize(writer, compileRequest.Render, jsonSerializerOptions);
+            }
+            if (compileRequest.CapabilitiesOption.IsSet)
+            {
+                writer.WritePropertyName("capabilities");
+                JsonSerializer.Serialize(writer, compileRequest.Capabilities, jsonSerializerOptions);
             }
         }
     }
@@ -1957,50 +3714,65 @@ namespace Templiqx.Adapter.Generated
 namespace Templiqx.Adapter.Generated
 {
     /// <summary>
-    /// CompileRequest
+    /// ComputedQualityIdentities
     /// </summary>
-    public partial class CompileRequest : IValidatableObject
+    public partial class ComputedQualityIdentities : IValidatableObject
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CompileRequest" /> class.
+        /// Initializes a new instance of the <see cref="ComputedQualityIdentities" /> class.
         /// </summary>
-        /// <param name="render">render</param>
-        /// <param name="capabilities">capabilities</param>
+        /// <param name="packageFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="baseContractFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="fixtureSetFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="qualityPolicyFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="requestFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
         [JsonConstructor]
-        public CompileRequest(Option<RenderRequest?> render = default, Option<List<string>?> capabilities = default)
+        public ComputedQualityIdentities(string packageFingerprint, string baseContractFingerprint, string fixtureSetFingerprint, string qualityPolicyFingerprint, string requestFingerprint)
         {
-            RenderOption = render;
-            CapabilitiesOption = capabilities;
+            PackageFingerprint = packageFingerprint;
+            BaseContractFingerprint = baseContractFingerprint;
+            FixtureSetFingerprint = fixtureSetFingerprint;
+            QualityPolicyFingerprint = qualityPolicyFingerprint;
+            RequestFingerprint = requestFingerprint;
             OnCreated();
         }
 
         partial void OnCreated();
 
         /// <summary>
-        /// Used to track the state of Render
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
         /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<RenderRequest?> RenderOption { get; private set; }
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("package_fingerprint")]
+        public string PackageFingerprint { get; set; }
 
         /// <summary>
-        /// Gets or Sets Render
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
         /// </summary>
-        [JsonPropertyName("render")]
-        public RenderRequest? Render { get { return this.RenderOption; } set { this.RenderOption = new(value); } }
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("base_contract_fingerprint")]
+        public string BaseContractFingerprint { get; set; }
 
         /// <summary>
-        /// Used to track the state of Capabilities
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
         /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<string>?> CapabilitiesOption { get; private set; }
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("fixture_set_fingerprint")]
+        public string FixtureSetFingerprint { get; set; }
 
         /// <summary>
-        /// Gets or Sets Capabilities
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
         /// </summary>
-        [JsonPropertyName("capabilities")]
-        public List<string>? Capabilities { get { return this.CapabilitiesOption; } set { this.CapabilitiesOption = new(value); } }
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("quality_policy_fingerprint")]
+        public string QualityPolicyFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("request_fingerprint")]
+        public string RequestFingerprint { get; set; }
 
         /// <summary>
         /// Returns the string presentation of the object
@@ -2009,9 +3781,12 @@ namespace Templiqx.Adapter.Generated
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class CompileRequest {\n");
-            sb.Append("  Render: ").Append(Render).Append("\n");
-            sb.Append("  Capabilities: ").Append(Capabilities).Append("\n");
+            sb.Append("class ComputedQualityIdentities {\n");
+            sb.Append("  PackageFingerprint: ").Append(PackageFingerprint).Append("\n");
+            sb.Append("  BaseContractFingerprint: ").Append(BaseContractFingerprint).Append("\n");
+            sb.Append("  FixtureSetFingerprint: ").Append(FixtureSetFingerprint).Append("\n");
+            sb.Append("  QualityPolicyFingerprint: ").Append(QualityPolicyFingerprint).Append("\n");
+            sb.Append("  RequestFingerprint: ").Append(RequestFingerprint).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -2023,24 +3798,134 @@ namespace Templiqx.Adapter.Generated
         /// <returns>Validation Result</returns>
         IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
         {
+            // PackageFingerprint (string) maxLength
+            if (this.PackageFingerprint != null && this.PackageFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for PackageFingerprint, length must be less than 64.", new [] { "PackageFingerprint" });
+            }
+
+            // PackageFingerprint (string) minLength
+            if (this.PackageFingerprint != null && this.PackageFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for PackageFingerprint, length must be greater than 64.", new [] { "PackageFingerprint" });
+            }
+
+            if (this.PackageFingerprint != null) {
+                // PackageFingerprint (string) pattern
+                Regex regexPackageFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexPackageFingerprint.Match(this.PackageFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for PackageFingerprint, must match a pattern of " + regexPackageFingerprint, new [] { "PackageFingerprint" });
+                }
+            }
+
+            // BaseContractFingerprint (string) maxLength
+            if (this.BaseContractFingerprint != null && this.BaseContractFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for BaseContractFingerprint, length must be less than 64.", new [] { "BaseContractFingerprint" });
+            }
+
+            // BaseContractFingerprint (string) minLength
+            if (this.BaseContractFingerprint != null && this.BaseContractFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for BaseContractFingerprint, length must be greater than 64.", new [] { "BaseContractFingerprint" });
+            }
+
+            if (this.BaseContractFingerprint != null) {
+                // BaseContractFingerprint (string) pattern
+                Regex regexBaseContractFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexBaseContractFingerprint.Match(this.BaseContractFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for BaseContractFingerprint, must match a pattern of " + regexBaseContractFingerprint, new [] { "BaseContractFingerprint" });
+                }
+            }
+
+            // FixtureSetFingerprint (string) maxLength
+            if (this.FixtureSetFingerprint != null && this.FixtureSetFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for FixtureSetFingerprint, length must be less than 64.", new [] { "FixtureSetFingerprint" });
+            }
+
+            // FixtureSetFingerprint (string) minLength
+            if (this.FixtureSetFingerprint != null && this.FixtureSetFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for FixtureSetFingerprint, length must be greater than 64.", new [] { "FixtureSetFingerprint" });
+            }
+
+            if (this.FixtureSetFingerprint != null) {
+                // FixtureSetFingerprint (string) pattern
+                Regex regexFixtureSetFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexFixtureSetFingerprint.Match(this.FixtureSetFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for FixtureSetFingerprint, must match a pattern of " + regexFixtureSetFingerprint, new [] { "FixtureSetFingerprint" });
+                }
+            }
+
+            // QualityPolicyFingerprint (string) maxLength
+            if (this.QualityPolicyFingerprint != null && this.QualityPolicyFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for QualityPolicyFingerprint, length must be less than 64.", new [] { "QualityPolicyFingerprint" });
+            }
+
+            // QualityPolicyFingerprint (string) minLength
+            if (this.QualityPolicyFingerprint != null && this.QualityPolicyFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for QualityPolicyFingerprint, length must be greater than 64.", new [] { "QualityPolicyFingerprint" });
+            }
+
+            if (this.QualityPolicyFingerprint != null) {
+                // QualityPolicyFingerprint (string) pattern
+                Regex regexQualityPolicyFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexQualityPolicyFingerprint.Match(this.QualityPolicyFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for QualityPolicyFingerprint, must match a pattern of " + regexQualityPolicyFingerprint, new [] { "QualityPolicyFingerprint" });
+                }
+            }
+
+            // RequestFingerprint (string) maxLength
+            if (this.RequestFingerprint != null && this.RequestFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for RequestFingerprint, length must be less than 64.", new [] { "RequestFingerprint" });
+            }
+
+            // RequestFingerprint (string) minLength
+            if (this.RequestFingerprint != null && this.RequestFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for RequestFingerprint, length must be greater than 64.", new [] { "RequestFingerprint" });
+            }
+
+            if (this.RequestFingerprint != null) {
+                // RequestFingerprint (string) pattern
+                Regex regexRequestFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexRequestFingerprint.Match(this.RequestFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for RequestFingerprint, must match a pattern of " + regexRequestFingerprint, new [] { "RequestFingerprint" });
+                }
+            }
+
             yield break;
         }
     }
 
     /// <summary>
-    /// A Json converter for type <see cref="CompileRequest" />
+    /// A Json converter for type <see cref="ComputedQualityIdentities" />
     /// </summary>
-    public class CompileRequestJsonConverter : JsonConverter<CompileRequest>
+    public class ComputedQualityIdentitiesJsonConverter : JsonConverter<ComputedQualityIdentities>
     {
         /// <summary>
-        /// Deserializes json to <see cref="CompileRequest" />
+        /// Deserializes json to <see cref="ComputedQualityIdentities" />
         /// </summary>
         /// <param name="utf8JsonReader"></param>
         /// <param name="typeToConvert"></param>
         /// <param name="jsonSerializerOptions"></param>
         /// <returns></returns>
         /// <exception cref="JsonException"></exception>
-        public override CompileRequest Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        public override ComputedQualityIdentities Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
         {
             int currentDepth = utf8JsonReader.CurrentDepth;
 
@@ -2049,8 +3934,11 @@ namespace Templiqx.Adapter.Generated
 
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
-            Option<RenderRequest?> render = default;
-            Option<List<string>?> capabilities = default;
+            Option<string?> packageFingerprint = default;
+            Option<string?> baseContractFingerprint = default;
+            Option<string?> fixtureSetFingerprint = default;
+            Option<string?> qualityPolicyFingerprint = default;
+            Option<string?> requestFingerprint = default;
 
             while (utf8JsonReader.Read())
             {
@@ -2067,11 +3955,20 @@ namespace Templiqx.Adapter.Generated
 
                     switch (localVarJsonPropertyName)
                     {
-                        case "render":
-                            render = new Option<RenderRequest?>(JsonSerializer.Deserialize<RenderRequest>(ref utf8JsonReader, jsonSerializerOptions)!);
+                        case "package_fingerprint":
+                            packageFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "capabilities":
-                            capabilities = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                        case "base_contract_fingerprint":
+                            baseContractFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "fixture_set_fingerprint":
+                            fixtureSetFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "quality_policy_fingerprint":
+                            qualityPolicyFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "request_fingerprint":
+                            requestFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         default:
                             break;
@@ -2079,55 +3976,87 @@ namespace Templiqx.Adapter.Generated
                 }
             }
 
-            if (render.IsSet && render.Value == null)
-                throw new ArgumentNullException(nameof(render), "Property is not nullable for class CompileRequest.");
+            if (!packageFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class ComputedQualityIdentities.", nameof(packageFingerprint));
 
-            if (capabilities.IsSet && capabilities.Value == null)
-                throw new ArgumentNullException(nameof(capabilities), "Property is not nullable for class CompileRequest.");
+            if (!baseContractFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class ComputedQualityIdentities.", nameof(baseContractFingerprint));
 
-            return new CompileRequest(render, capabilities);
+            if (!fixtureSetFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class ComputedQualityIdentities.", nameof(fixtureSetFingerprint));
+
+            if (!qualityPolicyFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class ComputedQualityIdentities.", nameof(qualityPolicyFingerprint));
+
+            if (!requestFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class ComputedQualityIdentities.", nameof(requestFingerprint));
+
+            if (packageFingerprint.IsSet && packageFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(packageFingerprint), "Property is not nullable for class ComputedQualityIdentities.");
+
+            if (baseContractFingerprint.IsSet && baseContractFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(baseContractFingerprint), "Property is not nullable for class ComputedQualityIdentities.");
+
+            if (fixtureSetFingerprint.IsSet && fixtureSetFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(fixtureSetFingerprint), "Property is not nullable for class ComputedQualityIdentities.");
+
+            if (qualityPolicyFingerprint.IsSet && qualityPolicyFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(qualityPolicyFingerprint), "Property is not nullable for class ComputedQualityIdentities.");
+
+            if (requestFingerprint.IsSet && requestFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(requestFingerprint), "Property is not nullable for class ComputedQualityIdentities.");
+
+            return new ComputedQualityIdentities(packageFingerprint.Value!, baseContractFingerprint.Value!, fixtureSetFingerprint.Value!, qualityPolicyFingerprint.Value!, requestFingerprint.Value!);
         }
 
         /// <summary>
-        /// Serializes a <see cref="CompileRequest" />
+        /// Serializes a <see cref="ComputedQualityIdentities" />
         /// </summary>
         /// <param name="writer"></param>
-        /// <param name="compileRequest"></param>
+        /// <param name="computedQualityIdentities"></param>
         /// <param name="jsonSerializerOptions"></param>
         /// <exception cref="NotImplementedException"></exception>
-        public override void Write(Utf8JsonWriter writer, CompileRequest compileRequest, JsonSerializerOptions jsonSerializerOptions)
+        public override void Write(Utf8JsonWriter writer, ComputedQualityIdentities computedQualityIdentities, JsonSerializerOptions jsonSerializerOptions)
         {
             writer.WriteStartObject();
 
-            WriteProperties(writer, compileRequest, jsonSerializerOptions);
+            WriteProperties(writer, computedQualityIdentities, jsonSerializerOptions);
             writer.WriteEndObject();
         }
 
         /// <summary>
-        /// Serializes the properties of <see cref="CompileRequest" />
+        /// Serializes the properties of <see cref="ComputedQualityIdentities" />
         /// </summary>
         /// <param name="writer"></param>
-        /// <param name="compileRequest"></param>
+        /// <param name="computedQualityIdentities"></param>
         /// <param name="jsonSerializerOptions"></param>
         /// <exception cref="NotImplementedException"></exception>
-        public void WriteProperties(Utf8JsonWriter writer, CompileRequest compileRequest, JsonSerializerOptions jsonSerializerOptions)
+        public void WriteProperties(Utf8JsonWriter writer, ComputedQualityIdentities computedQualityIdentities, JsonSerializerOptions jsonSerializerOptions)
         {
-            if (compileRequest.RenderOption.IsSet && compileRequest.Render == null)
-                throw new ArgumentNullException(nameof(compileRequest.Render), "Property is required for class CompileRequest.");
+            if (computedQualityIdentities.PackageFingerprint == null)
+                throw new ArgumentNullException(nameof(computedQualityIdentities.PackageFingerprint), "Property is required for class ComputedQualityIdentities.");
 
-            if (compileRequest.CapabilitiesOption.IsSet && compileRequest.Capabilities == null)
-                throw new ArgumentNullException(nameof(compileRequest.Capabilities), "Property is required for class CompileRequest.");
+            if (computedQualityIdentities.BaseContractFingerprint == null)
+                throw new ArgumentNullException(nameof(computedQualityIdentities.BaseContractFingerprint), "Property is required for class ComputedQualityIdentities.");
 
-            if (compileRequest.RenderOption.IsSet)
-            {
-                writer.WritePropertyName("render");
-                JsonSerializer.Serialize(writer, compileRequest.Render, jsonSerializerOptions);
-            }
-            if (compileRequest.CapabilitiesOption.IsSet)
-            {
-                writer.WritePropertyName("capabilities");
-                JsonSerializer.Serialize(writer, compileRequest.Capabilities, jsonSerializerOptions);
-            }
+            if (computedQualityIdentities.FixtureSetFingerprint == null)
+                throw new ArgumentNullException(nameof(computedQualityIdentities.FixtureSetFingerprint), "Property is required for class ComputedQualityIdentities.");
+
+            if (computedQualityIdentities.QualityPolicyFingerprint == null)
+                throw new ArgumentNullException(nameof(computedQualityIdentities.QualityPolicyFingerprint), "Property is required for class ComputedQualityIdentities.");
+
+            if (computedQualityIdentities.RequestFingerprint == null)
+                throw new ArgumentNullException(nameof(computedQualityIdentities.RequestFingerprint), "Property is required for class ComputedQualityIdentities.");
+
+            writer.WriteString("package_fingerprint", computedQualityIdentities.PackageFingerprint);
+
+            writer.WriteString("base_contract_fingerprint", computedQualityIdentities.BaseContractFingerprint);
+
+            writer.WriteString("fixture_set_fingerprint", computedQualityIdentities.FixtureSetFingerprint);
+
+            writer.WriteString("quality_policy_fingerprint", computedQualityIdentities.QualityPolicyFingerprint);
+
+            writer.WriteString("request_fingerprint", computedQualityIdentities.RequestFingerprint);
         }
     }
 }
@@ -4169,6 +6098,1075 @@ namespace Templiqx.Adapter.Generated
 namespace Templiqx.Adapter.Generated
 {
     /// <summary>
+    /// EligibilityAssessment
+    /// </summary>
+    public partial class EligibilityAssessment : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EligibilityAssessment" /> class.
+        /// </summary>
+        /// <param name="eligible">eligible</param>
+        /// <param name="totalTrialCount">totalTrialCount</param>
+        /// <param name="semanticTrialCount">semanticTrialCount</param>
+        /// <param name="infrastructureTrialCount">infrastructureTrialCount</param>
+        /// <param name="semanticCoveragePpm">semanticCoveragePpm</param>
+        /// <param name="infrastructureFailurePpm">infrastructureFailurePpm</param>
+        /// <param name="gates">gates</param>
+        [JsonConstructor]
+        public EligibilityAssessment(bool eligible, long totalTrialCount, long semanticTrialCount, long infrastructureTrialCount, long semanticCoveragePpm, long infrastructureFailurePpm, List<EligibilityGate> gates)
+        {
+            Eligible = eligible;
+            TotalTrialCount = totalTrialCount;
+            SemanticTrialCount = semanticTrialCount;
+            InfrastructureTrialCount = infrastructureTrialCount;
+            SemanticCoveragePpm = semanticCoveragePpm;
+            InfrastructureFailurePpm = infrastructureFailurePpm;
+            Gates = gates;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Eligible
+        /// </summary>
+        [JsonPropertyName("eligible")]
+        public bool Eligible { get; set; }
+
+        /// <summary>
+        /// Gets or Sets TotalTrialCount
+        /// </summary>
+        [JsonPropertyName("total_trial_count")]
+        public long TotalTrialCount { get; set; }
+
+        /// <summary>
+        /// Gets or Sets SemanticTrialCount
+        /// </summary>
+        [JsonPropertyName("semantic_trial_count")]
+        public long SemanticTrialCount { get; set; }
+
+        /// <summary>
+        /// Gets or Sets InfrastructureTrialCount
+        /// </summary>
+        [JsonPropertyName("infrastructure_trial_count")]
+        public long InfrastructureTrialCount { get; set; }
+
+        /// <summary>
+        /// Gets or Sets SemanticCoveragePpm
+        /// </summary>
+        [JsonPropertyName("semantic_coverage_ppm")]
+        public long SemanticCoveragePpm { get; set; }
+
+        /// <summary>
+        /// Gets or Sets InfrastructureFailurePpm
+        /// </summary>
+        [JsonPropertyName("infrastructure_failure_ppm")]
+        public long InfrastructureFailurePpm { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Gates
+        /// </summary>
+        [JsonPropertyName("gates")]
+        public List<EligibilityGate> Gates { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class EligibilityAssessment {\n");
+            sb.Append("  Eligible: ").Append(Eligible).Append("\n");
+            sb.Append("  TotalTrialCount: ").Append(TotalTrialCount).Append("\n");
+            sb.Append("  SemanticTrialCount: ").Append(SemanticTrialCount).Append("\n");
+            sb.Append("  InfrastructureTrialCount: ").Append(InfrastructureTrialCount).Append("\n");
+            sb.Append("  SemanticCoveragePpm: ").Append(SemanticCoveragePpm).Append("\n");
+            sb.Append("  InfrastructureFailurePpm: ").Append(InfrastructureFailurePpm).Append("\n");
+            sb.Append("  Gates: ").Append(Gates).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // TotalTrialCount (long) maximum
+            if (this.TotalTrialCount > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for TotalTrialCount, must be a value less than or equal to 9007199254740991.", new [] { "TotalTrialCount" });
+            }
+
+            // TotalTrialCount (long) minimum
+            if (this.TotalTrialCount < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for TotalTrialCount, must be a value greater than or equal to 0.", new [] { "TotalTrialCount" });
+            }
+
+            // SemanticTrialCount (long) maximum
+            if (this.SemanticTrialCount > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for SemanticTrialCount, must be a value less than or equal to 9007199254740991.", new [] { "SemanticTrialCount" });
+            }
+
+            // SemanticTrialCount (long) minimum
+            if (this.SemanticTrialCount < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for SemanticTrialCount, must be a value greater than or equal to 0.", new [] { "SemanticTrialCount" });
+            }
+
+            // InfrastructureTrialCount (long) maximum
+            if (this.InfrastructureTrialCount > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for InfrastructureTrialCount, must be a value less than or equal to 9007199254740991.", new [] { "InfrastructureTrialCount" });
+            }
+
+            // InfrastructureTrialCount (long) minimum
+            if (this.InfrastructureTrialCount < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for InfrastructureTrialCount, must be a value greater than or equal to 0.", new [] { "InfrastructureTrialCount" });
+            }
+
+            // SemanticCoveragePpm (long) maximum
+            if (this.SemanticCoveragePpm > (long)1000000)
+            {
+                yield return new ValidationResult("Invalid value for SemanticCoveragePpm, must be a value less than or equal to 1000000.", new [] { "SemanticCoveragePpm" });
+            }
+
+            // SemanticCoveragePpm (long) minimum
+            if (this.SemanticCoveragePpm < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for SemanticCoveragePpm, must be a value greater than or equal to 0.", new [] { "SemanticCoveragePpm" });
+            }
+
+            // InfrastructureFailurePpm (long) maximum
+            if (this.InfrastructureFailurePpm > (long)1000000)
+            {
+                yield return new ValidationResult("Invalid value for InfrastructureFailurePpm, must be a value less than or equal to 1000000.", new [] { "InfrastructureFailurePpm" });
+            }
+
+            // InfrastructureFailurePpm (long) minimum
+            if (this.InfrastructureFailurePpm < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for InfrastructureFailurePpm, must be a value greater than or equal to 0.", new [] { "InfrastructureFailurePpm" });
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="EligibilityAssessment" />
+    /// </summary>
+    public class EligibilityAssessmentJsonConverter : JsonConverter<EligibilityAssessment>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="EligibilityAssessment" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override EligibilityAssessment Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<bool?> eligible = default;
+            Option<long?> totalTrialCount = default;
+            Option<long?> semanticTrialCount = default;
+            Option<long?> infrastructureTrialCount = default;
+            Option<long?> semanticCoveragePpm = default;
+            Option<long?> infrastructureFailurePpm = default;
+            Option<List<EligibilityGate>?> gates = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "eligible":
+                            eligible = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                            break;
+                        case "total_trial_count":
+                            totalTrialCount = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "semantic_trial_count":
+                            semanticTrialCount = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "infrastructure_trial_count":
+                            infrastructureTrialCount = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "semantic_coverage_ppm":
+                            semanticCoveragePpm = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "infrastructure_failure_ppm":
+                            infrastructureFailurePpm = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "gates":
+                            gates = new Option<List<EligibilityGate>?>(JsonSerializer.Deserialize<List<EligibilityGate>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!eligible.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityAssessment.", nameof(eligible));
+
+            if (!totalTrialCount.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityAssessment.", nameof(totalTrialCount));
+
+            if (!semanticTrialCount.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityAssessment.", nameof(semanticTrialCount));
+
+            if (!infrastructureTrialCount.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityAssessment.", nameof(infrastructureTrialCount));
+
+            if (!semanticCoveragePpm.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityAssessment.", nameof(semanticCoveragePpm));
+
+            if (!infrastructureFailurePpm.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityAssessment.", nameof(infrastructureFailurePpm));
+
+            if (!gates.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityAssessment.", nameof(gates));
+
+            if (eligible.IsSet && eligible.Value == null)
+                throw new ArgumentNullException(nameof(eligible), "Property is not nullable for class EligibilityAssessment.");
+
+            if (totalTrialCount.IsSet && totalTrialCount.Value == null)
+                throw new ArgumentNullException(nameof(totalTrialCount), "Property is not nullable for class EligibilityAssessment.");
+
+            if (semanticTrialCount.IsSet && semanticTrialCount.Value == null)
+                throw new ArgumentNullException(nameof(semanticTrialCount), "Property is not nullable for class EligibilityAssessment.");
+
+            if (infrastructureTrialCount.IsSet && infrastructureTrialCount.Value == null)
+                throw new ArgumentNullException(nameof(infrastructureTrialCount), "Property is not nullable for class EligibilityAssessment.");
+
+            if (semanticCoveragePpm.IsSet && semanticCoveragePpm.Value == null)
+                throw new ArgumentNullException(nameof(semanticCoveragePpm), "Property is not nullable for class EligibilityAssessment.");
+
+            if (infrastructureFailurePpm.IsSet && infrastructureFailurePpm.Value == null)
+                throw new ArgumentNullException(nameof(infrastructureFailurePpm), "Property is not nullable for class EligibilityAssessment.");
+
+            if (gates.IsSet && gates.Value == null)
+                throw new ArgumentNullException(nameof(gates), "Property is not nullable for class EligibilityAssessment.");
+
+            return new EligibilityAssessment(eligible.Value!.Value!, totalTrialCount.Value!.Value!, semanticTrialCount.Value!.Value!, infrastructureTrialCount.Value!.Value!, semanticCoveragePpm.Value!.Value!, infrastructureFailurePpm.Value!.Value!, gates.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="EligibilityAssessment" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="eligibilityAssessment"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, EligibilityAssessment eligibilityAssessment, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, eligibilityAssessment, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="EligibilityAssessment" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="eligibilityAssessment"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, EligibilityAssessment eligibilityAssessment, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (eligibilityAssessment.Gates == null)
+                throw new ArgumentNullException(nameof(eligibilityAssessment.Gates), "Property is required for class EligibilityAssessment.");
+
+            writer.WriteBoolean("eligible", eligibilityAssessment.Eligible);
+
+            writer.WriteNumber("total_trial_count", eligibilityAssessment.TotalTrialCount);
+
+            writer.WriteNumber("semantic_trial_count", eligibilityAssessment.SemanticTrialCount);
+
+            writer.WriteNumber("infrastructure_trial_count", eligibilityAssessment.InfrastructureTrialCount);
+
+            writer.WriteNumber("semantic_coverage_ppm", eligibilityAssessment.SemanticCoveragePpm);
+
+            writer.WriteNumber("infrastructure_failure_ppm", eligibilityAssessment.InfrastructureFailurePpm);
+
+            writer.WritePropertyName("gates");
+            JsonSerializer.Serialize(writer, eligibilityAssessment.Gates, jsonSerializerOptions);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// Defines EligibilityComparator
+    /// </summary>
+    public enum EligibilityComparator
+    {
+        /// <summary>
+        /// Enum Gte for value: gte
+        /// </summary>
+        Gte = 1,
+
+        /// <summary>
+        /// Enum Lte for value: lte
+        /// </summary>
+        Lte = 2
+    }
+
+    /// <summary>
+    /// Converts <see cref="EligibilityComparator"/> to and from the JSON value
+    /// </summary>
+    public static class EligibilityComparatorValueConverter
+    {
+        /// <summary>
+        /// Parses a given value to <see cref="EligibilityComparator"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static EligibilityComparator FromString(string value)
+        {
+            if (value.Equals("gte"))
+                return EligibilityComparator.Gte;
+
+            if (value.Equals("lte"))
+                return EligibilityComparator.Lte;
+
+            throw new NotImplementedException($"Could not convert value to type EligibilityComparator: '{value}'");
+        }
+
+        /// <summary>
+        /// Parses a given value to <see cref="EligibilityComparator"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static EligibilityComparator? FromStringOrDefault(string value)
+        {
+            if (value.Equals("gte"))
+                return EligibilityComparator.Gte;
+
+            if (value.Equals("lte"))
+                return EligibilityComparator.Lte;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="EligibilityComparator"/> to the json value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static string ToJsonValue(EligibilityComparator value)
+        {
+            if (value == EligibilityComparator.Gte)
+                return "gte";
+
+            if (value == EligibilityComparator.Lte)
+                return "lte";
+
+            throw new NotImplementedException($"Value could not be handled: '{value}'");
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="EligibilityComparator"/>
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public class EligibilityComparatorJsonConverter : JsonConverter<EligibilityComparator>
+    {
+        /// <summary>
+        /// Returns a  from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override EligibilityComparator Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            EligibilityComparator? result = rawValue == null
+                ? null
+                : EligibilityComparatorValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the EligibilityComparator to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="eligibilityComparator"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, EligibilityComparator eligibilityComparator, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(EligibilityComparatorValueConverter.ToJsonValue(eligibilityComparator).ToString());
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="EligibilityComparator"/>
+    /// </summary>
+    public class EligibilityComparatorNullableJsonConverter : JsonConverter<EligibilityComparator?>
+    {
+        /// <summary>
+        /// Returns a EligibilityComparator from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override EligibilityComparator? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            EligibilityComparator? result = rawValue == null
+                ? null
+                : EligibilityComparatorValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the EligibilityComparator to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="eligibilityComparator"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, EligibilityComparator? eligibilityComparator, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(eligibilityComparator.HasValue ? EligibilityComparatorValueConverter.ToJsonValue(eligibilityComparator.Value).ToString() : "null");
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// EligibilityGate
+    /// </summary>
+    public partial class EligibilityGate : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EligibilityGate" /> class.
+        /// </summary>
+        /// <param name="ruleId">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="passed">passed</param>
+        /// <param name="comparator">comparator</param>
+        /// <param name="threshold">threshold</param>
+        /// <param name="unit">unit</param>
+        /// <param name="actual">actual</param>
+        [JsonConstructor]
+        public EligibilityGate(string ruleId, bool passed, EligibilityComparator comparator, long threshold, MetricUnit unit, Option<long?> actual = default)
+        {
+            RuleId = ruleId;
+            Passed = passed;
+            Comparator = comparator;
+            Threshold = threshold;
+            Unit = unit;
+            ActualOption = actual;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Comparator
+        /// </summary>
+        [JsonPropertyName("comparator")]
+        public EligibilityComparator Comparator { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Unit
+        /// </summary>
+        [JsonPropertyName("unit")]
+        public MetricUnit Unit { get; set; }
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("rule_id")]
+        public string RuleId { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Passed
+        /// </summary>
+        [JsonPropertyName("passed")]
+        public bool Passed { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Threshold
+        /// </summary>
+        [JsonPropertyName("threshold")]
+        public long Threshold { get; set; }
+
+        /// <summary>
+        /// Used to track the state of Actual
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<long?> ActualOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Actual
+        /// </summary>
+        [JsonPropertyName("actual")]
+        public long? Actual { get { return this.ActualOption; } set { this.ActualOption = new(value); } }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class EligibilityGate {\n");
+            sb.Append("  RuleId: ").Append(RuleId).Append("\n");
+            sb.Append("  Passed: ").Append(Passed).Append("\n");
+            sb.Append("  Comparator: ").Append(Comparator).Append("\n");
+            sb.Append("  Threshold: ").Append(Threshold).Append("\n");
+            sb.Append("  Unit: ").Append(Unit).Append("\n");
+            sb.Append("  Actual: ").Append(Actual).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // RuleId (string) maxLength
+            if (this.RuleId != null && this.RuleId.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for RuleId, length must be less than 128.", new [] { "RuleId" });
+            }
+
+            // RuleId (string) minLength
+            if (this.RuleId != null && this.RuleId.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for RuleId, length must be greater than 1.", new [] { "RuleId" });
+            }
+
+            if (this.RuleId != null) {
+                // RuleId (string) pattern
+                Regex regexRuleId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexRuleId.Match(this.RuleId).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for RuleId, must match a pattern of " + regexRuleId, new [] { "RuleId" });
+                }
+            }
+
+            // Threshold (long) maximum
+            if (this.Threshold > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for Threshold, must be a value less than or equal to 9007199254740991.", new [] { "Threshold" });
+            }
+
+            // Threshold (long) minimum
+            if (this.Threshold < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for Threshold, must be a value greater than or equal to 0.", new [] { "Threshold" });
+            }
+
+            // Actual (long) maximum
+            if (this.ActualOption.IsSet && this.ActualOption.Value > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for Actual, must be a value less than or equal to 9007199254740991.", new [] { "Actual" });
+            }
+
+            // Actual (long) minimum
+            if (this.ActualOption.IsSet && this.ActualOption.Value < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for Actual, must be a value greater than or equal to 0.", new [] { "Actual" });
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="EligibilityGate" />
+    /// </summary>
+    public class EligibilityGateJsonConverter : JsonConverter<EligibilityGate>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="EligibilityGate" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override EligibilityGate Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> ruleId = default;
+            Option<bool?> passed = default;
+            Option<EligibilityComparator?> comparator = default;
+            Option<long?> threshold = default;
+            Option<MetricUnit?> unit = default;
+            Option<long?> actual = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "rule_id":
+                            ruleId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "passed":
+                            passed = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                            break;
+                        case "comparator":
+                            string? comparatorRawValue = utf8JsonReader.GetString();
+                            if (comparatorRawValue != null)
+                                comparator = new Option<EligibilityComparator?>(EligibilityComparatorValueConverter.FromStringOrDefault(comparatorRawValue));
+                            break;
+                        case "threshold":
+                            threshold = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "unit":
+                            string? unitRawValue = utf8JsonReader.GetString();
+                            if (unitRawValue != null)
+                                unit = new Option<MetricUnit?>(MetricUnitValueConverter.FromStringOrDefault(unitRawValue));
+                            break;
+                        case "actual":
+                            actual = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!ruleId.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityGate.", nameof(ruleId));
+
+            if (!passed.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityGate.", nameof(passed));
+
+            if (!comparator.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityGate.", nameof(comparator));
+
+            if (!threshold.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityGate.", nameof(threshold));
+
+            if (!unit.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityGate.", nameof(unit));
+
+            if (ruleId.IsSet && ruleId.Value == null)
+                throw new ArgumentNullException(nameof(ruleId), "Property is not nullable for class EligibilityGate.");
+
+            if (passed.IsSet && passed.Value == null)
+                throw new ArgumentNullException(nameof(passed), "Property is not nullable for class EligibilityGate.");
+
+            if (comparator.IsSet && comparator.Value == null)
+                throw new ArgumentNullException(nameof(comparator), "Property is not nullable for class EligibilityGate.");
+
+            if (threshold.IsSet && threshold.Value == null)
+                throw new ArgumentNullException(nameof(threshold), "Property is not nullable for class EligibilityGate.");
+
+            if (unit.IsSet && unit.Value == null)
+                throw new ArgumentNullException(nameof(unit), "Property is not nullable for class EligibilityGate.");
+
+            if (actual.IsSet && actual.Value == null)
+                throw new ArgumentNullException(nameof(actual), "Property is not nullable for class EligibilityGate.");
+
+            return new EligibilityGate(ruleId.Value!, passed.Value!.Value!, comparator.Value!.Value!, threshold.Value!.Value!, unit.Value!.Value!, actual);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="EligibilityGate" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="eligibilityGate"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, EligibilityGate eligibilityGate, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, eligibilityGate, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="EligibilityGate" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="eligibilityGate"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, EligibilityGate eligibilityGate, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (eligibilityGate.RuleId == null)
+                throw new ArgumentNullException(nameof(eligibilityGate.RuleId), "Property is required for class EligibilityGate.");
+
+            writer.WriteString("rule_id", eligibilityGate.RuleId);
+
+            writer.WriteBoolean("passed", eligibilityGate.Passed);
+
+            var comparatorRawValue = EligibilityComparatorValueConverter.ToJsonValue(eligibilityGate.Comparator);
+            writer.WriteString("comparator", comparatorRawValue);
+
+            writer.WriteNumber("threshold", eligibilityGate.Threshold);
+
+            var unitRawValue = MetricUnitValueConverter.ToJsonValue(eligibilityGate.Unit);
+            writer.WriteString("unit", unitRawValue);
+
+            if (eligibilityGate.ActualOption.IsSet)
+                writer.WriteNumber("actual", eligibilityGate.ActualOption.Value!.Value);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// EligibilityRule
+    /// </summary>
+    public partial class EligibilityRule : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EligibilityRule" /> class.
+        /// </summary>
+        /// <param name="id">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="metricId">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="comparator">comparator</param>
+        /// <param name="unit">unit</param>
+        /// <param name="threshold">threshold</param>
+        [JsonConstructor]
+        public EligibilityRule(string id, string metricId, EligibilityComparator comparator, MetricUnit unit, long threshold)
+        {
+            Id = id;
+            MetricId = metricId;
+            Comparator = comparator;
+            Unit = unit;
+            Threshold = threshold;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Comparator
+        /// </summary>
+        [JsonPropertyName("comparator")]
+        public EligibilityComparator Comparator { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Unit
+        /// </summary>
+        [JsonPropertyName("unit")]
+        public MetricUnit Unit { get; set; }
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("metric_id")]
+        public string MetricId { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Threshold
+        /// </summary>
+        [JsonPropertyName("threshold")]
+        public long Threshold { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class EligibilityRule {\n");
+            sb.Append("  Id: ").Append(Id).Append("\n");
+            sb.Append("  MetricId: ").Append(MetricId).Append("\n");
+            sb.Append("  Comparator: ").Append(Comparator).Append("\n");
+            sb.Append("  Unit: ").Append(Unit).Append("\n");
+            sb.Append("  Threshold: ").Append(Threshold).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // Id (string) maxLength
+            if (this.Id != null && this.Id.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for Id, length must be less than 128.", new [] { "Id" });
+            }
+
+            // Id (string) minLength
+            if (this.Id != null && this.Id.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for Id, length must be greater than 1.", new [] { "Id" });
+            }
+
+            if (this.Id != null) {
+                // Id (string) pattern
+                Regex regexId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexId.Match(this.Id).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for Id, must match a pattern of " + regexId, new [] { "Id" });
+                }
+            }
+
+            // MetricId (string) maxLength
+            if (this.MetricId != null && this.MetricId.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be less than 128.", new [] { "MetricId" });
+            }
+
+            // MetricId (string) minLength
+            if (this.MetricId != null && this.MetricId.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be greater than 1.", new [] { "MetricId" });
+            }
+
+            if (this.MetricId != null) {
+                // MetricId (string) pattern
+                Regex regexMetricId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexMetricId.Match(this.MetricId).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MetricId, must match a pattern of " + regexMetricId, new [] { "MetricId" });
+                }
+            }
+
+            // Threshold (long) maximum
+            if (this.Threshold > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for Threshold, must be a value less than or equal to 9007199254740991.", new [] { "Threshold" });
+            }
+
+            // Threshold (long) minimum
+            if (this.Threshold < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for Threshold, must be a value greater than or equal to 0.", new [] { "Threshold" });
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="EligibilityRule" />
+    /// </summary>
+    public class EligibilityRuleJsonConverter : JsonConverter<EligibilityRule>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="EligibilityRule" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override EligibilityRule Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> id = default;
+            Option<string?> metricId = default;
+            Option<EligibilityComparator?> comparator = default;
+            Option<MetricUnit?> unit = default;
+            Option<long?> threshold = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "id":
+                            id = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "metric_id":
+                            metricId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "comparator":
+                            string? comparatorRawValue = utf8JsonReader.GetString();
+                            if (comparatorRawValue != null)
+                                comparator = new Option<EligibilityComparator?>(EligibilityComparatorValueConverter.FromStringOrDefault(comparatorRawValue));
+                            break;
+                        case "unit":
+                            string? unitRawValue = utf8JsonReader.GetString();
+                            if (unitRawValue != null)
+                                unit = new Option<MetricUnit?>(MetricUnitValueConverter.FromStringOrDefault(unitRawValue));
+                            break;
+                        case "threshold":
+                            threshold = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!id.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityRule.", nameof(id));
+
+            if (!metricId.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityRule.", nameof(metricId));
+
+            if (!comparator.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityRule.", nameof(comparator));
+
+            if (!unit.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityRule.", nameof(unit));
+
+            if (!threshold.IsSet)
+                throw new ArgumentException("Property is required for class EligibilityRule.", nameof(threshold));
+
+            if (id.IsSet && id.Value == null)
+                throw new ArgumentNullException(nameof(id), "Property is not nullable for class EligibilityRule.");
+
+            if (metricId.IsSet && metricId.Value == null)
+                throw new ArgumentNullException(nameof(metricId), "Property is not nullable for class EligibilityRule.");
+
+            if (comparator.IsSet && comparator.Value == null)
+                throw new ArgumentNullException(nameof(comparator), "Property is not nullable for class EligibilityRule.");
+
+            if (unit.IsSet && unit.Value == null)
+                throw new ArgumentNullException(nameof(unit), "Property is not nullable for class EligibilityRule.");
+
+            if (threshold.IsSet && threshold.Value == null)
+                throw new ArgumentNullException(nameof(threshold), "Property is not nullable for class EligibilityRule.");
+
+            return new EligibilityRule(id.Value!, metricId.Value!, comparator.Value!.Value!, unit.Value!.Value!, threshold.Value!.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="EligibilityRule" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="eligibilityRule"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, EligibilityRule eligibilityRule, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, eligibilityRule, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="EligibilityRule" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="eligibilityRule"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, EligibilityRule eligibilityRule, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (eligibilityRule.Id == null)
+                throw new ArgumentNullException(nameof(eligibilityRule.Id), "Property is required for class EligibilityRule.");
+
+            if (eligibilityRule.MetricId == null)
+                throw new ArgumentNullException(nameof(eligibilityRule.MetricId), "Property is required for class EligibilityRule.");
+
+            writer.WriteString("id", eligibilityRule.Id);
+
+            writer.WriteString("metric_id", eligibilityRule.MetricId);
+
+            var comparatorRawValue = EligibilityComparatorValueConverter.ToJsonValue(eligibilityRule.Comparator);
+            writer.WriteString("comparator", comparatorRawValue);
+
+            var unitRawValue = MetricUnitValueConverter.ToJsonValue(eligibilityRule.Unit);
+            writer.WriteString("unit", unitRawValue);
+
+            writer.WriteNumber("threshold", eligibilityRule.Threshold);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
     /// ExecuteRequest
     /// </summary>
     public partial class ExecuteRequest : IValidatableObject
@@ -5442,6 +8440,241 @@ namespace Templiqx.Adapter.Generated
 namespace Templiqx.Adapter.Generated
 {
     /// <summary>
+    /// Defines InfrastructureFailureReason
+    /// </summary>
+    public enum InfrastructureFailureReason
+    {
+        /// <summary>
+        /// Enum Transport for value: transport
+        /// </summary>
+        Transport = 1,
+
+        /// <summary>
+        /// Enum Timeout for value: timeout
+        /// </summary>
+        Timeout = 2,
+
+        /// <summary>
+        /// Enum RateLimit for value: rate_limit
+        /// </summary>
+        RateLimit = 3,
+
+        /// <summary>
+        /// Enum ProviderUnavailable for value: provider_unavailable
+        /// </summary>
+        ProviderUnavailable = 4,
+
+        /// <summary>
+        /// Enum ProviderInternal for value: provider_internal
+        /// </summary>
+        ProviderInternal = 5,
+
+        /// <summary>
+        /// Enum Cancellation for value: cancellation
+        /// </summary>
+        Cancellation = 6,
+
+        /// <summary>
+        /// Enum Budget for value: budget
+        /// </summary>
+        Budget = 7,
+
+        /// <summary>
+        /// Enum EvaluatorInfrastructure for value: evaluator_infrastructure
+        /// </summary>
+        EvaluatorInfrastructure = 8
+    }
+
+    /// <summary>
+    /// Converts <see cref="InfrastructureFailureReason"/> to and from the JSON value
+    /// </summary>
+    public static class InfrastructureFailureReasonValueConverter
+    {
+        /// <summary>
+        /// Parses a given value to <see cref="InfrastructureFailureReason"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static InfrastructureFailureReason FromString(string value)
+        {
+            if (value.Equals("transport"))
+                return InfrastructureFailureReason.Transport;
+
+            if (value.Equals("timeout"))
+                return InfrastructureFailureReason.Timeout;
+
+            if (value.Equals("rate_limit"))
+                return InfrastructureFailureReason.RateLimit;
+
+            if (value.Equals("provider_unavailable"))
+                return InfrastructureFailureReason.ProviderUnavailable;
+
+            if (value.Equals("provider_internal"))
+                return InfrastructureFailureReason.ProviderInternal;
+
+            if (value.Equals("cancellation"))
+                return InfrastructureFailureReason.Cancellation;
+
+            if (value.Equals("budget"))
+                return InfrastructureFailureReason.Budget;
+
+            if (value.Equals("evaluator_infrastructure"))
+                return InfrastructureFailureReason.EvaluatorInfrastructure;
+
+            throw new NotImplementedException($"Could not convert value to type InfrastructureFailureReason: '{value}'");
+        }
+
+        /// <summary>
+        /// Parses a given value to <see cref="InfrastructureFailureReason"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static InfrastructureFailureReason? FromStringOrDefault(string value)
+        {
+            if (value.Equals("transport"))
+                return InfrastructureFailureReason.Transport;
+
+            if (value.Equals("timeout"))
+                return InfrastructureFailureReason.Timeout;
+
+            if (value.Equals("rate_limit"))
+                return InfrastructureFailureReason.RateLimit;
+
+            if (value.Equals("provider_unavailable"))
+                return InfrastructureFailureReason.ProviderUnavailable;
+
+            if (value.Equals("provider_internal"))
+                return InfrastructureFailureReason.ProviderInternal;
+
+            if (value.Equals("cancellation"))
+                return InfrastructureFailureReason.Cancellation;
+
+            if (value.Equals("budget"))
+                return InfrastructureFailureReason.Budget;
+
+            if (value.Equals("evaluator_infrastructure"))
+                return InfrastructureFailureReason.EvaluatorInfrastructure;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="InfrastructureFailureReason"/> to the json value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static string ToJsonValue(InfrastructureFailureReason value)
+        {
+            if (value == InfrastructureFailureReason.Transport)
+                return "transport";
+
+            if (value == InfrastructureFailureReason.Timeout)
+                return "timeout";
+
+            if (value == InfrastructureFailureReason.RateLimit)
+                return "rate_limit";
+
+            if (value == InfrastructureFailureReason.ProviderUnavailable)
+                return "provider_unavailable";
+
+            if (value == InfrastructureFailureReason.ProviderInternal)
+                return "provider_internal";
+
+            if (value == InfrastructureFailureReason.Cancellation)
+                return "cancellation";
+
+            if (value == InfrastructureFailureReason.Budget)
+                return "budget";
+
+            if (value == InfrastructureFailureReason.EvaluatorInfrastructure)
+                return "evaluator_infrastructure";
+
+            throw new NotImplementedException($"Value could not be handled: '{value}'");
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="InfrastructureFailureReason"/>
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public class InfrastructureFailureReasonJsonConverter : JsonConverter<InfrastructureFailureReason>
+    {
+        /// <summary>
+        /// Returns a  from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override InfrastructureFailureReason Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            InfrastructureFailureReason? result = rawValue == null
+                ? null
+                : InfrastructureFailureReasonValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the InfrastructureFailureReason to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="infrastructureFailureReason"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, InfrastructureFailureReason infrastructureFailureReason, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(InfrastructureFailureReasonValueConverter.ToJsonValue(infrastructureFailureReason).ToString());
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="InfrastructureFailureReason"/>
+    /// </summary>
+    public class InfrastructureFailureReasonNullableJsonConverter : JsonConverter<InfrastructureFailureReason?>
+    {
+        /// <summary>
+        /// Returns a InfrastructureFailureReason from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override InfrastructureFailureReason? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            InfrastructureFailureReason? result = rawValue == null
+                ? null
+                : InfrastructureFailureReasonValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the InfrastructureFailureReason to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="infrastructureFailureReason"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, InfrastructureFailureReason? infrastructureFailureReason, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(infrastructureFailureReason.HasValue ? InfrastructureFailureReasonValueConverter.ToJsonValue(infrastructureFailureReason.Value).ToString() : "null");
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
     /// InspectDocumentEnvelope
     /// </summary>
     public partial class InspectDocumentEnvelope : IValidatableObject
@@ -6486,6 +9719,967 @@ namespace Templiqx.Adapter.Generated
 namespace Templiqx.Adapter.Generated
 {
     /// <summary>
+    /// MetricAggregate
+    /// </summary>
+    public partial class MetricAggregate : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MetricAggregate" /> class.
+        /// </summary>
+        /// <param name="metricId">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="unit">unit</param>
+        /// <param name="aggregation">aggregation</param>
+        /// <param name="direction">direction</param>
+        /// <param name="value">value</param>
+        [JsonConstructor]
+        public MetricAggregate(string metricId, MetricUnit unit, MetricAggregation aggregation, ObjectiveDirection direction, long value)
+        {
+            MetricId = metricId;
+            Unit = unit;
+            Aggregation = aggregation;
+            Direction = direction;
+            Value = value;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Unit
+        /// </summary>
+        [JsonPropertyName("unit")]
+        public MetricUnit Unit { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Aggregation
+        /// </summary>
+        [JsonPropertyName("aggregation")]
+        public MetricAggregation Aggregation { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Direction
+        /// </summary>
+        [JsonPropertyName("direction")]
+        public ObjectiveDirection Direction { get; set; }
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("metric_id")]
+        public string MetricId { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Value
+        /// </summary>
+        [JsonPropertyName("value")]
+        public long Value { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class MetricAggregate {\n");
+            sb.Append("  MetricId: ").Append(MetricId).Append("\n");
+            sb.Append("  Unit: ").Append(Unit).Append("\n");
+            sb.Append("  Aggregation: ").Append(Aggregation).Append("\n");
+            sb.Append("  Direction: ").Append(Direction).Append("\n");
+            sb.Append("  Value: ").Append(Value).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // MetricId (string) maxLength
+            if (this.MetricId != null && this.MetricId.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be less than 128.", new [] { "MetricId" });
+            }
+
+            // MetricId (string) minLength
+            if (this.MetricId != null && this.MetricId.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be greater than 1.", new [] { "MetricId" });
+            }
+
+            if (this.MetricId != null) {
+                // MetricId (string) pattern
+                Regex regexMetricId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexMetricId.Match(this.MetricId).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MetricId, must match a pattern of " + regexMetricId, new [] { "MetricId" });
+                }
+            }
+
+            // Value (long) maximum
+            if (this.Value > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for Value, must be a value less than or equal to 9007199254740991.", new [] { "Value" });
+            }
+
+            // Value (long) minimum
+            if (this.Value < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for Value, must be a value greater than or equal to 0.", new [] { "Value" });
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="MetricAggregate" />
+    /// </summary>
+    public class MetricAggregateJsonConverter : JsonConverter<MetricAggregate>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="MetricAggregate" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override MetricAggregate Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> metricId = default;
+            Option<MetricUnit?> unit = default;
+            Option<MetricAggregation?> aggregation = default;
+            Option<ObjectiveDirection?> direction = default;
+            Option<long?> value = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "metric_id":
+                            metricId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "unit":
+                            string? unitRawValue = utf8JsonReader.GetString();
+                            if (unitRawValue != null)
+                                unit = new Option<MetricUnit?>(MetricUnitValueConverter.FromStringOrDefault(unitRawValue));
+                            break;
+                        case "aggregation":
+                            string? aggregationRawValue = utf8JsonReader.GetString();
+                            if (aggregationRawValue != null)
+                                aggregation = new Option<MetricAggregation?>(MetricAggregationValueConverter.FromStringOrDefault(aggregationRawValue));
+                            break;
+                        case "direction":
+                            string? directionRawValue = utf8JsonReader.GetString();
+                            if (directionRawValue != null)
+                                direction = new Option<ObjectiveDirection?>(ObjectiveDirectionValueConverter.FromStringOrDefault(directionRawValue));
+                            break;
+                        case "value":
+                            value = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!metricId.IsSet)
+                throw new ArgumentException("Property is required for class MetricAggregate.", nameof(metricId));
+
+            if (!unit.IsSet)
+                throw new ArgumentException("Property is required for class MetricAggregate.", nameof(unit));
+
+            if (!aggregation.IsSet)
+                throw new ArgumentException("Property is required for class MetricAggregate.", nameof(aggregation));
+
+            if (!direction.IsSet)
+                throw new ArgumentException("Property is required for class MetricAggregate.", nameof(direction));
+
+            if (!value.IsSet)
+                throw new ArgumentException("Property is required for class MetricAggregate.", nameof(value));
+
+            if (metricId.IsSet && metricId.Value == null)
+                throw new ArgumentNullException(nameof(metricId), "Property is not nullable for class MetricAggregate.");
+
+            if (unit.IsSet && unit.Value == null)
+                throw new ArgumentNullException(nameof(unit), "Property is not nullable for class MetricAggregate.");
+
+            if (aggregation.IsSet && aggregation.Value == null)
+                throw new ArgumentNullException(nameof(aggregation), "Property is not nullable for class MetricAggregate.");
+
+            if (direction.IsSet && direction.Value == null)
+                throw new ArgumentNullException(nameof(direction), "Property is not nullable for class MetricAggregate.");
+
+            if (value.IsSet && value.Value == null)
+                throw new ArgumentNullException(nameof(value), "Property is not nullable for class MetricAggregate.");
+
+            return new MetricAggregate(metricId.Value!, unit.Value!.Value!, aggregation.Value!.Value!, direction.Value!.Value!, value.Value!.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="MetricAggregate" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="metricAggregate"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, MetricAggregate metricAggregate, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, metricAggregate, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="MetricAggregate" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="metricAggregate"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, MetricAggregate metricAggregate, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (metricAggregate.MetricId == null)
+                throw new ArgumentNullException(nameof(metricAggregate.MetricId), "Property is required for class MetricAggregate.");
+
+            writer.WriteString("metric_id", metricAggregate.MetricId);
+
+            var unitRawValue = MetricUnitValueConverter.ToJsonValue(metricAggregate.Unit);
+            writer.WriteString("unit", unitRawValue);
+
+            var aggregationRawValue = MetricAggregationValueConverter.ToJsonValue(metricAggregate.Aggregation);
+            writer.WriteString("aggregation", aggregationRawValue);
+
+            var directionRawValue = ObjectiveDirectionValueConverter.ToJsonValue(metricAggregate.Direction);
+            writer.WriteString("direction", directionRawValue);
+
+            writer.WriteNumber("value", metricAggregate.Value);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// Defines MetricAggregation
+    /// </summary>
+    public enum MetricAggregation
+    {
+        /// <summary>
+        /// Enum BinaryRatioPpm for value: binary_ratio_ppm
+        /// </summary>
+        BinaryRatioPpm = 1,
+
+        /// <summary>
+        /// Enum Mean for value: mean
+        /// </summary>
+        Mean = 2,
+
+        /// <summary>
+        /// Enum Sum for value: sum
+        /// </summary>
+        Sum = 3,
+
+        /// <summary>
+        /// Enum P95NearestRank for value: p95_nearest_rank
+        /// </summary>
+        P95NearestRank = 4
+    }
+
+    /// <summary>
+    /// Converts <see cref="MetricAggregation"/> to and from the JSON value
+    /// </summary>
+    public static class MetricAggregationValueConverter
+    {
+        /// <summary>
+        /// Parses a given value to <see cref="MetricAggregation"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static MetricAggregation FromString(string value)
+        {
+            if (value.Equals("binary_ratio_ppm"))
+                return MetricAggregation.BinaryRatioPpm;
+
+            if (value.Equals("mean"))
+                return MetricAggregation.Mean;
+
+            if (value.Equals("sum"))
+                return MetricAggregation.Sum;
+
+            if (value.Equals("p95_nearest_rank"))
+                return MetricAggregation.P95NearestRank;
+
+            throw new NotImplementedException($"Could not convert value to type MetricAggregation: '{value}'");
+        }
+
+        /// <summary>
+        /// Parses a given value to <see cref="MetricAggregation"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static MetricAggregation? FromStringOrDefault(string value)
+        {
+            if (value.Equals("binary_ratio_ppm"))
+                return MetricAggregation.BinaryRatioPpm;
+
+            if (value.Equals("mean"))
+                return MetricAggregation.Mean;
+
+            if (value.Equals("sum"))
+                return MetricAggregation.Sum;
+
+            if (value.Equals("p95_nearest_rank"))
+                return MetricAggregation.P95NearestRank;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="MetricAggregation"/> to the json value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static string ToJsonValue(MetricAggregation value)
+        {
+            if (value == MetricAggregation.BinaryRatioPpm)
+                return "binary_ratio_ppm";
+
+            if (value == MetricAggregation.Mean)
+                return "mean";
+
+            if (value == MetricAggregation.Sum)
+                return "sum";
+
+            if (value == MetricAggregation.P95NearestRank)
+                return "p95_nearest_rank";
+
+            throw new NotImplementedException($"Value could not be handled: '{value}'");
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="MetricAggregation"/>
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public class MetricAggregationJsonConverter : JsonConverter<MetricAggregation>
+    {
+        /// <summary>
+        /// Returns a  from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override MetricAggregation Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            MetricAggregation? result = rawValue == null
+                ? null
+                : MetricAggregationValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the MetricAggregation to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="metricAggregation"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, MetricAggregation metricAggregation, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(MetricAggregationValueConverter.ToJsonValue(metricAggregation).ToString());
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="MetricAggregation"/>
+    /// </summary>
+    public class MetricAggregationNullableJsonConverter : JsonConverter<MetricAggregation?>
+    {
+        /// <summary>
+        /// Returns a MetricAggregation from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override MetricAggregation? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            MetricAggregation? result = rawValue == null
+                ? null
+                : MetricAggregationValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the MetricAggregation to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="metricAggregation"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, MetricAggregation? metricAggregation, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(metricAggregation.HasValue ? MetricAggregationValueConverter.ToJsonValue(metricAggregation.Value).ToString() : "null");
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// MetricObservation
+    /// </summary>
+    public partial class MetricObservation : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MetricObservation" /> class.
+        /// </summary>
+        /// <param name="metricId">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="unit">unit</param>
+        /// <param name="value">value</param>
+        /// <param name="claimedMeasurementProfileFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="currencyCode">currencyCode</param>
+        /// <param name="tokenKind">tokenKind</param>
+        [JsonConstructor]
+        public MetricObservation(string metricId, MetricUnit unit, long value, string claimedMeasurementProfileFingerprint, Option<string?> currencyCode = default, Option<TokenKind?> tokenKind = default)
+        {
+            MetricId = metricId;
+            Unit = unit;
+            Value = value;
+            ClaimedMeasurementProfileFingerprint = claimedMeasurementProfileFingerprint;
+            CurrencyCodeOption = currencyCode;
+            TokenKindOption = tokenKind;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Unit
+        /// </summary>
+        [JsonPropertyName("unit")]
+        public MetricUnit Unit { get; set; }
+
+        /// <summary>
+        /// Used to track the state of TokenKind
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<TokenKind?> TokenKindOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets TokenKind
+        /// </summary>
+        [JsonPropertyName("token_kind")]
+        public TokenKind? TokenKind { get { return this.TokenKindOption; } set { this.TokenKindOption = new(value); } }
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("metric_id")]
+        public string MetricId { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Value
+        /// </summary>
+        [JsonPropertyName("value")]
+        public long Value { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_measurement_profile_fingerprint")]
+        public string ClaimedMeasurementProfileFingerprint { get; set; }
+
+        /// <summary>
+        /// Used to track the state of CurrencyCode
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<string?> CurrencyCodeOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets CurrencyCode
+        /// </summary>
+        [JsonPropertyName("currency_code")]
+        public string? CurrencyCode { get { return this.CurrencyCodeOption; } set { this.CurrencyCodeOption = new(value); } }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class MetricObservation {\n");
+            sb.Append("  MetricId: ").Append(MetricId).Append("\n");
+            sb.Append("  Unit: ").Append(Unit).Append("\n");
+            sb.Append("  Value: ").Append(Value).Append("\n");
+            sb.Append("  ClaimedMeasurementProfileFingerprint: ").Append(ClaimedMeasurementProfileFingerprint).Append("\n");
+            sb.Append("  CurrencyCode: ").Append(CurrencyCode).Append("\n");
+            sb.Append("  TokenKind: ").Append(TokenKind).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // MetricId (string) maxLength
+            if (this.MetricId != null && this.MetricId.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be less than 128.", new [] { "MetricId" });
+            }
+
+            // MetricId (string) minLength
+            if (this.MetricId != null && this.MetricId.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be greater than 1.", new [] { "MetricId" });
+            }
+
+            if (this.MetricId != null) {
+                // MetricId (string) pattern
+                Regex regexMetricId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexMetricId.Match(this.MetricId).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MetricId, must match a pattern of " + regexMetricId, new [] { "MetricId" });
+                }
+            }
+
+            // Value (long) maximum
+            if (this.Value > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for Value, must be a value less than or equal to 9007199254740991.", new [] { "Value" });
+            }
+
+            // Value (long) minimum
+            if (this.Value < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for Value, must be a value greater than or equal to 0.", new [] { "Value" });
+            }
+
+            // ClaimedMeasurementProfileFingerprint (string) maxLength
+            if (this.ClaimedMeasurementProfileFingerprint != null && this.ClaimedMeasurementProfileFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedMeasurementProfileFingerprint, length must be less than 64.", new [] { "ClaimedMeasurementProfileFingerprint" });
+            }
+
+            // ClaimedMeasurementProfileFingerprint (string) minLength
+            if (this.ClaimedMeasurementProfileFingerprint != null && this.ClaimedMeasurementProfileFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedMeasurementProfileFingerprint, length must be greater than 64.", new [] { "ClaimedMeasurementProfileFingerprint" });
+            }
+
+            if (this.ClaimedMeasurementProfileFingerprint != null) {
+                // ClaimedMeasurementProfileFingerprint (string) pattern
+                Regex regexClaimedMeasurementProfileFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedMeasurementProfileFingerprint.Match(this.ClaimedMeasurementProfileFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedMeasurementProfileFingerprint, must match a pattern of " + regexClaimedMeasurementProfileFingerprint, new [] { "ClaimedMeasurementProfileFingerprint" });
+                }
+            }
+
+            if (this.CurrencyCodeOption.Value != null) {
+                // CurrencyCode (string) pattern
+                Regex regexCurrencyCode = new Regex(@"^[A-Z]{3}$", RegexOptions.CultureInvariant);
+
+                if (this.CurrencyCodeOption.Value != null &&!regexCurrencyCode.Match(this.CurrencyCodeOption.Value).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for CurrencyCode, must match a pattern of " + regexCurrencyCode, new [] { "CurrencyCode" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="MetricObservation" />
+    /// </summary>
+    public class MetricObservationJsonConverter : JsonConverter<MetricObservation>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="MetricObservation" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override MetricObservation Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> metricId = default;
+            Option<MetricUnit?> unit = default;
+            Option<long?> value = default;
+            Option<string?> claimedMeasurementProfileFingerprint = default;
+            Option<string?> currencyCode = default;
+            Option<TokenKind?> tokenKind = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "metric_id":
+                            metricId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "unit":
+                            string? unitRawValue = utf8JsonReader.GetString();
+                            if (unitRawValue != null)
+                                unit = new Option<MetricUnit?>(MetricUnitValueConverter.FromStringOrDefault(unitRawValue));
+                            break;
+                        case "value":
+                            value = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "claimed_measurement_profile_fingerprint":
+                            claimedMeasurementProfileFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "currency_code":
+                            currencyCode = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "token_kind":
+                            string? tokenKindRawValue = utf8JsonReader.GetString();
+                            if (tokenKindRawValue != null)
+                                tokenKind = new Option<TokenKind?>(TokenKindValueConverter.FromStringOrDefault(tokenKindRawValue));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!metricId.IsSet)
+                throw new ArgumentException("Property is required for class MetricObservation.", nameof(metricId));
+
+            if (!unit.IsSet)
+                throw new ArgumentException("Property is required for class MetricObservation.", nameof(unit));
+
+            if (!value.IsSet)
+                throw new ArgumentException("Property is required for class MetricObservation.", nameof(value));
+
+            if (!claimedMeasurementProfileFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class MetricObservation.", nameof(claimedMeasurementProfileFingerprint));
+
+            if (metricId.IsSet && metricId.Value == null)
+                throw new ArgumentNullException(nameof(metricId), "Property is not nullable for class MetricObservation.");
+
+            if (unit.IsSet && unit.Value == null)
+                throw new ArgumentNullException(nameof(unit), "Property is not nullable for class MetricObservation.");
+
+            if (value.IsSet && value.Value == null)
+                throw new ArgumentNullException(nameof(value), "Property is not nullable for class MetricObservation.");
+
+            if (claimedMeasurementProfileFingerprint.IsSet && claimedMeasurementProfileFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedMeasurementProfileFingerprint), "Property is not nullable for class MetricObservation.");
+
+            if (currencyCode.IsSet && currencyCode.Value == null)
+                throw new ArgumentNullException(nameof(currencyCode), "Property is not nullable for class MetricObservation.");
+
+            if (tokenKind.IsSet && tokenKind.Value == null)
+                throw new ArgumentNullException(nameof(tokenKind), "Property is not nullable for class MetricObservation.");
+
+            return new MetricObservation(metricId.Value!, unit.Value!.Value!, value.Value!.Value!, claimedMeasurementProfileFingerprint.Value!, currencyCode, tokenKind);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="MetricObservation" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="metricObservation"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, MetricObservation metricObservation, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, metricObservation, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="MetricObservation" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="metricObservation"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, MetricObservation metricObservation, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (metricObservation.MetricId == null)
+                throw new ArgumentNullException(nameof(metricObservation.MetricId), "Property is required for class MetricObservation.");
+
+            if (metricObservation.ClaimedMeasurementProfileFingerprint == null)
+                throw new ArgumentNullException(nameof(metricObservation.ClaimedMeasurementProfileFingerprint), "Property is required for class MetricObservation.");
+
+            if (metricObservation.CurrencyCodeOption.IsSet && metricObservation.CurrencyCode == null)
+                throw new ArgumentNullException(nameof(metricObservation.CurrencyCode), "Property is required for class MetricObservation.");
+
+            writer.WriteString("metric_id", metricObservation.MetricId);
+
+            var unitRawValue = MetricUnitValueConverter.ToJsonValue(metricObservation.Unit);
+            writer.WriteString("unit", unitRawValue);
+
+            writer.WriteNumber("value", metricObservation.Value);
+
+            writer.WriteString("claimed_measurement_profile_fingerprint", metricObservation.ClaimedMeasurementProfileFingerprint);
+
+            if (metricObservation.CurrencyCodeOption.IsSet)
+                writer.WriteString("currency_code", metricObservation.CurrencyCode);
+
+            if (metricObservation.TokenKindOption.IsSet)
+            {
+                var tokenKindRawValue = TokenKindValueConverter.ToJsonValue(metricObservation.TokenKind!.Value);
+                writer.WriteString("token_kind", tokenKindRawValue);
+            }
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// Defines MetricUnit
+    /// </summary>
+    public enum MetricUnit
+    {
+        /// <summary>
+        /// Enum RatioPpm for value: ratio_ppm
+        /// </summary>
+        RatioPpm = 1,
+
+        /// <summary>
+        /// Enum Milliseconds for value: milliseconds
+        /// </summary>
+        Milliseconds = 2,
+
+        /// <summary>
+        /// Enum TokenCount for value: token_count
+        /// </summary>
+        TokenCount = 3,
+
+        /// <summary>
+        /// Enum CurrencyMicrounits for value: currency_microunits
+        /// </summary>
+        CurrencyMicrounits = 4
+    }
+
+    /// <summary>
+    /// Converts <see cref="MetricUnit"/> to and from the JSON value
+    /// </summary>
+    public static class MetricUnitValueConverter
+    {
+        /// <summary>
+        /// Parses a given value to <see cref="MetricUnit"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static MetricUnit FromString(string value)
+        {
+            if (value.Equals("ratio_ppm"))
+                return MetricUnit.RatioPpm;
+
+            if (value.Equals("milliseconds"))
+                return MetricUnit.Milliseconds;
+
+            if (value.Equals("token_count"))
+                return MetricUnit.TokenCount;
+
+            if (value.Equals("currency_microunits"))
+                return MetricUnit.CurrencyMicrounits;
+
+            throw new NotImplementedException($"Could not convert value to type MetricUnit: '{value}'");
+        }
+
+        /// <summary>
+        /// Parses a given value to <see cref="MetricUnit"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static MetricUnit? FromStringOrDefault(string value)
+        {
+            if (value.Equals("ratio_ppm"))
+                return MetricUnit.RatioPpm;
+
+            if (value.Equals("milliseconds"))
+                return MetricUnit.Milliseconds;
+
+            if (value.Equals("token_count"))
+                return MetricUnit.TokenCount;
+
+            if (value.Equals("currency_microunits"))
+                return MetricUnit.CurrencyMicrounits;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="MetricUnit"/> to the json value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static string ToJsonValue(MetricUnit value)
+        {
+            if (value == MetricUnit.RatioPpm)
+                return "ratio_ppm";
+
+            if (value == MetricUnit.Milliseconds)
+                return "milliseconds";
+
+            if (value == MetricUnit.TokenCount)
+                return "token_count";
+
+            if (value == MetricUnit.CurrencyMicrounits)
+                return "currency_microunits";
+
+            throw new NotImplementedException($"Value could not be handled: '{value}'");
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="MetricUnit"/>
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public class MetricUnitJsonConverter : JsonConverter<MetricUnit>
+    {
+        /// <summary>
+        /// Returns a  from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override MetricUnit Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            MetricUnit? result = rawValue == null
+                ? null
+                : MetricUnitValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the MetricUnit to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="metricUnit"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, MetricUnit metricUnit, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(MetricUnitValueConverter.ToJsonValue(metricUnit).ToString());
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="MetricUnit"/>
+    /// </summary>
+    public class MetricUnitNullableJsonConverter : JsonConverter<MetricUnit?>
+    {
+        /// <summary>
+        /// Returns a MetricUnit from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override MetricUnit? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            MetricUnit? result = rawValue == null
+                ? null
+                : MetricUnitValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the MetricUnit to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="metricUnit"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, MetricUnit? metricUnit, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(metricUnit.HasValue ? MetricUnitValueConverter.ToJsonValue(metricUnit.Value).ToString() : "null");
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
     /// MigrateLegacyRequest
     /// </summary>
     public partial class MigrateLegacyRequest : IValidatableObject
@@ -6690,6 +10884,157 @@ namespace Templiqx.Adapter.Generated
             }
             else
                 writer.WriteNull("aliases");
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// Defines ObjectiveDirection
+    /// </summary>
+    public enum ObjectiveDirection
+    {
+        /// <summary>
+        /// Enum Maximize for value: maximize
+        /// </summary>
+        Maximize = 1,
+
+        /// <summary>
+        /// Enum Minimize for value: minimize
+        /// </summary>
+        Minimize = 2
+    }
+
+    /// <summary>
+    /// Converts <see cref="ObjectiveDirection"/> to and from the JSON value
+    /// </summary>
+    public static class ObjectiveDirectionValueConverter
+    {
+        /// <summary>
+        /// Parses a given value to <see cref="ObjectiveDirection"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static ObjectiveDirection FromString(string value)
+        {
+            if (value.Equals("maximize"))
+                return ObjectiveDirection.Maximize;
+
+            if (value.Equals("minimize"))
+                return ObjectiveDirection.Minimize;
+
+            throw new NotImplementedException($"Could not convert value to type ObjectiveDirection: '{value}'");
+        }
+
+        /// <summary>
+        /// Parses a given value to <see cref="ObjectiveDirection"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static ObjectiveDirection? FromStringOrDefault(string value)
+        {
+            if (value.Equals("maximize"))
+                return ObjectiveDirection.Maximize;
+
+            if (value.Equals("minimize"))
+                return ObjectiveDirection.Minimize;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="ObjectiveDirection"/> to the json value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static string ToJsonValue(ObjectiveDirection value)
+        {
+            if (value == ObjectiveDirection.Maximize)
+                return "maximize";
+
+            if (value == ObjectiveDirection.Minimize)
+                return "minimize";
+
+            throw new NotImplementedException($"Value could not be handled: '{value}'");
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="ObjectiveDirection"/>
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public class ObjectiveDirectionJsonConverter : JsonConverter<ObjectiveDirection>
+    {
+        /// <summary>
+        /// Returns a  from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override ObjectiveDirection Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            ObjectiveDirection? result = rawValue == null
+                ? null
+                : ObjectiveDirectionValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the ObjectiveDirection to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="objectiveDirection"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, ObjectiveDirection objectiveDirection, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(ObjectiveDirectionValueConverter.ToJsonValue(objectiveDirection).ToString());
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="ObjectiveDirection"/>
+    /// </summary>
+    public class ObjectiveDirectionNullableJsonConverter : JsonConverter<ObjectiveDirection?>
+    {
+        /// <summary>
+        /// Returns a ObjectiveDirection from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override ObjectiveDirection? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            ObjectiveDirection? result = rawValue == null
+                ? null
+                : ObjectiveDirectionValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the ObjectiveDirection to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="objectiveDirection"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, ObjectiveDirection? objectiveDirection, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(objectiveDirection.HasValue ? ObjectiveDirectionValueConverter.ToJsonValue(objectiveDirection.Value).ToString() : "null");
         }
     }
 }
@@ -8318,6 +12663,2455 @@ namespace Templiqx.Adapter.Generated
             writer.WriteString("algorithm", packageSignature.Algorithm);
 
             writer.WriteString("value", packageSignature.Value);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// ParetoFront
+    /// </summary>
+    public partial class ParetoFront : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ParetoFront" /> class.
+        /// </summary>
+        /// <param name="rank">rank</param>
+        /// <param name="candidateFingerprints">candidateFingerprints</param>
+        [JsonConstructor]
+        public ParetoFront(long rank, List<string> candidateFingerprints)
+        {
+            Rank = rank;
+            CandidateFingerprints = candidateFingerprints;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Rank
+        /// </summary>
+        [JsonPropertyName("rank")]
+        public long Rank { get; set; }
+
+        /// <summary>
+        /// Gets or Sets CandidateFingerprints
+        /// </summary>
+        [JsonPropertyName("candidate_fingerprints")]
+        public List<string> CandidateFingerprints { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class ParetoFront {\n");
+            sb.Append("  Rank: ").Append(Rank).Append("\n");
+            sb.Append("  CandidateFingerprints: ").Append(CandidateFingerprints).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // Rank (long) maximum
+            if (this.Rank > (long)4294967295)
+            {
+                yield return new ValidationResult("Invalid value for Rank, must be a value less than or equal to 4294967295.", new [] { "Rank" });
+            }
+
+            // Rank (long) minimum
+            if (this.Rank < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for Rank, must be a value greater than or equal to 0.", new [] { "Rank" });
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="ParetoFront" />
+    /// </summary>
+    public class ParetoFrontJsonConverter : JsonConverter<ParetoFront>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="ParetoFront" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override ParetoFront Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<long?> rank = default;
+            Option<List<string>?> candidateFingerprints = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "rank":
+                            rank = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "candidate_fingerprints":
+                            candidateFingerprints = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!rank.IsSet)
+                throw new ArgumentException("Property is required for class ParetoFront.", nameof(rank));
+
+            if (!candidateFingerprints.IsSet)
+                throw new ArgumentException("Property is required for class ParetoFront.", nameof(candidateFingerprints));
+
+            if (rank.IsSet && rank.Value == null)
+                throw new ArgumentNullException(nameof(rank), "Property is not nullable for class ParetoFront.");
+
+            if (candidateFingerprints.IsSet && candidateFingerprints.Value == null)
+                throw new ArgumentNullException(nameof(candidateFingerprints), "Property is not nullable for class ParetoFront.");
+
+            return new ParetoFront(rank.Value!.Value!, candidateFingerprints.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="ParetoFront" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="paretoFront"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, ParetoFront paretoFront, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, paretoFront, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="ParetoFront" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="paretoFront"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, ParetoFront paretoFront, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (paretoFront.CandidateFingerprints == null)
+                throw new ArgumentNullException(nameof(paretoFront.CandidateFingerprints), "Property is required for class ParetoFront.");
+
+            writer.WriteNumber("rank", paretoFront.Rank);
+
+            writer.WritePropertyName("candidate_fingerprints");
+            JsonSerializer.Serialize(writer, paretoFront.CandidateFingerprints, jsonSerializerOptions);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// QualityCandidateSubmission
+    /// </summary>
+    public partial class QualityCandidateSubmission : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QualityCandidateSubmission" /> class.
+        /// </summary>
+        /// <param name="candidateSource">Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.</param>
+        /// <param name="syntheticOrSanitizedDataAttestation">syntheticOrSanitizedDataAttestation</param>
+        /// <param name="evidence">evidence</param>
+        [JsonConstructor]
+        public QualityCandidateSubmission(string candidateSource, bool syntheticOrSanitizedDataAttestation, CandidateEvidence evidence)
+        {
+            CandidateSource = candidateSource;
+            SyntheticOrSanitizedDataAttestation = syntheticOrSanitizedDataAttestation;
+            Evidence = evidence;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.
+        /// </summary>
+        /// <value>Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.</value>
+        [JsonPropertyName("candidate_source")]
+        public string CandidateSource { get; set; }
+
+        /// <summary>
+        /// Gets or Sets SyntheticOrSanitizedDataAttestation
+        /// </summary>
+        [JsonPropertyName("synthetic_or_sanitized_data_attestation")]
+        public bool SyntheticOrSanitizedDataAttestation { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Evidence
+        /// </summary>
+        [JsonPropertyName("evidence")]
+        public CandidateEvidence Evidence { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class QualityCandidateSubmission {\n");
+            sb.Append("  CandidateSource: ").Append(CandidateSource).Append("\n");
+            sb.Append("  SyntheticOrSanitizedDataAttestation: ").Append(SyntheticOrSanitizedDataAttestation).Append("\n");
+            sb.Append("  Evidence: ").Append(Evidence).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // CandidateSource (string) maxLength
+            if (this.CandidateSource != null && this.CandidateSource.Length > 524288)
+            {
+                yield return new ValidationResult("Invalid value for CandidateSource, length must be less than 524288.", new [] { "CandidateSource" });
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="QualityCandidateSubmission" />
+    /// </summary>
+    public class QualityCandidateSubmissionJsonConverter : JsonConverter<QualityCandidateSubmission>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="QualityCandidateSubmission" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override QualityCandidateSubmission Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> candidateSource = default;
+            Option<bool?> syntheticOrSanitizedDataAttestation = default;
+            Option<CandidateEvidence?> evidence = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "candidate_source":
+                            candidateSource = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "synthetic_or_sanitized_data_attestation":
+                            syntheticOrSanitizedDataAttestation = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                            break;
+                        case "evidence":
+                            evidence = new Option<CandidateEvidence?>(JsonSerializer.Deserialize<CandidateEvidence>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!candidateSource.IsSet)
+                throw new ArgumentException("Property is required for class QualityCandidateSubmission.", nameof(candidateSource));
+
+            if (!syntheticOrSanitizedDataAttestation.IsSet)
+                throw new ArgumentException("Property is required for class QualityCandidateSubmission.", nameof(syntheticOrSanitizedDataAttestation));
+
+            if (!evidence.IsSet)
+                throw new ArgumentException("Property is required for class QualityCandidateSubmission.", nameof(evidence));
+
+            if (candidateSource.IsSet && candidateSource.Value == null)
+                throw new ArgumentNullException(nameof(candidateSource), "Property is not nullable for class QualityCandidateSubmission.");
+
+            if (syntheticOrSanitizedDataAttestation.IsSet && syntheticOrSanitizedDataAttestation.Value == null)
+                throw new ArgumentNullException(nameof(syntheticOrSanitizedDataAttestation), "Property is not nullable for class QualityCandidateSubmission.");
+
+            if (evidence.IsSet && evidence.Value == null)
+                throw new ArgumentNullException(nameof(evidence), "Property is not nullable for class QualityCandidateSubmission.");
+
+            return new QualityCandidateSubmission(candidateSource.Value!, syntheticOrSanitizedDataAttestation.Value!.Value!, evidence.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="QualityCandidateSubmission" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityCandidateSubmission"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, QualityCandidateSubmission qualityCandidateSubmission, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, qualityCandidateSubmission, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="QualityCandidateSubmission" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityCandidateSubmission"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, QualityCandidateSubmission qualityCandidateSubmission, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (qualityCandidateSubmission.CandidateSource == null)
+                throw new ArgumentNullException(nameof(qualityCandidateSubmission.CandidateSource), "Property is required for class QualityCandidateSubmission.");
+
+            if (qualityCandidateSubmission.Evidence == null)
+                throw new ArgumentNullException(nameof(qualityCandidateSubmission.Evidence), "Property is required for class QualityCandidateSubmission.");
+
+            writer.WriteString("candidate_source", qualityCandidateSubmission.CandidateSource);
+
+            writer.WriteBoolean("synthetic_or_sanitized_data_attestation", qualityCandidateSubmission.SyntheticOrSanitizedDataAttestation);
+
+            writer.WritePropertyName("evidence");
+            JsonSerializer.Serialize(writer, qualityCandidateSubmission.Evidence, jsonSerializerOptions);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// QualityObjective
+    /// </summary>
+    public partial class QualityObjective : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QualityObjective" /> class.
+        /// </summary>
+        /// <param name="id">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="metricId">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="unit">unit</param>
+        /// <param name="aggregation">aggregation</param>
+        /// <param name="direction">direction</param>
+        /// <param name="claimedMeasurementProfileFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="currencyCode">currencyCode</param>
+        /// <param name="tokenKind">tokenKind</param>
+        [JsonConstructor]
+        public QualityObjective(string id, string metricId, MetricUnit unit, MetricAggregation aggregation, ObjectiveDirection direction, string claimedMeasurementProfileFingerprint, Option<string?> currencyCode = default, Option<TokenKind?> tokenKind = default)
+        {
+            Id = id;
+            MetricId = metricId;
+            Unit = unit;
+            Aggregation = aggregation;
+            Direction = direction;
+            ClaimedMeasurementProfileFingerprint = claimedMeasurementProfileFingerprint;
+            CurrencyCodeOption = currencyCode;
+            TokenKindOption = tokenKind;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Unit
+        /// </summary>
+        [JsonPropertyName("unit")]
+        public MetricUnit Unit { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Aggregation
+        /// </summary>
+        [JsonPropertyName("aggregation")]
+        public MetricAggregation Aggregation { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Direction
+        /// </summary>
+        [JsonPropertyName("direction")]
+        public ObjectiveDirection Direction { get; set; }
+
+        /// <summary>
+        /// Used to track the state of TokenKind
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<TokenKind?> TokenKindOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets TokenKind
+        /// </summary>
+        [JsonPropertyName("token_kind")]
+        public TokenKind? TokenKind { get { return this.TokenKindOption; } set { this.TokenKindOption = new(value); } }
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("metric_id")]
+        public string MetricId { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_measurement_profile_fingerprint")]
+        public string ClaimedMeasurementProfileFingerprint { get; set; }
+
+        /// <summary>
+        /// Used to track the state of CurrencyCode
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<string?> CurrencyCodeOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets CurrencyCode
+        /// </summary>
+        [JsonPropertyName("currency_code")]
+        public string? CurrencyCode { get { return this.CurrencyCodeOption; } set { this.CurrencyCodeOption = new(value); } }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class QualityObjective {\n");
+            sb.Append("  Id: ").Append(Id).Append("\n");
+            sb.Append("  MetricId: ").Append(MetricId).Append("\n");
+            sb.Append("  Unit: ").Append(Unit).Append("\n");
+            sb.Append("  Aggregation: ").Append(Aggregation).Append("\n");
+            sb.Append("  Direction: ").Append(Direction).Append("\n");
+            sb.Append("  ClaimedMeasurementProfileFingerprint: ").Append(ClaimedMeasurementProfileFingerprint).Append("\n");
+            sb.Append("  CurrencyCode: ").Append(CurrencyCode).Append("\n");
+            sb.Append("  TokenKind: ").Append(TokenKind).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // Id (string) maxLength
+            if (this.Id != null && this.Id.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for Id, length must be less than 128.", new [] { "Id" });
+            }
+
+            // Id (string) minLength
+            if (this.Id != null && this.Id.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for Id, length must be greater than 1.", new [] { "Id" });
+            }
+
+            if (this.Id != null) {
+                // Id (string) pattern
+                Regex regexId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexId.Match(this.Id).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for Id, must match a pattern of " + regexId, new [] { "Id" });
+                }
+            }
+
+            // MetricId (string) maxLength
+            if (this.MetricId != null && this.MetricId.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be less than 128.", new [] { "MetricId" });
+            }
+
+            // MetricId (string) minLength
+            if (this.MetricId != null && this.MetricId.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for MetricId, length must be greater than 1.", new [] { "MetricId" });
+            }
+
+            if (this.MetricId != null) {
+                // MetricId (string) pattern
+                Regex regexMetricId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexMetricId.Match(this.MetricId).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MetricId, must match a pattern of " + regexMetricId, new [] { "MetricId" });
+                }
+            }
+
+            // ClaimedMeasurementProfileFingerprint (string) maxLength
+            if (this.ClaimedMeasurementProfileFingerprint != null && this.ClaimedMeasurementProfileFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedMeasurementProfileFingerprint, length must be less than 64.", new [] { "ClaimedMeasurementProfileFingerprint" });
+            }
+
+            // ClaimedMeasurementProfileFingerprint (string) minLength
+            if (this.ClaimedMeasurementProfileFingerprint != null && this.ClaimedMeasurementProfileFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedMeasurementProfileFingerprint, length must be greater than 64.", new [] { "ClaimedMeasurementProfileFingerprint" });
+            }
+
+            if (this.ClaimedMeasurementProfileFingerprint != null) {
+                // ClaimedMeasurementProfileFingerprint (string) pattern
+                Regex regexClaimedMeasurementProfileFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedMeasurementProfileFingerprint.Match(this.ClaimedMeasurementProfileFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedMeasurementProfileFingerprint, must match a pattern of " + regexClaimedMeasurementProfileFingerprint, new [] { "ClaimedMeasurementProfileFingerprint" });
+                }
+            }
+
+            if (this.CurrencyCodeOption.Value != null) {
+                // CurrencyCode (string) pattern
+                Regex regexCurrencyCode = new Regex(@"^[A-Z]{3}$", RegexOptions.CultureInvariant);
+
+                if (this.CurrencyCodeOption.Value != null &&!regexCurrencyCode.Match(this.CurrencyCodeOption.Value).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for CurrencyCode, must match a pattern of " + regexCurrencyCode, new [] { "CurrencyCode" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="QualityObjective" />
+    /// </summary>
+    public class QualityObjectiveJsonConverter : JsonConverter<QualityObjective>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="QualityObjective" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override QualityObjective Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> id = default;
+            Option<string?> metricId = default;
+            Option<MetricUnit?> unit = default;
+            Option<MetricAggregation?> aggregation = default;
+            Option<ObjectiveDirection?> direction = default;
+            Option<string?> claimedMeasurementProfileFingerprint = default;
+            Option<string?> currencyCode = default;
+            Option<TokenKind?> tokenKind = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "id":
+                            id = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "metric_id":
+                            metricId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "unit":
+                            string? unitRawValue = utf8JsonReader.GetString();
+                            if (unitRawValue != null)
+                                unit = new Option<MetricUnit?>(MetricUnitValueConverter.FromStringOrDefault(unitRawValue));
+                            break;
+                        case "aggregation":
+                            string? aggregationRawValue = utf8JsonReader.GetString();
+                            if (aggregationRawValue != null)
+                                aggregation = new Option<MetricAggregation?>(MetricAggregationValueConverter.FromStringOrDefault(aggregationRawValue));
+                            break;
+                        case "direction":
+                            string? directionRawValue = utf8JsonReader.GetString();
+                            if (directionRawValue != null)
+                                direction = new Option<ObjectiveDirection?>(ObjectiveDirectionValueConverter.FromStringOrDefault(directionRawValue));
+                            break;
+                        case "claimed_measurement_profile_fingerprint":
+                            claimedMeasurementProfileFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "currency_code":
+                            currencyCode = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "token_kind":
+                            string? tokenKindRawValue = utf8JsonReader.GetString();
+                            if (tokenKindRawValue != null)
+                                tokenKind = new Option<TokenKind?>(TokenKindValueConverter.FromStringOrDefault(tokenKindRawValue));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!id.IsSet)
+                throw new ArgumentException("Property is required for class QualityObjective.", nameof(id));
+
+            if (!metricId.IsSet)
+                throw new ArgumentException("Property is required for class QualityObjective.", nameof(metricId));
+
+            if (!unit.IsSet)
+                throw new ArgumentException("Property is required for class QualityObjective.", nameof(unit));
+
+            if (!aggregation.IsSet)
+                throw new ArgumentException("Property is required for class QualityObjective.", nameof(aggregation));
+
+            if (!direction.IsSet)
+                throw new ArgumentException("Property is required for class QualityObjective.", nameof(direction));
+
+            if (!claimedMeasurementProfileFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class QualityObjective.", nameof(claimedMeasurementProfileFingerprint));
+
+            if (id.IsSet && id.Value == null)
+                throw new ArgumentNullException(nameof(id), "Property is not nullable for class QualityObjective.");
+
+            if (metricId.IsSet && metricId.Value == null)
+                throw new ArgumentNullException(nameof(metricId), "Property is not nullable for class QualityObjective.");
+
+            if (unit.IsSet && unit.Value == null)
+                throw new ArgumentNullException(nameof(unit), "Property is not nullable for class QualityObjective.");
+
+            if (aggregation.IsSet && aggregation.Value == null)
+                throw new ArgumentNullException(nameof(aggregation), "Property is not nullable for class QualityObjective.");
+
+            if (direction.IsSet && direction.Value == null)
+                throw new ArgumentNullException(nameof(direction), "Property is not nullable for class QualityObjective.");
+
+            if (claimedMeasurementProfileFingerprint.IsSet && claimedMeasurementProfileFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedMeasurementProfileFingerprint), "Property is not nullable for class QualityObjective.");
+
+            if (currencyCode.IsSet && currencyCode.Value == null)
+                throw new ArgumentNullException(nameof(currencyCode), "Property is not nullable for class QualityObjective.");
+
+            if (tokenKind.IsSet && tokenKind.Value == null)
+                throw new ArgumentNullException(nameof(tokenKind), "Property is not nullable for class QualityObjective.");
+
+            return new QualityObjective(id.Value!, metricId.Value!, unit.Value!.Value!, aggregation.Value!.Value!, direction.Value!.Value!, claimedMeasurementProfileFingerprint.Value!, currencyCode, tokenKind);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="QualityObjective" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityObjective"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, QualityObjective qualityObjective, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, qualityObjective, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="QualityObjective" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityObjective"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, QualityObjective qualityObjective, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (qualityObjective.Id == null)
+                throw new ArgumentNullException(nameof(qualityObjective.Id), "Property is required for class QualityObjective.");
+
+            if (qualityObjective.MetricId == null)
+                throw new ArgumentNullException(nameof(qualityObjective.MetricId), "Property is required for class QualityObjective.");
+
+            if (qualityObjective.ClaimedMeasurementProfileFingerprint == null)
+                throw new ArgumentNullException(nameof(qualityObjective.ClaimedMeasurementProfileFingerprint), "Property is required for class QualityObjective.");
+
+            if (qualityObjective.CurrencyCodeOption.IsSet && qualityObjective.CurrencyCode == null)
+                throw new ArgumentNullException(nameof(qualityObjective.CurrencyCode), "Property is required for class QualityObjective.");
+
+            writer.WriteString("id", qualityObjective.Id);
+
+            writer.WriteString("metric_id", qualityObjective.MetricId);
+
+            var unitRawValue = MetricUnitValueConverter.ToJsonValue(qualityObjective.Unit);
+            writer.WriteString("unit", unitRawValue);
+
+            var aggregationRawValue = MetricAggregationValueConverter.ToJsonValue(qualityObjective.Aggregation);
+            writer.WriteString("aggregation", aggregationRawValue);
+
+            var directionRawValue = ObjectiveDirectionValueConverter.ToJsonValue(qualityObjective.Direction);
+            writer.WriteString("direction", directionRawValue);
+
+            writer.WriteString("claimed_measurement_profile_fingerprint", qualityObjective.ClaimedMeasurementProfileFingerprint);
+
+            if (qualityObjective.CurrencyCodeOption.IsSet)
+                writer.WriteString("currency_code", qualityObjective.CurrencyCode);
+
+            if (qualityObjective.TokenKindOption.IsSet)
+            {
+                var tokenKindRawValue = TokenKindValueConverter.ToJsonValue(qualityObjective.TokenKind!.Value);
+                writer.WriteString("token_kind", tokenKindRawValue);
+            }
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// QualityPolicy
+    /// </summary>
+    public partial class QualityPolicy : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QualityPolicy" /> class.
+        /// </summary>
+        /// <param name="id">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="replicatesPerFixture">replicatesPerFixture</param>
+        /// <param name="minimumSemanticCases">minimumSemanticCases</param>
+        /// <param name="maximumInfrastructureFailurePpm">maximumInfrastructureFailurePpm</param>
+        /// <param name="claimedEvaluatorProfileFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="claimedModelProfileFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="binaryScorers">binaryScorers</param>
+        /// <param name="objectives">objectives</param>
+        /// <param name="eligibilityRules">eligibilityRules</param>
+        [JsonConstructor]
+        public QualityPolicy(string id, long replicatesPerFixture, long minimumSemanticCases, long maximumInfrastructureFailurePpm, string claimedEvaluatorProfileFingerprint, string claimedModelProfileFingerprint, List<BinaryScorer> binaryScorers, List<QualityObjective> objectives, List<EligibilityRule> eligibilityRules)
+        {
+            Id = id;
+            ReplicatesPerFixture = replicatesPerFixture;
+            MinimumSemanticCases = minimumSemanticCases;
+            MaximumInfrastructureFailurePpm = maximumInfrastructureFailurePpm;
+            ClaimedEvaluatorProfileFingerprint = claimedEvaluatorProfileFingerprint;
+            ClaimedModelProfileFingerprint = claimedModelProfileFingerprint;
+            BinaryScorers = binaryScorers;
+            Objectives = objectives;
+            EligibilityRules = eligibilityRules;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ReplicatesPerFixture
+        /// </summary>
+        [JsonPropertyName("replicates_per_fixture")]
+        public long ReplicatesPerFixture { get; set; }
+
+        /// <summary>
+        /// Gets or Sets MinimumSemanticCases
+        /// </summary>
+        [JsonPropertyName("minimum_semantic_cases")]
+        public long MinimumSemanticCases { get; set; }
+
+        /// <summary>
+        /// Gets or Sets MaximumInfrastructureFailurePpm
+        /// </summary>
+        [JsonPropertyName("maximum_infrastructure_failure_ppm")]
+        public long MaximumInfrastructureFailurePpm { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_evaluator_profile_fingerprint")]
+        public string ClaimedEvaluatorProfileFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("claimed_model_profile_fingerprint")]
+        public string ClaimedModelProfileFingerprint { get; set; }
+
+        /// <summary>
+        /// Gets or Sets BinaryScorers
+        /// </summary>
+        [JsonPropertyName("binary_scorers")]
+        public List<BinaryScorer> BinaryScorers { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Objectives
+        /// </summary>
+        [JsonPropertyName("objectives")]
+        public List<QualityObjective> Objectives { get; set; }
+
+        /// <summary>
+        /// Gets or Sets EligibilityRules
+        /// </summary>
+        [JsonPropertyName("eligibility_rules")]
+        public List<EligibilityRule> EligibilityRules { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class QualityPolicy {\n");
+            sb.Append("  Id: ").Append(Id).Append("\n");
+            sb.Append("  ReplicatesPerFixture: ").Append(ReplicatesPerFixture).Append("\n");
+            sb.Append("  MinimumSemanticCases: ").Append(MinimumSemanticCases).Append("\n");
+            sb.Append("  MaximumInfrastructureFailurePpm: ").Append(MaximumInfrastructureFailurePpm).Append("\n");
+            sb.Append("  ClaimedEvaluatorProfileFingerprint: ").Append(ClaimedEvaluatorProfileFingerprint).Append("\n");
+            sb.Append("  ClaimedModelProfileFingerprint: ").Append(ClaimedModelProfileFingerprint).Append("\n");
+            sb.Append("  BinaryScorers: ").Append(BinaryScorers).Append("\n");
+            sb.Append("  Objectives: ").Append(Objectives).Append("\n");
+            sb.Append("  EligibilityRules: ").Append(EligibilityRules).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // Id (string) maxLength
+            if (this.Id != null && this.Id.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for Id, length must be less than 128.", new [] { "Id" });
+            }
+
+            // Id (string) minLength
+            if (this.Id != null && this.Id.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for Id, length must be greater than 1.", new [] { "Id" });
+            }
+
+            if (this.Id != null) {
+                // Id (string) pattern
+                Regex regexId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexId.Match(this.Id).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for Id, must match a pattern of " + regexId, new [] { "Id" });
+                }
+            }
+
+            // ReplicatesPerFixture (long) maximum
+            if (this.ReplicatesPerFixture > (long)20)
+            {
+                yield return new ValidationResult("Invalid value for ReplicatesPerFixture, must be a value less than or equal to 20.", new [] { "ReplicatesPerFixture" });
+            }
+
+            // ReplicatesPerFixture (long) minimum
+            if (this.ReplicatesPerFixture < (long)1)
+            {
+                yield return new ValidationResult("Invalid value for ReplicatesPerFixture, must be a value greater than or equal to 1.", new [] { "ReplicatesPerFixture" });
+            }
+
+            // MinimumSemanticCases (long) maximum
+            if (this.MinimumSemanticCases > (long)9007199254740991)
+            {
+                yield return new ValidationResult("Invalid value for MinimumSemanticCases, must be a value less than or equal to 9007199254740991.", new [] { "MinimumSemanticCases" });
+            }
+
+            // MinimumSemanticCases (long) minimum
+            if (this.MinimumSemanticCases < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for MinimumSemanticCases, must be a value greater than or equal to 0.", new [] { "MinimumSemanticCases" });
+            }
+
+            // MaximumInfrastructureFailurePpm (long) maximum
+            if (this.MaximumInfrastructureFailurePpm > (long)1000000)
+            {
+                yield return new ValidationResult("Invalid value for MaximumInfrastructureFailurePpm, must be a value less than or equal to 1000000.", new [] { "MaximumInfrastructureFailurePpm" });
+            }
+
+            // MaximumInfrastructureFailurePpm (long) minimum
+            if (this.MaximumInfrastructureFailurePpm < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for MaximumInfrastructureFailurePpm, must be a value greater than or equal to 0.", new [] { "MaximumInfrastructureFailurePpm" });
+            }
+
+            // ClaimedEvaluatorProfileFingerprint (string) maxLength
+            if (this.ClaimedEvaluatorProfileFingerprint != null && this.ClaimedEvaluatorProfileFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, length must be less than 64.", new [] { "ClaimedEvaluatorProfileFingerprint" });
+            }
+
+            // ClaimedEvaluatorProfileFingerprint (string) minLength
+            if (this.ClaimedEvaluatorProfileFingerprint != null && this.ClaimedEvaluatorProfileFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, length must be greater than 64.", new [] { "ClaimedEvaluatorProfileFingerprint" });
+            }
+
+            if (this.ClaimedEvaluatorProfileFingerprint != null) {
+                // ClaimedEvaluatorProfileFingerprint (string) pattern
+                Regex regexClaimedEvaluatorProfileFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedEvaluatorProfileFingerprint.Match(this.ClaimedEvaluatorProfileFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedEvaluatorProfileFingerprint, must match a pattern of " + regexClaimedEvaluatorProfileFingerprint, new [] { "ClaimedEvaluatorProfileFingerprint" });
+                }
+            }
+
+            // ClaimedModelProfileFingerprint (string) maxLength
+            if (this.ClaimedModelProfileFingerprint != null && this.ClaimedModelProfileFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedModelProfileFingerprint, length must be less than 64.", new [] { "ClaimedModelProfileFingerprint" });
+            }
+
+            // ClaimedModelProfileFingerprint (string) minLength
+            if (this.ClaimedModelProfileFingerprint != null && this.ClaimedModelProfileFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ClaimedModelProfileFingerprint, length must be greater than 64.", new [] { "ClaimedModelProfileFingerprint" });
+            }
+
+            if (this.ClaimedModelProfileFingerprint != null) {
+                // ClaimedModelProfileFingerprint (string) pattern
+                Regex regexClaimedModelProfileFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexClaimedModelProfileFingerprint.Match(this.ClaimedModelProfileFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ClaimedModelProfileFingerprint, must match a pattern of " + regexClaimedModelProfileFingerprint, new [] { "ClaimedModelProfileFingerprint" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="QualityPolicy" />
+    /// </summary>
+    public class QualityPolicyJsonConverter : JsonConverter<QualityPolicy>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="QualityPolicy" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override QualityPolicy Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> id = default;
+            Option<long?> replicatesPerFixture = default;
+            Option<long?> minimumSemanticCases = default;
+            Option<long?> maximumInfrastructureFailurePpm = default;
+            Option<string?> claimedEvaluatorProfileFingerprint = default;
+            Option<string?> claimedModelProfileFingerprint = default;
+            Option<List<BinaryScorer>?> binaryScorers = default;
+            Option<List<QualityObjective>?> objectives = default;
+            Option<List<EligibilityRule>?> eligibilityRules = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "id":
+                            id = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "replicates_per_fixture":
+                            replicatesPerFixture = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "minimum_semantic_cases":
+                            minimumSemanticCases = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "maximum_infrastructure_failure_ppm":
+                            maximumInfrastructureFailurePpm = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "claimed_evaluator_profile_fingerprint":
+                            claimedEvaluatorProfileFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "claimed_model_profile_fingerprint":
+                            claimedModelProfileFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "binary_scorers":
+                            binaryScorers = new Option<List<BinaryScorer>?>(JsonSerializer.Deserialize<List<BinaryScorer>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "objectives":
+                            objectives = new Option<List<QualityObjective>?>(JsonSerializer.Deserialize<List<QualityObjective>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "eligibility_rules":
+                            eligibilityRules = new Option<List<EligibilityRule>?>(JsonSerializer.Deserialize<List<EligibilityRule>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!id.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(id));
+
+            if (!replicatesPerFixture.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(replicatesPerFixture));
+
+            if (!minimumSemanticCases.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(minimumSemanticCases));
+
+            if (!maximumInfrastructureFailurePpm.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(maximumInfrastructureFailurePpm));
+
+            if (!claimedEvaluatorProfileFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(claimedEvaluatorProfileFingerprint));
+
+            if (!claimedModelProfileFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(claimedModelProfileFingerprint));
+
+            if (!binaryScorers.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(binaryScorers));
+
+            if (!objectives.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(objectives));
+
+            if (!eligibilityRules.IsSet)
+                throw new ArgumentException("Property is required for class QualityPolicy.", nameof(eligibilityRules));
+
+            if (id.IsSet && id.Value == null)
+                throw new ArgumentNullException(nameof(id), "Property is not nullable for class QualityPolicy.");
+
+            if (replicatesPerFixture.IsSet && replicatesPerFixture.Value == null)
+                throw new ArgumentNullException(nameof(replicatesPerFixture), "Property is not nullable for class QualityPolicy.");
+
+            if (minimumSemanticCases.IsSet && minimumSemanticCases.Value == null)
+                throw new ArgumentNullException(nameof(minimumSemanticCases), "Property is not nullable for class QualityPolicy.");
+
+            if (maximumInfrastructureFailurePpm.IsSet && maximumInfrastructureFailurePpm.Value == null)
+                throw new ArgumentNullException(nameof(maximumInfrastructureFailurePpm), "Property is not nullable for class QualityPolicy.");
+
+            if (claimedEvaluatorProfileFingerprint.IsSet && claimedEvaluatorProfileFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedEvaluatorProfileFingerprint), "Property is not nullable for class QualityPolicy.");
+
+            if (claimedModelProfileFingerprint.IsSet && claimedModelProfileFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(claimedModelProfileFingerprint), "Property is not nullable for class QualityPolicy.");
+
+            if (binaryScorers.IsSet && binaryScorers.Value == null)
+                throw new ArgumentNullException(nameof(binaryScorers), "Property is not nullable for class QualityPolicy.");
+
+            if (objectives.IsSet && objectives.Value == null)
+                throw new ArgumentNullException(nameof(objectives), "Property is not nullable for class QualityPolicy.");
+
+            if (eligibilityRules.IsSet && eligibilityRules.Value == null)
+                throw new ArgumentNullException(nameof(eligibilityRules), "Property is not nullable for class QualityPolicy.");
+
+            return new QualityPolicy(id.Value!, replicatesPerFixture.Value!.Value!, minimumSemanticCases.Value!.Value!, maximumInfrastructureFailurePpm.Value!.Value!, claimedEvaluatorProfileFingerprint.Value!, claimedModelProfileFingerprint.Value!, binaryScorers.Value!, objectives.Value!, eligibilityRules.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="QualityPolicy" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityPolicy"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, QualityPolicy qualityPolicy, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, qualityPolicy, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="QualityPolicy" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityPolicy"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, QualityPolicy qualityPolicy, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (qualityPolicy.Id == null)
+                throw new ArgumentNullException(nameof(qualityPolicy.Id), "Property is required for class QualityPolicy.");
+
+            if (qualityPolicy.ClaimedEvaluatorProfileFingerprint == null)
+                throw new ArgumentNullException(nameof(qualityPolicy.ClaimedEvaluatorProfileFingerprint), "Property is required for class QualityPolicy.");
+
+            if (qualityPolicy.ClaimedModelProfileFingerprint == null)
+                throw new ArgumentNullException(nameof(qualityPolicy.ClaimedModelProfileFingerprint), "Property is required for class QualityPolicy.");
+
+            if (qualityPolicy.BinaryScorers == null)
+                throw new ArgumentNullException(nameof(qualityPolicy.BinaryScorers), "Property is required for class QualityPolicy.");
+
+            if (qualityPolicy.Objectives == null)
+                throw new ArgumentNullException(nameof(qualityPolicy.Objectives), "Property is required for class QualityPolicy.");
+
+            if (qualityPolicy.EligibilityRules == null)
+                throw new ArgumentNullException(nameof(qualityPolicy.EligibilityRules), "Property is required for class QualityPolicy.");
+
+            writer.WriteString("id", qualityPolicy.Id);
+
+            writer.WriteNumber("replicates_per_fixture", qualityPolicy.ReplicatesPerFixture);
+
+            writer.WriteNumber("minimum_semantic_cases", qualityPolicy.MinimumSemanticCases);
+
+            writer.WriteNumber("maximum_infrastructure_failure_ppm", qualityPolicy.MaximumInfrastructureFailurePpm);
+
+            writer.WriteString("claimed_evaluator_profile_fingerprint", qualityPolicy.ClaimedEvaluatorProfileFingerprint);
+
+            writer.WriteString("claimed_model_profile_fingerprint", qualityPolicy.ClaimedModelProfileFingerprint);
+
+            writer.WritePropertyName("binary_scorers");
+            JsonSerializer.Serialize(writer, qualityPolicy.BinaryScorers, jsonSerializerOptions);
+            writer.WritePropertyName("objectives");
+            JsonSerializer.Serialize(writer, qualityPolicy.Objectives, jsonSerializerOptions);
+            writer.WritePropertyName("eligibility_rules");
+            JsonSerializer.Serialize(writer, qualityPolicy.EligibilityRules, jsonSerializerOptions);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// QualityProposalReport
+    /// </summary>
+    public partial class QualityProposalReport : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QualityProposalReport" /> class.
+        /// </summary>
+        /// <param name="computedIdentities">computedIdentities</param>
+        /// <param name="candidateAssessments">candidateAssessments</param>
+        /// <param name="paretoFronts">paretoFronts</param>
+        /// <param name="reportFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        [JsonConstructor]
+        public QualityProposalReport(ComputedQualityIdentities computedIdentities, List<CandidateAssessment> candidateAssessments, List<ParetoFront> paretoFronts, string reportFingerprint)
+        {
+            ComputedIdentities = computedIdentities;
+            CandidateAssessments = candidateAssessments;
+            ParetoFronts = paretoFronts;
+            ReportFingerprint = reportFingerprint;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets ComputedIdentities
+        /// </summary>
+        [JsonPropertyName("computed_identities")]
+        public ComputedQualityIdentities ComputedIdentities { get; set; }
+
+        /// <summary>
+        /// Gets or Sets CandidateAssessments
+        /// </summary>
+        [JsonPropertyName("candidate_assessments")]
+        public List<CandidateAssessment> CandidateAssessments { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ParetoFronts
+        /// </summary>
+        [JsonPropertyName("pareto_fronts")]
+        public List<ParetoFront> ParetoFronts { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("report_fingerprint")]
+        public string ReportFingerprint { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class QualityProposalReport {\n");
+            sb.Append("  ComputedIdentities: ").Append(ComputedIdentities).Append("\n");
+            sb.Append("  CandidateAssessments: ").Append(CandidateAssessments).Append("\n");
+            sb.Append("  ParetoFronts: ").Append(ParetoFronts).Append("\n");
+            sb.Append("  ReportFingerprint: ").Append(ReportFingerprint).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // ReportFingerprint (string) maxLength
+            if (this.ReportFingerprint != null && this.ReportFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ReportFingerprint, length must be less than 64.", new [] { "ReportFingerprint" });
+            }
+
+            // ReportFingerprint (string) minLength
+            if (this.ReportFingerprint != null && this.ReportFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ReportFingerprint, length must be greater than 64.", new [] { "ReportFingerprint" });
+            }
+
+            if (this.ReportFingerprint != null) {
+                // ReportFingerprint (string) pattern
+                Regex regexReportFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexReportFingerprint.Match(this.ReportFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ReportFingerprint, must match a pattern of " + regexReportFingerprint, new [] { "ReportFingerprint" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="QualityProposalReport" />
+    /// </summary>
+    public class QualityProposalReportJsonConverter : JsonConverter<QualityProposalReport>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="QualityProposalReport" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override QualityProposalReport Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<ComputedQualityIdentities?> computedIdentities = default;
+            Option<List<CandidateAssessment>?> candidateAssessments = default;
+            Option<List<ParetoFront>?> paretoFronts = default;
+            Option<string?> reportFingerprint = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "computed_identities":
+                            computedIdentities = new Option<ComputedQualityIdentities?>(JsonSerializer.Deserialize<ComputedQualityIdentities>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "candidate_assessments":
+                            candidateAssessments = new Option<List<CandidateAssessment>?>(JsonSerializer.Deserialize<List<CandidateAssessment>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "pareto_fronts":
+                            paretoFronts = new Option<List<ParetoFront>?>(JsonSerializer.Deserialize<List<ParetoFront>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "report_fingerprint":
+                            reportFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!computedIdentities.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReport.", nameof(computedIdentities));
+
+            if (!candidateAssessments.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReport.", nameof(candidateAssessments));
+
+            if (!paretoFronts.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReport.", nameof(paretoFronts));
+
+            if (!reportFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReport.", nameof(reportFingerprint));
+
+            if (computedIdentities.IsSet && computedIdentities.Value == null)
+                throw new ArgumentNullException(nameof(computedIdentities), "Property is not nullable for class QualityProposalReport.");
+
+            if (candidateAssessments.IsSet && candidateAssessments.Value == null)
+                throw new ArgumentNullException(nameof(candidateAssessments), "Property is not nullable for class QualityProposalReport.");
+
+            if (paretoFronts.IsSet && paretoFronts.Value == null)
+                throw new ArgumentNullException(nameof(paretoFronts), "Property is not nullable for class QualityProposalReport.");
+
+            if (reportFingerprint.IsSet && reportFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(reportFingerprint), "Property is not nullable for class QualityProposalReport.");
+
+            return new QualityProposalReport(computedIdentities.Value!, candidateAssessments.Value!, paretoFronts.Value!, reportFingerprint.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="QualityProposalReport" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityProposalReport"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, QualityProposalReport qualityProposalReport, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, qualityProposalReport, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="QualityProposalReport" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityProposalReport"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, QualityProposalReport qualityProposalReport, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (qualityProposalReport.ComputedIdentities == null)
+                throw new ArgumentNullException(nameof(qualityProposalReport.ComputedIdentities), "Property is required for class QualityProposalReport.");
+
+            if (qualityProposalReport.CandidateAssessments == null)
+                throw new ArgumentNullException(nameof(qualityProposalReport.CandidateAssessments), "Property is required for class QualityProposalReport.");
+
+            if (qualityProposalReport.ParetoFronts == null)
+                throw new ArgumentNullException(nameof(qualityProposalReport.ParetoFronts), "Property is required for class QualityProposalReport.");
+
+            if (qualityProposalReport.ReportFingerprint == null)
+                throw new ArgumentNullException(nameof(qualityProposalReport.ReportFingerprint), "Property is required for class QualityProposalReport.");
+
+            writer.WritePropertyName("computed_identities");
+            JsonSerializer.Serialize(writer, qualityProposalReport.ComputedIdentities, jsonSerializerOptions);
+            writer.WritePropertyName("candidate_assessments");
+            JsonSerializer.Serialize(writer, qualityProposalReport.CandidateAssessments, jsonSerializerOptions);
+            writer.WritePropertyName("pareto_fronts");
+            JsonSerializer.Serialize(writer, qualityProposalReport.ParetoFronts, jsonSerializerOptions);
+            writer.WriteString("report_fingerprint", qualityProposalReport.ReportFingerprint);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// QualityProposalReportEnvelope
+    /// </summary>
+    public partial class QualityProposalReportEnvelope : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QualityProposalReportEnvelope" /> class.
+        /// </summary>
+        /// <param name="apiVersion">apiVersion</param>
+        /// <param name="operation">operation</param>
+        /// <param name="ok">ok</param>
+        /// <param name="diagnostics">diagnostics</param>
+        /// <param name="fingerprints">fingerprints</param>
+        /// <param name="streamEvents">streamEvents</param>
+        /// <param name="result">result</param>
+        [JsonConstructor]
+        public QualityProposalReportEnvelope(ApiVersionEnum apiVersion, string operation, bool ok, List<Diagnostic> diagnostics, Dictionary<string, string> fingerprints, Option<List<StreamEvent>?> streamEvents = default, Option<QualityProposalReport?> result = default)
+        {
+            ApiVersion = apiVersion;
+            Operation = operation;
+            Ok = ok;
+            Diagnostics = diagnostics;
+            Fingerprints = fingerprints;
+            StreamEventsOption = streamEvents;
+            ResultOption = result;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Defines ApiVersion
+        /// </summary>
+        public enum ApiVersionEnum
+        {
+            /// <summary>
+            /// Enum TempliqxV1alpha1 for value: templiqx/v1alpha1
+            /// </summary>
+            TempliqxV1alpha1 = 1
+        }
+
+        /// <summary>
+        /// Returns a <see cref="ApiVersionEnum"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static ApiVersionEnum ApiVersionEnumFromString(string value)
+        {
+            if (value.Equals("templiqx/v1alpha1"))
+                return ApiVersionEnum.TempliqxV1alpha1;
+
+            throw new NotImplementedException($"Could not convert value to type ApiVersionEnum: '{value}'");
+        }
+
+        /// <summary>
+        /// Returns a <see cref="ApiVersionEnum"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static ApiVersionEnum? ApiVersionEnumFromStringOrDefault(string value)
+        {
+            if (value.Equals("templiqx/v1alpha1"))
+                return ApiVersionEnum.TempliqxV1alpha1;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="ApiVersionEnum"/> to the json value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static string ApiVersionEnumToJsonValue(ApiVersionEnum value)
+        {
+            if (value == ApiVersionEnum.TempliqxV1alpha1)
+                return "templiqx/v1alpha1";
+
+            throw new NotImplementedException($"Value could not be handled: '{value}'");
+        }
+
+        /// <summary>
+        /// Gets or Sets ApiVersion
+        /// </summary>
+        [JsonPropertyName("api_version")]
+        public ApiVersionEnum ApiVersion { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Operation
+        /// </summary>
+        [JsonPropertyName("operation")]
+        public string Operation { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Ok
+        /// </summary>
+        [JsonPropertyName("ok")]
+        public bool Ok { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Diagnostics
+        /// </summary>
+        [JsonPropertyName("diagnostics")]
+        public List<Diagnostic> Diagnostics { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Fingerprints
+        /// </summary>
+        [JsonPropertyName("fingerprints")]
+        public Dictionary<string, string> Fingerprints { get; set; }
+
+        /// <summary>
+        /// Used to track the state of StreamEvents
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<List<StreamEvent>?> StreamEventsOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets StreamEvents
+        /// </summary>
+        [JsonPropertyName("stream_events")]
+        public List<StreamEvent>? StreamEvents { get { return this.StreamEventsOption; } set { this.StreamEventsOption = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of Result
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<QualityProposalReport?> ResultOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Result
+        /// </summary>
+        [JsonPropertyName("result")]
+        public QualityProposalReport? Result { get { return this.ResultOption; } set { this.ResultOption = new(value); } }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class QualityProposalReportEnvelope {\n");
+            sb.Append("  ApiVersion: ").Append(ApiVersion).Append("\n");
+            sb.Append("  Operation: ").Append(Operation).Append("\n");
+            sb.Append("  Ok: ").Append(Ok).Append("\n");
+            sb.Append("  Diagnostics: ").Append(Diagnostics).Append("\n");
+            sb.Append("  Fingerprints: ").Append(Fingerprints).Append("\n");
+            sb.Append("  StreamEvents: ").Append(StreamEvents).Append("\n");
+            sb.Append("  Result: ").Append(Result).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="QualityProposalReportEnvelope" />
+    /// </summary>
+    public class QualityProposalReportEnvelopeJsonConverter : JsonConverter<QualityProposalReportEnvelope>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="QualityProposalReportEnvelope" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override QualityProposalReportEnvelope Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<QualityProposalReportEnvelope.ApiVersionEnum?> apiVersion = default;
+            Option<string?> operation = default;
+            Option<bool?> ok = default;
+            Option<List<Diagnostic>?> diagnostics = default;
+            Option<Dictionary<string, string>?> fingerprints = default;
+            Option<List<StreamEvent>?> streamEvents = default;
+            Option<QualityProposalReport?> result = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "api_version":
+                            string? apiVersionRawValue = utf8JsonReader.GetString();
+                            if (apiVersionRawValue != null)
+                                apiVersion = new Option<QualityProposalReportEnvelope.ApiVersionEnum?>(QualityProposalReportEnvelope.ApiVersionEnumFromStringOrDefault(apiVersionRawValue));
+                            break;
+                        case "operation":
+                            operation = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "ok":
+                            ok = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                            break;
+                        case "diagnostics":
+                            diagnostics = new Option<List<Diagnostic>?>(JsonSerializer.Deserialize<List<Diagnostic>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "fingerprints":
+                            fingerprints = new Option<Dictionary<string, string>?>(JsonSerializer.Deserialize<Dictionary<string, string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "stream_events":
+                            streamEvents = new Option<List<StreamEvent>?>(JsonSerializer.Deserialize<List<StreamEvent>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "result":
+                            result = new Option<QualityProposalReport?>(JsonSerializer.Deserialize<QualityProposalReport>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!apiVersion.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReportEnvelope.", nameof(apiVersion));
+
+            if (!operation.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReportEnvelope.", nameof(operation));
+
+            if (!ok.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReportEnvelope.", nameof(ok));
+
+            if (!diagnostics.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReportEnvelope.", nameof(diagnostics));
+
+            if (!fingerprints.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalReportEnvelope.", nameof(fingerprints));
+
+            if (apiVersion.IsSet && apiVersion.Value == null)
+                throw new ArgumentNullException(nameof(apiVersion), "Property is not nullable for class QualityProposalReportEnvelope.");
+
+            if (operation.IsSet && operation.Value == null)
+                throw new ArgumentNullException(nameof(operation), "Property is not nullable for class QualityProposalReportEnvelope.");
+
+            if (ok.IsSet && ok.Value == null)
+                throw new ArgumentNullException(nameof(ok), "Property is not nullable for class QualityProposalReportEnvelope.");
+
+            if (diagnostics.IsSet && diagnostics.Value == null)
+                throw new ArgumentNullException(nameof(diagnostics), "Property is not nullable for class QualityProposalReportEnvelope.");
+
+            if (fingerprints.IsSet && fingerprints.Value == null)
+                throw new ArgumentNullException(nameof(fingerprints), "Property is not nullable for class QualityProposalReportEnvelope.");
+
+            if (streamEvents.IsSet && streamEvents.Value == null)
+                throw new ArgumentNullException(nameof(streamEvents), "Property is not nullable for class QualityProposalReportEnvelope.");
+
+            if (result.IsSet && result.Value == null)
+                throw new ArgumentNullException(nameof(result), "Property is not nullable for class QualityProposalReportEnvelope.");
+
+            return new QualityProposalReportEnvelope(apiVersion.Value!.Value!, operation.Value!, ok.Value!.Value!, diagnostics.Value!, fingerprints.Value!, streamEvents, result);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="QualityProposalReportEnvelope" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityProposalReportEnvelope"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, QualityProposalReportEnvelope qualityProposalReportEnvelope, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, qualityProposalReportEnvelope, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="QualityProposalReportEnvelope" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityProposalReportEnvelope"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, QualityProposalReportEnvelope qualityProposalReportEnvelope, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (qualityProposalReportEnvelope.Operation == null)
+                throw new ArgumentNullException(nameof(qualityProposalReportEnvelope.Operation), "Property is required for class QualityProposalReportEnvelope.");
+
+            if (qualityProposalReportEnvelope.Diagnostics == null)
+                throw new ArgumentNullException(nameof(qualityProposalReportEnvelope.Diagnostics), "Property is required for class QualityProposalReportEnvelope.");
+
+            if (qualityProposalReportEnvelope.Fingerprints == null)
+                throw new ArgumentNullException(nameof(qualityProposalReportEnvelope.Fingerprints), "Property is required for class QualityProposalReportEnvelope.");
+
+            if (qualityProposalReportEnvelope.StreamEventsOption.IsSet && qualityProposalReportEnvelope.StreamEvents == null)
+                throw new ArgumentNullException(nameof(qualityProposalReportEnvelope.StreamEvents), "Property is required for class QualityProposalReportEnvelope.");
+
+            if (qualityProposalReportEnvelope.ResultOption.IsSet && qualityProposalReportEnvelope.Result == null)
+                throw new ArgumentNullException(nameof(qualityProposalReportEnvelope.Result), "Property is required for class QualityProposalReportEnvelope.");
+
+            var apiVersionRawValue = QualityProposalReportEnvelope.ApiVersionEnumToJsonValue(qualityProposalReportEnvelope.ApiVersion);
+            writer.WriteString("api_version", apiVersionRawValue);
+            writer.WriteString("operation", qualityProposalReportEnvelope.Operation);
+
+            writer.WriteBoolean("ok", qualityProposalReportEnvelope.Ok);
+
+            writer.WritePropertyName("diagnostics");
+            JsonSerializer.Serialize(writer, qualityProposalReportEnvelope.Diagnostics, jsonSerializerOptions);
+            writer.WritePropertyName("fingerprints");
+            JsonSerializer.Serialize(writer, qualityProposalReportEnvelope.Fingerprints, jsonSerializerOptions);
+            if (qualityProposalReportEnvelope.StreamEventsOption.IsSet)
+            {
+                writer.WritePropertyName("stream_events");
+                JsonSerializer.Serialize(writer, qualityProposalReportEnvelope.StreamEvents, jsonSerializerOptions);
+            }
+            if (qualityProposalReportEnvelope.ResultOption.IsSet)
+            {
+                writer.WritePropertyName("result");
+                JsonSerializer.Serialize(writer, qualityProposalReportEnvelope.Result, jsonSerializerOptions);
+            }
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// QualityProposalRequest
+    /// </summary>
+    public partial class QualityProposalRequest : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QualityProposalRequest" /> class.
+        /// </summary>
+        /// <param name="package">package</param>
+        /// <param name="contractId">contractId</param>
+        /// <param name="expectedPackageFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="expectedBaseContractFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="expectedFixtureSetFingerprint">Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</param>
+        /// <param name="policy">policy</param>
+        /// <param name="candidates">candidates</param>
+        [JsonConstructor]
+        public QualityProposalRequest(string package, string contractId, string expectedPackageFingerprint, string expectedBaseContractFingerprint, string expectedFixtureSetFingerprint, QualityPolicy policy, List<QualityCandidateSubmission> candidates)
+        {
+            Package = package;
+            ContractId = contractId;
+            ExpectedPackageFingerprint = expectedPackageFingerprint;
+            ExpectedBaseContractFingerprint = expectedBaseContractFingerprint;
+            ExpectedFixtureSetFingerprint = expectedFixtureSetFingerprint;
+            Policy = policy;
+            Candidates = candidates;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Package
+        /// </summary>
+        [JsonPropertyName("package")]
+        public string Package { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ContractId
+        /// </summary>
+        [JsonPropertyName("contract_id")]
+        public string ContractId { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("expected_package_fingerprint")]
+        public string ExpectedPackageFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("expected_base_contract_fingerprint")]
+        public string ExpectedBaseContractFingerprint { get; set; }
+
+        /// <summary>
+        /// Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+        /// </summary>
+        /// <value>Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.</value>
+        [JsonPropertyName("expected_fixture_set_fingerprint")]
+        public string ExpectedFixtureSetFingerprint { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Policy
+        /// </summary>
+        [JsonPropertyName("policy")]
+        public QualityPolicy Policy { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Candidates
+        /// </summary>
+        [JsonPropertyName("candidates")]
+        public List<QualityCandidateSubmission> Candidates { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class QualityProposalRequest {\n");
+            sb.Append("  Package: ").Append(Package).Append("\n");
+            sb.Append("  ContractId: ").Append(ContractId).Append("\n");
+            sb.Append("  ExpectedPackageFingerprint: ").Append(ExpectedPackageFingerprint).Append("\n");
+            sb.Append("  ExpectedBaseContractFingerprint: ").Append(ExpectedBaseContractFingerprint).Append("\n");
+            sb.Append("  ExpectedFixtureSetFingerprint: ").Append(ExpectedFixtureSetFingerprint).Append("\n");
+            sb.Append("  Policy: ").Append(Policy).Append("\n");
+            sb.Append("  Candidates: ").Append(Candidates).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // ExpectedPackageFingerprint (string) maxLength
+            if (this.ExpectedPackageFingerprint != null && this.ExpectedPackageFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ExpectedPackageFingerprint, length must be less than 64.", new [] { "ExpectedPackageFingerprint" });
+            }
+
+            // ExpectedPackageFingerprint (string) minLength
+            if (this.ExpectedPackageFingerprint != null && this.ExpectedPackageFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ExpectedPackageFingerprint, length must be greater than 64.", new [] { "ExpectedPackageFingerprint" });
+            }
+
+            if (this.ExpectedPackageFingerprint != null) {
+                // ExpectedPackageFingerprint (string) pattern
+                Regex regexExpectedPackageFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexExpectedPackageFingerprint.Match(this.ExpectedPackageFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ExpectedPackageFingerprint, must match a pattern of " + regexExpectedPackageFingerprint, new [] { "ExpectedPackageFingerprint" });
+                }
+            }
+
+            // ExpectedBaseContractFingerprint (string) maxLength
+            if (this.ExpectedBaseContractFingerprint != null && this.ExpectedBaseContractFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ExpectedBaseContractFingerprint, length must be less than 64.", new [] { "ExpectedBaseContractFingerprint" });
+            }
+
+            // ExpectedBaseContractFingerprint (string) minLength
+            if (this.ExpectedBaseContractFingerprint != null && this.ExpectedBaseContractFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ExpectedBaseContractFingerprint, length must be greater than 64.", new [] { "ExpectedBaseContractFingerprint" });
+            }
+
+            if (this.ExpectedBaseContractFingerprint != null) {
+                // ExpectedBaseContractFingerprint (string) pattern
+                Regex regexExpectedBaseContractFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexExpectedBaseContractFingerprint.Match(this.ExpectedBaseContractFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ExpectedBaseContractFingerprint, must match a pattern of " + regexExpectedBaseContractFingerprint, new [] { "ExpectedBaseContractFingerprint" });
+                }
+            }
+
+            // ExpectedFixtureSetFingerprint (string) maxLength
+            if (this.ExpectedFixtureSetFingerprint != null && this.ExpectedFixtureSetFingerprint.Length > 64)
+            {
+                yield return new ValidationResult("Invalid value for ExpectedFixtureSetFingerprint, length must be less than 64.", new [] { "ExpectedFixtureSetFingerprint" });
+            }
+
+            // ExpectedFixtureSetFingerprint (string) minLength
+            if (this.ExpectedFixtureSetFingerprint != null && this.ExpectedFixtureSetFingerprint.Length < 64)
+            {
+                yield return new ValidationResult("Invalid value for ExpectedFixtureSetFingerprint, length must be greater than 64.", new [] { "ExpectedFixtureSetFingerprint" });
+            }
+
+            if (this.ExpectedFixtureSetFingerprint != null) {
+                // ExpectedFixtureSetFingerprint (string) pattern
+                Regex regexExpectedFixtureSetFingerprint = new Regex(@"^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant);
+
+                if (!regexExpectedFixtureSetFingerprint.Match(this.ExpectedFixtureSetFingerprint).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for ExpectedFixtureSetFingerprint, must match a pattern of " + regexExpectedFixtureSetFingerprint, new [] { "ExpectedFixtureSetFingerprint" });
+                }
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="QualityProposalRequest" />
+    /// </summary>
+    public class QualityProposalRequestJsonConverter : JsonConverter<QualityProposalRequest>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="QualityProposalRequest" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override QualityProposalRequest Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> package = default;
+            Option<string?> contractId = default;
+            Option<string?> expectedPackageFingerprint = default;
+            Option<string?> expectedBaseContractFingerprint = default;
+            Option<string?> expectedFixtureSetFingerprint = default;
+            Option<QualityPolicy?> policy = default;
+            Option<List<QualityCandidateSubmission>?> candidates = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "package":
+                            package = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "contract_id":
+                            contractId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "expected_package_fingerprint":
+                            expectedPackageFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "expected_base_contract_fingerprint":
+                            expectedBaseContractFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "expected_fixture_set_fingerprint":
+                            expectedFixtureSetFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "policy":
+                            policy = new Option<QualityPolicy?>(JsonSerializer.Deserialize<QualityPolicy>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "candidates":
+                            candidates = new Option<List<QualityCandidateSubmission>?>(JsonSerializer.Deserialize<List<QualityCandidateSubmission>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!package.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalRequest.", nameof(package));
+
+            if (!contractId.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalRequest.", nameof(contractId));
+
+            if (!expectedPackageFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalRequest.", nameof(expectedPackageFingerprint));
+
+            if (!expectedBaseContractFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalRequest.", nameof(expectedBaseContractFingerprint));
+
+            if (!expectedFixtureSetFingerprint.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalRequest.", nameof(expectedFixtureSetFingerprint));
+
+            if (!policy.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalRequest.", nameof(policy));
+
+            if (!candidates.IsSet)
+                throw new ArgumentException("Property is required for class QualityProposalRequest.", nameof(candidates));
+
+            if (package.IsSet && package.Value == null)
+                throw new ArgumentNullException(nameof(package), "Property is not nullable for class QualityProposalRequest.");
+
+            if (contractId.IsSet && contractId.Value == null)
+                throw new ArgumentNullException(nameof(contractId), "Property is not nullable for class QualityProposalRequest.");
+
+            if (expectedPackageFingerprint.IsSet && expectedPackageFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(expectedPackageFingerprint), "Property is not nullable for class QualityProposalRequest.");
+
+            if (expectedBaseContractFingerprint.IsSet && expectedBaseContractFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(expectedBaseContractFingerprint), "Property is not nullable for class QualityProposalRequest.");
+
+            if (expectedFixtureSetFingerprint.IsSet && expectedFixtureSetFingerprint.Value == null)
+                throw new ArgumentNullException(nameof(expectedFixtureSetFingerprint), "Property is not nullable for class QualityProposalRequest.");
+
+            if (policy.IsSet && policy.Value == null)
+                throw new ArgumentNullException(nameof(policy), "Property is not nullable for class QualityProposalRequest.");
+
+            if (candidates.IsSet && candidates.Value == null)
+                throw new ArgumentNullException(nameof(candidates), "Property is not nullable for class QualityProposalRequest.");
+
+            return new QualityProposalRequest(package.Value!, contractId.Value!, expectedPackageFingerprint.Value!, expectedBaseContractFingerprint.Value!, expectedFixtureSetFingerprint.Value!, policy.Value!, candidates.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="QualityProposalRequest" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityProposalRequest"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, QualityProposalRequest qualityProposalRequest, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, qualityProposalRequest, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="QualityProposalRequest" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityProposalRequest"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, QualityProposalRequest qualityProposalRequest, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (qualityProposalRequest.Package == null)
+                throw new ArgumentNullException(nameof(qualityProposalRequest.Package), "Property is required for class QualityProposalRequest.");
+
+            if (qualityProposalRequest.ContractId == null)
+                throw new ArgumentNullException(nameof(qualityProposalRequest.ContractId), "Property is required for class QualityProposalRequest.");
+
+            if (qualityProposalRequest.ExpectedPackageFingerprint == null)
+                throw new ArgumentNullException(nameof(qualityProposalRequest.ExpectedPackageFingerprint), "Property is required for class QualityProposalRequest.");
+
+            if (qualityProposalRequest.ExpectedBaseContractFingerprint == null)
+                throw new ArgumentNullException(nameof(qualityProposalRequest.ExpectedBaseContractFingerprint), "Property is required for class QualityProposalRequest.");
+
+            if (qualityProposalRequest.ExpectedFixtureSetFingerprint == null)
+                throw new ArgumentNullException(nameof(qualityProposalRequest.ExpectedFixtureSetFingerprint), "Property is required for class QualityProposalRequest.");
+
+            if (qualityProposalRequest.Policy == null)
+                throw new ArgumentNullException(nameof(qualityProposalRequest.Policy), "Property is required for class QualityProposalRequest.");
+
+            if (qualityProposalRequest.Candidates == null)
+                throw new ArgumentNullException(nameof(qualityProposalRequest.Candidates), "Property is required for class QualityProposalRequest.");
+
+            writer.WriteString("package", qualityProposalRequest.Package);
+
+            writer.WriteString("contract_id", qualityProposalRequest.ContractId);
+
+            writer.WriteString("expected_package_fingerprint", qualityProposalRequest.ExpectedPackageFingerprint);
+
+            writer.WriteString("expected_base_contract_fingerprint", qualityProposalRequest.ExpectedBaseContractFingerprint);
+
+            writer.WriteString("expected_fixture_set_fingerprint", qualityProposalRequest.ExpectedFixtureSetFingerprint);
+
+            writer.WritePropertyName("policy");
+            JsonSerializer.Serialize(writer, qualityProposalRequest.Policy, jsonSerializerOptions);
+            writer.WritePropertyName("candidates");
+            JsonSerializer.Serialize(writer, qualityProposalRequest.Candidates, jsonSerializerOptions);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// QualityTrialSummary
+    /// </summary>
+    public partial class QualityTrialSummary : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QualityTrialSummary" /> class.
+        /// </summary>
+        /// <param name="fixtureId">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="replicateIndex">replicateIndex</param>
+        /// <param name="providerAttemptCount">providerAttemptCount</param>
+        /// <param name="outcome">outcome</param>
+        /// <param name="passedScorers">passedScorers</param>
+        /// <param name="failedScorers">failedScorers</param>
+        /// <param name="observations">observations</param>
+        [JsonConstructor]
+        public QualityTrialSummary(string fixtureId, long replicateIndex, long providerAttemptCount, TrialOutcome outcome, List<string> passedScorers, List<string> failedScorers, List<MetricObservation> observations)
+        {
+            FixtureId = fixtureId;
+            ReplicateIndex = replicateIndex;
+            ProviderAttemptCount = providerAttemptCount;
+            Outcome = outcome;
+            PassedScorers = passedScorers;
+            FailedScorers = failedScorers;
+            Observations = observations;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("fixture_id")]
+        public string FixtureId { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ReplicateIndex
+        /// </summary>
+        [JsonPropertyName("replicate_index")]
+        public long ReplicateIndex { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ProviderAttemptCount
+        /// </summary>
+        [JsonPropertyName("provider_attempt_count")]
+        public long ProviderAttemptCount { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Outcome
+        /// </summary>
+        [JsonPropertyName("outcome")]
+        public TrialOutcome Outcome { get; set; }
+
+        /// <summary>
+        /// Gets or Sets PassedScorers
+        /// </summary>
+        [JsonPropertyName("passed_scorers")]
+        public List<string> PassedScorers { get; set; }
+
+        /// <summary>
+        /// Gets or Sets FailedScorers
+        /// </summary>
+        [JsonPropertyName("failed_scorers")]
+        public List<string> FailedScorers { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Observations
+        /// </summary>
+        [JsonPropertyName("observations")]
+        public List<MetricObservation> Observations { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class QualityTrialSummary {\n");
+            sb.Append("  FixtureId: ").Append(FixtureId).Append("\n");
+            sb.Append("  ReplicateIndex: ").Append(ReplicateIndex).Append("\n");
+            sb.Append("  ProviderAttemptCount: ").Append(ProviderAttemptCount).Append("\n");
+            sb.Append("  Outcome: ").Append(Outcome).Append("\n");
+            sb.Append("  PassedScorers: ").Append(PassedScorers).Append("\n");
+            sb.Append("  FailedScorers: ").Append(FailedScorers).Append("\n");
+            sb.Append("  Observations: ").Append(Observations).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // FixtureId (string) maxLength
+            if (this.FixtureId != null && this.FixtureId.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for FixtureId, length must be less than 128.", new [] { "FixtureId" });
+            }
+
+            // FixtureId (string) minLength
+            if (this.FixtureId != null && this.FixtureId.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for FixtureId, length must be greater than 1.", new [] { "FixtureId" });
+            }
+
+            if (this.FixtureId != null) {
+                // FixtureId (string) pattern
+                Regex regexFixtureId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexFixtureId.Match(this.FixtureId).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for FixtureId, must match a pattern of " + regexFixtureId, new [] { "FixtureId" });
+                }
+            }
+
+            // ReplicateIndex (long) maximum
+            if (this.ReplicateIndex > (long)65535)
+            {
+                yield return new ValidationResult("Invalid value for ReplicateIndex, must be a value less than or equal to 65535.", new [] { "ReplicateIndex" });
+            }
+
+            // ReplicateIndex (long) minimum
+            if (this.ReplicateIndex < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for ReplicateIndex, must be a value greater than or equal to 0.", new [] { "ReplicateIndex" });
+            }
+
+            // ProviderAttemptCount (long) maximum
+            if (this.ProviderAttemptCount > (long)4294967295)
+            {
+                yield return new ValidationResult("Invalid value for ProviderAttemptCount, must be a value less than or equal to 4294967295.", new [] { "ProviderAttemptCount" });
+            }
+
+            // ProviderAttemptCount (long) minimum
+            if (this.ProviderAttemptCount < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for ProviderAttemptCount, must be a value greater than or equal to 0.", new [] { "ProviderAttemptCount" });
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="QualityTrialSummary" />
+    /// </summary>
+    public class QualityTrialSummaryJsonConverter : JsonConverter<QualityTrialSummary>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="QualityTrialSummary" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override QualityTrialSummary Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> fixtureId = default;
+            Option<long?> replicateIndex = default;
+            Option<long?> providerAttemptCount = default;
+            Option<TrialOutcome?> outcome = default;
+            Option<List<string>?> passedScorers = default;
+            Option<List<string>?> failedScorers = default;
+            Option<List<MetricObservation>?> observations = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "fixture_id":
+                            fixtureId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "replicate_index":
+                            replicateIndex = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "provider_attempt_count":
+                            providerAttemptCount = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "outcome":
+                            outcome = new Option<TrialOutcome?>(JsonSerializer.Deserialize<TrialOutcome>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "passed_scorers":
+                            passedScorers = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "failed_scorers":
+                            failedScorers = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "observations":
+                            observations = new Option<List<MetricObservation>?>(JsonSerializer.Deserialize<List<MetricObservation>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!fixtureId.IsSet)
+                throw new ArgumentException("Property is required for class QualityTrialSummary.", nameof(fixtureId));
+
+            if (!replicateIndex.IsSet)
+                throw new ArgumentException("Property is required for class QualityTrialSummary.", nameof(replicateIndex));
+
+            if (!providerAttemptCount.IsSet)
+                throw new ArgumentException("Property is required for class QualityTrialSummary.", nameof(providerAttemptCount));
+
+            if (!outcome.IsSet)
+                throw new ArgumentException("Property is required for class QualityTrialSummary.", nameof(outcome));
+
+            if (!passedScorers.IsSet)
+                throw new ArgumentException("Property is required for class QualityTrialSummary.", nameof(passedScorers));
+
+            if (!failedScorers.IsSet)
+                throw new ArgumentException("Property is required for class QualityTrialSummary.", nameof(failedScorers));
+
+            if (!observations.IsSet)
+                throw new ArgumentException("Property is required for class QualityTrialSummary.", nameof(observations));
+
+            if (fixtureId.IsSet && fixtureId.Value == null)
+                throw new ArgumentNullException(nameof(fixtureId), "Property is not nullable for class QualityTrialSummary.");
+
+            if (replicateIndex.IsSet && replicateIndex.Value == null)
+                throw new ArgumentNullException(nameof(replicateIndex), "Property is not nullable for class QualityTrialSummary.");
+
+            if (providerAttemptCount.IsSet && providerAttemptCount.Value == null)
+                throw new ArgumentNullException(nameof(providerAttemptCount), "Property is not nullable for class QualityTrialSummary.");
+
+            if (outcome.IsSet && outcome.Value == null)
+                throw new ArgumentNullException(nameof(outcome), "Property is not nullable for class QualityTrialSummary.");
+
+            if (passedScorers.IsSet && passedScorers.Value == null)
+                throw new ArgumentNullException(nameof(passedScorers), "Property is not nullable for class QualityTrialSummary.");
+
+            if (failedScorers.IsSet && failedScorers.Value == null)
+                throw new ArgumentNullException(nameof(failedScorers), "Property is not nullable for class QualityTrialSummary.");
+
+            if (observations.IsSet && observations.Value == null)
+                throw new ArgumentNullException(nameof(observations), "Property is not nullable for class QualityTrialSummary.");
+
+            return new QualityTrialSummary(fixtureId.Value!, replicateIndex.Value!.Value!, providerAttemptCount.Value!.Value!, outcome.Value!, passedScorers.Value!, failedScorers.Value!, observations.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="QualityTrialSummary" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityTrialSummary"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, QualityTrialSummary qualityTrialSummary, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, qualityTrialSummary, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="QualityTrialSummary" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="qualityTrialSummary"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, QualityTrialSummary qualityTrialSummary, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (qualityTrialSummary.FixtureId == null)
+                throw new ArgumentNullException(nameof(qualityTrialSummary.FixtureId), "Property is required for class QualityTrialSummary.");
+
+            if (qualityTrialSummary.Outcome == null)
+                throw new ArgumentNullException(nameof(qualityTrialSummary.Outcome), "Property is required for class QualityTrialSummary.");
+
+            if (qualityTrialSummary.PassedScorers == null)
+                throw new ArgumentNullException(nameof(qualityTrialSummary.PassedScorers), "Property is required for class QualityTrialSummary.");
+
+            if (qualityTrialSummary.FailedScorers == null)
+                throw new ArgumentNullException(nameof(qualityTrialSummary.FailedScorers), "Property is required for class QualityTrialSummary.");
+
+            if (qualityTrialSummary.Observations == null)
+                throw new ArgumentNullException(nameof(qualityTrialSummary.Observations), "Property is required for class QualityTrialSummary.");
+
+            writer.WriteString("fixture_id", qualityTrialSummary.FixtureId);
+
+            writer.WriteNumber("replicate_index", qualityTrialSummary.ReplicateIndex);
+
+            writer.WriteNumber("provider_attempt_count", qualityTrialSummary.ProviderAttemptCount);
+
+            writer.WritePropertyName("outcome");
+            JsonSerializer.Serialize(writer, qualityTrialSummary.Outcome, jsonSerializerOptions);
+            writer.WritePropertyName("passed_scorers");
+            JsonSerializer.Serialize(writer, qualityTrialSummary.PassedScorers, jsonSerializerOptions);
+            writer.WritePropertyName("failed_scorers");
+            JsonSerializer.Serialize(writer, qualityTrialSummary.FailedScorers, jsonSerializerOptions);
+            writer.WritePropertyName("observations");
+            JsonSerializer.Serialize(writer, qualityTrialSummary.Observations, jsonSerializerOptions);
         }
     }
 }
@@ -10900,6 +17694,171 @@ namespace Templiqx.Adapter.Generated
 namespace Templiqx.Adapter.Generated
 {
     /// <summary>
+    /// Defines TokenKind
+    /// </summary>
+    public enum TokenKind
+    {
+        /// <summary>
+        /// Enum Prompt for value: prompt
+        /// </summary>
+        Prompt = 1,
+
+        /// <summary>
+        /// Enum Completion for value: completion
+        /// </summary>
+        Completion = 2,
+
+        /// <summary>
+        /// Enum Total for value: total
+        /// </summary>
+        Total = 3
+    }
+
+    /// <summary>
+    /// Converts <see cref="TokenKind"/> to and from the JSON value
+    /// </summary>
+    public static class TokenKindValueConverter
+    {
+        /// <summary>
+        /// Parses a given value to <see cref="TokenKind"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static TokenKind FromString(string value)
+        {
+            if (value.Equals("prompt"))
+                return TokenKind.Prompt;
+
+            if (value.Equals("completion"))
+                return TokenKind.Completion;
+
+            if (value.Equals("total"))
+                return TokenKind.Total;
+
+            throw new NotImplementedException($"Could not convert value to type TokenKind: '{value}'");
+        }
+
+        /// <summary>
+        /// Parses a given value to <see cref="TokenKind"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static TokenKind? FromStringOrDefault(string value)
+        {
+            if (value.Equals("prompt"))
+                return TokenKind.Prompt;
+
+            if (value.Equals("completion"))
+                return TokenKind.Completion;
+
+            if (value.Equals("total"))
+                return TokenKind.Total;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Converts the <see cref="TokenKind"/> to the json value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static string ToJsonValue(TokenKind value)
+        {
+            if (value == TokenKind.Prompt)
+                return "prompt";
+
+            if (value == TokenKind.Completion)
+                return "completion";
+
+            if (value == TokenKind.Total)
+                return "total";
+
+            throw new NotImplementedException($"Value could not be handled: '{value}'");
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="TokenKind"/>
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public class TokenKindJsonConverter : JsonConverter<TokenKind>
+    {
+        /// <summary>
+        /// Returns a  from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override TokenKind Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            TokenKind? result = rawValue == null
+                ? null
+                : TokenKindValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the TokenKind to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="tokenKind"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, TokenKind tokenKind, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(TokenKindValueConverter.ToJsonValue(tokenKind).ToString());
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="TokenKind"/>
+    /// </summary>
+    public class TokenKindNullableJsonConverter : JsonConverter<TokenKind?>
+    {
+        /// <summary>
+        /// Returns a TokenKind from the Json object
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public override TokenKind? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string? rawValue = reader.GetString();
+
+            TokenKind? result = rawValue == null
+                ? null
+                : TokenKindValueConverter.FromStringOrDefault(rawValue);
+
+            if (result != null)
+                return result.Value;
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Writes the TokenKind to the json writer
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="tokenKind"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, TokenKind? tokenKind, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(tokenKind.HasValue ? TokenKindValueConverter.ToJsonValue(tokenKind.Value).ToString() : "null");
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
     /// TransportError
     /// </summary>
     public partial class TransportError : IValidatableObject
@@ -11085,6 +18044,997 @@ namespace Templiqx.Adapter.Generated
 
             if (transportError.RequestIdOption.IsSet)
                 writer.WriteString("request_id", transportError.RequestId);
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// TrialEvidence
+    /// </summary>
+    public partial class TrialEvidence : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TrialEvidence" /> class.
+        /// </summary>
+        /// <param name="fixtureId">Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</param>
+        /// <param name="replicateIndex">replicateIndex</param>
+        /// <param name="providerAttemptCount">providerAttemptCount</param>
+        /// <param name="outcome">outcome</param>
+        /// <param name="observations">observations</param>
+        /// <param name="passedScorers">passedScorers</param>
+        /// <param name="failedScorers">failedScorers</param>
+        [JsonConstructor]
+        public TrialEvidence(string fixtureId, long replicateIndex, long providerAttemptCount, TrialOutcome outcome, List<MetricObservation> observations, Option<List<string>?> passedScorers = default, Option<List<string>?> failedScorers = default)
+        {
+            FixtureId = fixtureId;
+            ReplicateIndex = replicateIndex;
+            ProviderAttemptCount = providerAttemptCount;
+            Outcome = outcome;
+            Observations = observations;
+            PassedScorersOption = passedScorers;
+            FailedScorersOption = failedScorers;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+        /// </summary>
+        /// <value>Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.</value>
+        [JsonPropertyName("fixture_id")]
+        public string FixtureId { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ReplicateIndex
+        /// </summary>
+        [JsonPropertyName("replicate_index")]
+        public long ReplicateIndex { get; set; }
+
+        /// <summary>
+        /// Gets or Sets ProviderAttemptCount
+        /// </summary>
+        [JsonPropertyName("provider_attempt_count")]
+        public long ProviderAttemptCount { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Outcome
+        /// </summary>
+        [JsonPropertyName("outcome")]
+        public TrialOutcome Outcome { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Observations
+        /// </summary>
+        [JsonPropertyName("observations")]
+        public List<MetricObservation> Observations { get; set; }
+
+        /// <summary>
+        /// Used to track the state of PassedScorers
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<List<string>?> PassedScorersOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets PassedScorers
+        /// </summary>
+        [JsonPropertyName("passed_scorers")]
+        public List<string>? PassedScorers { get { return this.PassedScorersOption; } set { this.PassedScorersOption = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of FailedScorers
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<List<string>?> FailedScorersOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets FailedScorers
+        /// </summary>
+        [JsonPropertyName("failed_scorers")]
+        public List<string>? FailedScorers { get { return this.FailedScorersOption; } set { this.FailedScorersOption = new(value); } }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class TrialEvidence {\n");
+            sb.Append("  FixtureId: ").Append(FixtureId).Append("\n");
+            sb.Append("  ReplicateIndex: ").Append(ReplicateIndex).Append("\n");
+            sb.Append("  ProviderAttemptCount: ").Append(ProviderAttemptCount).Append("\n");
+            sb.Append("  Outcome: ").Append(Outcome).Append("\n");
+            sb.Append("  Observations: ").Append(Observations).Append("\n");
+            sb.Append("  PassedScorers: ").Append(PassedScorers).Append("\n");
+            sb.Append("  FailedScorers: ").Append(FailedScorers).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            // FixtureId (string) maxLength
+            if (this.FixtureId != null && this.FixtureId.Length > 128)
+            {
+                yield return new ValidationResult("Invalid value for FixtureId, length must be less than 128.", new [] { "FixtureId" });
+            }
+
+            // FixtureId (string) minLength
+            if (this.FixtureId != null && this.FixtureId.Length < 1)
+            {
+                yield return new ValidationResult("Invalid value for FixtureId, length must be greater than 1.", new [] { "FixtureId" });
+            }
+
+            if (this.FixtureId != null) {
+                // FixtureId (string) pattern
+                Regex regexFixtureId = new Regex(@"^[A-Za-z0-9._:-]+$", RegexOptions.CultureInvariant);
+
+                if (!regexFixtureId.Match(this.FixtureId).Success)
+                {
+                    yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for FixtureId, must match a pattern of " + regexFixtureId, new [] { "FixtureId" });
+                }
+            }
+
+            // ReplicateIndex (long) maximum
+            if (this.ReplicateIndex > (long)65535)
+            {
+                yield return new ValidationResult("Invalid value for ReplicateIndex, must be a value less than or equal to 65535.", new [] { "ReplicateIndex" });
+            }
+
+            // ReplicateIndex (long) minimum
+            if (this.ReplicateIndex < (long)0)
+            {
+                yield return new ValidationResult("Invalid value for ReplicateIndex, must be a value greater than or equal to 0.", new [] { "ReplicateIndex" });
+            }
+
+            // ProviderAttemptCount (long) maximum
+            if (this.ProviderAttemptCount > (long)4294967295)
+            {
+                yield return new ValidationResult("Invalid value for ProviderAttemptCount, must be a value less than or equal to 4294967295.", new [] { "ProviderAttemptCount" });
+            }
+
+            // ProviderAttemptCount (long) minimum
+            if (this.ProviderAttemptCount < (long)1)
+            {
+                yield return new ValidationResult("Invalid value for ProviderAttemptCount, must be a value greater than or equal to 1.", new [] { "ProviderAttemptCount" });
+            }
+
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="TrialEvidence" />
+    /// </summary>
+    public class TrialEvidenceJsonConverter : JsonConverter<TrialEvidence>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="TrialEvidence" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override TrialEvidence Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<string?> fixtureId = default;
+            Option<long?> replicateIndex = default;
+            Option<long?> providerAttemptCount = default;
+            Option<TrialOutcome?> outcome = default;
+            Option<List<MetricObservation>?> observations = default;
+            Option<List<string>?> passedScorers = default;
+            Option<List<string>?> failedScorers = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "fixture_id":
+                            fixtureId = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "replicate_index":
+                            replicateIndex = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "provider_attempt_count":
+                            providerAttemptCount = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (long?)null : utf8JsonReader.GetInt64());
+                            break;
+                        case "outcome":
+                            outcome = new Option<TrialOutcome?>(JsonSerializer.Deserialize<TrialOutcome>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "observations":
+                            observations = new Option<List<MetricObservation>?>(JsonSerializer.Deserialize<List<MetricObservation>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "passed_scorers":
+                            passedScorers = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "failed_scorers":
+                            failedScorers = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!fixtureId.IsSet)
+                throw new ArgumentException("Property is required for class TrialEvidence.", nameof(fixtureId));
+
+            if (!replicateIndex.IsSet)
+                throw new ArgumentException("Property is required for class TrialEvidence.", nameof(replicateIndex));
+
+            if (!providerAttemptCount.IsSet)
+                throw new ArgumentException("Property is required for class TrialEvidence.", nameof(providerAttemptCount));
+
+            if (!outcome.IsSet)
+                throw new ArgumentException("Property is required for class TrialEvidence.", nameof(outcome));
+
+            if (!observations.IsSet)
+                throw new ArgumentException("Property is required for class TrialEvidence.", nameof(observations));
+
+            if (fixtureId.IsSet && fixtureId.Value == null)
+                throw new ArgumentNullException(nameof(fixtureId), "Property is not nullable for class TrialEvidence.");
+
+            if (replicateIndex.IsSet && replicateIndex.Value == null)
+                throw new ArgumentNullException(nameof(replicateIndex), "Property is not nullable for class TrialEvidence.");
+
+            if (providerAttemptCount.IsSet && providerAttemptCount.Value == null)
+                throw new ArgumentNullException(nameof(providerAttemptCount), "Property is not nullable for class TrialEvidence.");
+
+            if (outcome.IsSet && outcome.Value == null)
+                throw new ArgumentNullException(nameof(outcome), "Property is not nullable for class TrialEvidence.");
+
+            if (observations.IsSet && observations.Value == null)
+                throw new ArgumentNullException(nameof(observations), "Property is not nullable for class TrialEvidence.");
+
+            if (passedScorers.IsSet && passedScorers.Value == null)
+                throw new ArgumentNullException(nameof(passedScorers), "Property is not nullable for class TrialEvidence.");
+
+            if (failedScorers.IsSet && failedScorers.Value == null)
+                throw new ArgumentNullException(nameof(failedScorers), "Property is not nullable for class TrialEvidence.");
+
+            return new TrialEvidence(fixtureId.Value!, replicateIndex.Value!.Value!, providerAttemptCount.Value!.Value!, outcome.Value!, observations.Value!, passedScorers, failedScorers);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="TrialEvidence" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialEvidence"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, TrialEvidence trialEvidence, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, trialEvidence, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="TrialEvidence" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialEvidence"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, TrialEvidence trialEvidence, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (trialEvidence.FixtureId == null)
+                throw new ArgumentNullException(nameof(trialEvidence.FixtureId), "Property is required for class TrialEvidence.");
+
+            if (trialEvidence.Outcome == null)
+                throw new ArgumentNullException(nameof(trialEvidence.Outcome), "Property is required for class TrialEvidence.");
+
+            if (trialEvidence.Observations == null)
+                throw new ArgumentNullException(nameof(trialEvidence.Observations), "Property is required for class TrialEvidence.");
+
+            if (trialEvidence.PassedScorersOption.IsSet && trialEvidence.PassedScorers == null)
+                throw new ArgumentNullException(nameof(trialEvidence.PassedScorers), "Property is required for class TrialEvidence.");
+
+            if (trialEvidence.FailedScorersOption.IsSet && trialEvidence.FailedScorers == null)
+                throw new ArgumentNullException(nameof(trialEvidence.FailedScorers), "Property is required for class TrialEvidence.");
+
+            writer.WriteString("fixture_id", trialEvidence.FixtureId);
+
+            writer.WriteNumber("replicate_index", trialEvidence.ReplicateIndex);
+
+            writer.WriteNumber("provider_attempt_count", trialEvidence.ProviderAttemptCount);
+
+            writer.WritePropertyName("outcome");
+            JsonSerializer.Serialize(writer, trialEvidence.Outcome, jsonSerializerOptions);
+            writer.WritePropertyName("observations");
+            JsonSerializer.Serialize(writer, trialEvidence.Observations, jsonSerializerOptions);
+            if (trialEvidence.PassedScorersOption.IsSet)
+            {
+                writer.WritePropertyName("passed_scorers");
+                JsonSerializer.Serialize(writer, trialEvidence.PassedScorers, jsonSerializerOptions);
+            }
+            if (trialEvidence.FailedScorersOption.IsSet)
+            {
+                writer.WritePropertyName("failed_scorers");
+                JsonSerializer.Serialize(writer, trialEvidence.FailedScorers, jsonSerializerOptions);
+            }
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// TrialOutcome
+    /// </summary>
+    public partial class TrialOutcome : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TrialOutcome" /> class.
+        /// </summary>
+        /// <param name="trialOutcomeOneOf"></param>
+        public TrialOutcome(TrialOutcomeOneOf trialOutcomeOneOf)
+        {
+            TrialOutcomeOneOf = trialOutcomeOneOf;
+            OnCreated();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TrialOutcome" /> class.
+        /// </summary>
+        /// <param name="trialOutcomeOneOf1"></param>
+        public TrialOutcome(TrialOutcomeOneOf1 trialOutcomeOneOf1)
+        {
+            TrialOutcomeOneOf1 = trialOutcomeOneOf1;
+            OnCreated();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TrialOutcome" /> class.
+        /// </summary>
+        /// <param name="trialOutcomeOneOf2"></param>
+        public TrialOutcome(TrialOutcomeOneOf2 trialOutcomeOneOf2)
+        {
+            TrialOutcomeOneOf2 = trialOutcomeOneOf2;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets TrialOutcomeOneOf
+        /// </summary>
+        public TrialOutcomeOneOf? TrialOutcomeOneOf { get; set; }
+
+        /// <summary>
+        /// Gets or Sets TrialOutcomeOneOf1
+        /// </summary>
+        public TrialOutcomeOneOf1? TrialOutcomeOneOf1 { get; set; }
+
+        /// <summary>
+        /// Gets or Sets TrialOutcomeOneOf2
+        /// </summary>
+        public TrialOutcomeOneOf2? TrialOutcomeOneOf2 { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class TrialOutcome {\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="TrialOutcome" />
+    /// </summary>
+    public class TrialOutcomeJsonConverter : JsonConverter<TrialOutcome>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="TrialOutcome" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override TrialOutcome Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            TrialOutcomeOneOf? trialOutcomeOneOf = default;
+            TrialOutcomeOneOf1? trialOutcomeOneOf1 = default;
+            TrialOutcomeOneOf2? trialOutcomeOneOf2 = default;
+
+            Utf8JsonReader utf8JsonReaderOneOf = utf8JsonReader;
+            while (utf8JsonReaderOneOf.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReaderOneOf.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReaderOneOf.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReaderOneOf.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReaderOneOf.CurrentDepth)
+                    break;
+
+                if (utf8JsonReaderOneOf.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReaderOneOf.CurrentDepth - 1)
+                {
+                    Utf8JsonReader utf8JsonReaderTrialOutcomeOneOf = utf8JsonReader;
+                    ClientUtils.TryDeserialize<TrialOutcomeOneOf?>(ref utf8JsonReaderTrialOutcomeOneOf, jsonSerializerOptions, out trialOutcomeOneOf);
+
+                    Utf8JsonReader utf8JsonReaderTrialOutcomeOneOf1 = utf8JsonReader;
+                    ClientUtils.TryDeserialize<TrialOutcomeOneOf1?>(ref utf8JsonReaderTrialOutcomeOneOf1, jsonSerializerOptions, out trialOutcomeOneOf1);
+
+                    Utf8JsonReader utf8JsonReaderTrialOutcomeOneOf2 = utf8JsonReader;
+                    ClientUtils.TryDeserialize<TrialOutcomeOneOf2?>(ref utf8JsonReaderTrialOutcomeOneOf2, jsonSerializerOptions, out trialOutcomeOneOf2);
+                }
+            }
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (trialOutcomeOneOf != null)
+                return new TrialOutcome(trialOutcomeOneOf);
+
+            if (trialOutcomeOneOf1 != null)
+                return new TrialOutcome(trialOutcomeOneOf1);
+
+            if (trialOutcomeOneOf2 != null)
+                return new TrialOutcome(trialOutcomeOneOf2);
+
+            throw new JsonException();
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="TrialOutcome" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialOutcome"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, TrialOutcome trialOutcome, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, trialOutcome, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="TrialOutcome" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialOutcome"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, TrialOutcome trialOutcome, JsonSerializerOptions jsonSerializerOptions)
+        {
+
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// TrialOutcomeOneOf
+    /// </summary>
+    public partial class TrialOutcomeOneOf : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TrialOutcomeOneOf" /> class.
+        /// </summary>
+        /// <param name="kind">kind</param>
+        [JsonConstructor]
+        public TrialOutcomeOneOf(Object? kind = default)
+        {
+            Kind = kind;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Kind
+        /// </summary>
+        [JsonPropertyName("kind")]
+        public Object? Kind { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class TrialOutcomeOneOf {\n");
+            sb.Append("  Kind: ").Append(Kind).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="TrialOutcomeOneOf" />
+    /// </summary>
+    public class TrialOutcomeOneOfJsonConverter : JsonConverter<TrialOutcomeOneOf>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="TrialOutcomeOneOf" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override TrialOutcomeOneOf Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<Object?> kind = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "kind":
+                            kind = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!kind.IsSet)
+                throw new ArgumentException("Property is required for class TrialOutcomeOneOf.", nameof(kind));
+
+            return new TrialOutcomeOneOf(kind.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="TrialOutcomeOneOf" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialOutcomeOneOf"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, TrialOutcomeOneOf trialOutcomeOneOf, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, trialOutcomeOneOf, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="TrialOutcomeOneOf" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialOutcomeOneOf"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, TrialOutcomeOneOf trialOutcomeOneOf, JsonSerializerOptions jsonSerializerOptions)
+        {
+            if (trialOutcomeOneOf.Kind != null)
+            {
+                writer.WritePropertyName("kind");
+                JsonSerializer.Serialize(writer, trialOutcomeOneOf.Kind, jsonSerializerOptions);
+            }
+            else
+                writer.WriteNull("kind");
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// TrialOutcomeOneOf1
+    /// </summary>
+    public partial class TrialOutcomeOneOf1 : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TrialOutcomeOneOf1" /> class.
+        /// </summary>
+        /// <param name="reason">reason</param>
+        /// <param name="kind">kind</param>
+        [JsonConstructor]
+        public TrialOutcomeOneOf1(CandidateQualityFailureReason reason, Object? kind = default)
+        {
+            Reason = reason;
+            Kind = kind;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Reason
+        /// </summary>
+        [JsonPropertyName("reason")]
+        public CandidateQualityFailureReason Reason { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Kind
+        /// </summary>
+        [JsonPropertyName("kind")]
+        public Object? Kind { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class TrialOutcomeOneOf1 {\n");
+            sb.Append("  Reason: ").Append(Reason).Append("\n");
+            sb.Append("  Kind: ").Append(Kind).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="TrialOutcomeOneOf1" />
+    /// </summary>
+    public class TrialOutcomeOneOf1JsonConverter : JsonConverter<TrialOutcomeOneOf1>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="TrialOutcomeOneOf1" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override TrialOutcomeOneOf1 Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<CandidateQualityFailureReason?> reason = default;
+            Option<Object?> kind = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "reason":
+                            string? reasonRawValue = utf8JsonReader.GetString();
+                            if (reasonRawValue != null)
+                                reason = new Option<CandidateQualityFailureReason?>(CandidateQualityFailureReasonValueConverter.FromStringOrDefault(reasonRawValue));
+                            break;
+                        case "kind":
+                            kind = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!reason.IsSet)
+                throw new ArgumentException("Property is required for class TrialOutcomeOneOf1.", nameof(reason));
+
+            if (!kind.IsSet)
+                throw new ArgumentException("Property is required for class TrialOutcomeOneOf1.", nameof(kind));
+
+            if (reason.IsSet && reason.Value == null)
+                throw new ArgumentNullException(nameof(reason), "Property is not nullable for class TrialOutcomeOneOf1.");
+
+            return new TrialOutcomeOneOf1(reason.Value!.Value!, kind.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="TrialOutcomeOneOf1" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialOutcomeOneOf1"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, TrialOutcomeOneOf1 trialOutcomeOneOf1, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, trialOutcomeOneOf1, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="TrialOutcomeOneOf1" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialOutcomeOneOf1"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, TrialOutcomeOneOf1 trialOutcomeOneOf1, JsonSerializerOptions jsonSerializerOptions)
+        {
+            var reasonRawValue = CandidateQualityFailureReasonValueConverter.ToJsonValue(trialOutcomeOneOf1.Reason);
+            writer.WriteString("reason", reasonRawValue);
+
+            if (trialOutcomeOneOf1.Kind != null)
+            {
+                writer.WritePropertyName("kind");
+                JsonSerializer.Serialize(writer, trialOutcomeOneOf1.Kind, jsonSerializerOptions);
+            }
+            else
+                writer.WriteNull("kind");
+        }
+    }
+}
+
+namespace Templiqx.Adapter.Generated
+{
+    /// <summary>
+    /// TrialOutcomeOneOf2
+    /// </summary>
+    public partial class TrialOutcomeOneOf2 : IValidatableObject
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TrialOutcomeOneOf2" /> class.
+        /// </summary>
+        /// <param name="reason">reason</param>
+        /// <param name="kind">kind</param>
+        [JsonConstructor]
+        public TrialOutcomeOneOf2(InfrastructureFailureReason reason, Object? kind = default)
+        {
+            Reason = reason;
+            Kind = kind;
+            OnCreated();
+        }
+
+        partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Reason
+        /// </summary>
+        [JsonPropertyName("reason")]
+        public InfrastructureFailureReason Reason { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Kind
+        /// </summary>
+        [JsonPropertyName("kind")]
+        public Object? Kind { get; set; }
+
+        /// <summary>
+        /// Returns the string presentation of the object
+        /// </summary>
+        /// <returns>String presentation of the object</returns>
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("class TrialOutcomeOneOf2 {\n");
+            sb.Append("  Reason: ").Append(Reason).Append("\n");
+            sb.Append("  Kind: ").Append(Kind).Append("\n");
+            sb.Append("}\n");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// To validate all properties of the instance
+        /// </summary>
+        /// <param name="validationContext">Validation context</param>
+        /// <returns>Validation Result</returns>
+        IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    /// <summary>
+    /// A Json converter for type <see cref="TrialOutcomeOneOf2" />
+    /// </summary>
+    public class TrialOutcomeOneOf2JsonConverter : JsonConverter<TrialOutcomeOneOf2>
+    {
+        /// <summary>
+        /// Deserializes json to <see cref="TrialOutcomeOneOf2" />
+        /// </summary>
+        /// <param name="utf8JsonReader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override TrialOutcomeOneOf2 Read(ref Utf8JsonReader utf8JsonReader, Type typeToConvert, JsonSerializerOptions jsonSerializerOptions)
+        {
+            int currentDepth = utf8JsonReader.CurrentDepth;
+
+            if (utf8JsonReader.TokenType != JsonTokenType.StartObject && utf8JsonReader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            JsonTokenType startingTokenType = utf8JsonReader.TokenType;
+
+            Option<InfrastructureFailureReason?> reason = default;
+            Option<Object?> kind = default;
+
+            while (utf8JsonReader.Read())
+            {
+                if (startingTokenType == JsonTokenType.StartObject && utf8JsonReader.TokenType == JsonTokenType.EndObject && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (startingTokenType == JsonTokenType.StartArray && utf8JsonReader.TokenType == JsonTokenType.EndArray && currentDepth == utf8JsonReader.CurrentDepth)
+                    break;
+
+                if (utf8JsonReader.TokenType == JsonTokenType.PropertyName && currentDepth == utf8JsonReader.CurrentDepth - 1)
+                {
+                    string? localVarJsonPropertyName = utf8JsonReader.GetString();
+                    utf8JsonReader.Read();
+
+                    switch (localVarJsonPropertyName)
+                    {
+                        case "reason":
+                            string? reasonRawValue = utf8JsonReader.GetString();
+                            if (reasonRawValue != null)
+                                reason = new Option<InfrastructureFailureReason?>(InfrastructureFailureReasonValueConverter.FromStringOrDefault(reasonRawValue));
+                            break;
+                        case "kind":
+                            kind = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (!reason.IsSet)
+                throw new ArgumentException("Property is required for class TrialOutcomeOneOf2.", nameof(reason));
+
+            if (!kind.IsSet)
+                throw new ArgumentException("Property is required for class TrialOutcomeOneOf2.", nameof(kind));
+
+            if (reason.IsSet && reason.Value == null)
+                throw new ArgumentNullException(nameof(reason), "Property is not nullable for class TrialOutcomeOneOf2.");
+
+            return new TrialOutcomeOneOf2(reason.Value!.Value!, kind.Value!);
+        }
+
+        /// <summary>
+        /// Serializes a <see cref="TrialOutcomeOneOf2" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialOutcomeOneOf2"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override void Write(Utf8JsonWriter writer, TrialOutcomeOneOf2 trialOutcomeOneOf2, JsonSerializerOptions jsonSerializerOptions)
+        {
+            writer.WriteStartObject();
+
+            WriteProperties(writer, trialOutcomeOneOf2, jsonSerializerOptions);
+            writer.WriteEndObject();
+        }
+
+        /// <summary>
+        /// Serializes the properties of <see cref="TrialOutcomeOneOf2" />
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="trialOutcomeOneOf2"></param>
+        /// <param name="jsonSerializerOptions"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void WriteProperties(Utf8JsonWriter writer, TrialOutcomeOneOf2 trialOutcomeOneOf2, JsonSerializerOptions jsonSerializerOptions)
+        {
+            var reasonRawValue = InfrastructureFailureReasonValueConverter.ToJsonValue(trialOutcomeOneOf2.Reason);
+            writer.WriteString("reason", reasonRawValue);
+
+            if (trialOutcomeOneOf2.Kind != null)
+            {
+                writer.WritePropertyName("kind");
+                JsonSerializer.Serialize(writer, trialOutcomeOneOf2.Kind, jsonSerializerOptions);
+            }
+            else
+                writer.WriteNull("kind");
         }
     }
 }

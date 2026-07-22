@@ -3,10 +3,10 @@
 package templiqx
 
 const (
-	GeneratedOpenAPIVersion   = "1.0.0-alpha.1"
-	GeneratedOpenAPIDigest    = "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914"
+	GeneratedOpenAPIVersion   = "1.0.0-alpha.2"
+	GeneratedOpenAPIDigest    = "sha256:f9aa381dee153007e3298afb7ab85f00ff114dd93a056ea6f54cef7d280432d4"
 	GeneratedContractFormat   = "templiqx/v1alpha1"
-	GeneratedEngineAPIVersion = "0.1"
-	GeneratedEngineVersion    = "0.1.0"
-	GeneratedSDKVersion       = "0.1.0"
+	GeneratedEngineAPIVersion = "0.2"
+	GeneratedEngineVersion    = "0.2.0"
+	GeneratedSDKVersion       = "0.2.0"
 )

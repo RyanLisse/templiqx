@@ -1,0 +1,158 @@
+{
+  "synthetic_pii_canary": "quality-canary@example.invalid NL00BANK0123456789",
+  "policies": {
+    "high_consequence": {
+      "id": "high_consequence",
+      "replicates_per_fixture": 20,
+      "minimum_semantic_cases": 20,
+      "maximum_infrastructure_failure_ppm": 0,
+      "claimed_evaluator_profile_fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+      "claimed_model_profile_fingerprint": "2222222222222222222222222222222222222222222222222222222222222222",
+      "binary_scorers": [
+        {
+          "id": "correctness",
+          "metric_id": "correctness_ratio",
+          "claimed_scorer_fingerprint": "3333333333333333333333333333333333333333333333333333333333333333"
+        },
+        {
+          "id": "grounding",
+          "metric_id": "grounding_ratio",
+          "claimed_scorer_fingerprint": "4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ],
+      "objectives": [
+        {
+          "id": "correctness",
+          "metric_id": "correctness_ratio",
+          "unit": "ratio_ppm",
+          "aggregation": "binary_ratio_ppm",
+          "direction": "maximize",
+          "claimed_measurement_profile_fingerprint": "5555555555555555555555555555555555555555555555555555555555555555"
+        },
+        {
+          "id": "grounding",
+          "metric_id": "grounding_ratio",
+          "unit": "ratio_ppm",
+          "aggregation": "binary_ratio_ppm",
+          "direction": "maximize",
+          "claimed_measurement_profile_fingerprint": "6666666666666666666666666666666666666666666666666666666666666666"
+        },
+        {
+          "id": "latency",
+          "metric_id": "latency_ms",
+          "unit": "milliseconds",
+          "aggregation": "p95_nearest_rank",
+          "direction": "minimize",
+          "claimed_measurement_profile_fingerprint": "7777777777777777777777777777777777777777777777777777777777777777"
+        },
+        {
+          "id": "cost",
+          "metric_id": "cost_microunits",
+          "unit": "currency_microunits",
+          "aggregation": "sum",
+          "direction": "minimize",
+          "claimed_measurement_profile_fingerprint": "8888888888888888888888888888888888888888888888888888888888888888",
+          "currency_code": "EUR"
+        }
+      ],
+      "eligibility_rules": [
+        {
+          "id": "correctness_floor",
+          "metric_id": "correctness_ratio",
+          "comparator": "gte",
+          "unit": "ratio_ppm",
+          "threshold": 950000
+        },
+        {
+          "id": "grounding_floor",
+          "metric_id": "grounding_ratio",
+          "comparator": "gte",
+          "unit": "ratio_ppm",
+          "threshold": 950000
+        }
+      ]
+    },
+    "general_advisory": {
+      "id": "general_advisory",
+      "replicates_per_fixture": 20,
+      "minimum_semantic_cases": 20,
+      "maximum_infrastructure_failure_ppm": 0,
+      "claimed_evaluator_profile_fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+      "claimed_model_profile_fingerprint": "2222222222222222222222222222222222222222222222222222222222222222",
+      "binary_scorers": [
+        {
+          "id": "correctness",
+          "metric_id": "correctness_ratio",
+          "claimed_scorer_fingerprint": "3333333333333333333333333333333333333333333333333333333333333333"
+        },
+        {
+          "id": "grounding",
+          "metric_id": "grounding_ratio",
+          "claimed_scorer_fingerprint": "4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ],
+      "objectives": [
+        {
+          "id": "correctness",
+          "metric_id": "correctness_ratio",
+          "unit": "ratio_ppm",
+          "aggregation": "binary_ratio_ppm",
+          "direction": "maximize",
+          "claimed_measurement_profile_fingerprint": "5555555555555555555555555555555555555555555555555555555555555555"
+        },
+        {
+          "id": "grounding",
+          "metric_id": "grounding_ratio",
+          "unit": "ratio_ppm",
+          "aggregation": "binary_ratio_ppm",
+          "direction": "maximize",
+          "claimed_measurement_profile_fingerprint": "6666666666666666666666666666666666666666666666666666666666666666"
+        },
+        {
+          "id": "latency",
+          "metric_id": "latency_ms",
+          "unit": "milliseconds",
+          "aggregation": "p95_nearest_rank",
+          "direction": "minimize",
+          "claimed_measurement_profile_fingerprint": "7777777777777777777777777777777777777777777777777777777777777777"
+        },
+        {
+          "id": "cost",
+          "metric_id": "cost_microunits",
+          "unit": "currency_microunits",
+          "aggregation": "sum",
+          "direction": "minimize",
+          "claimed_measurement_profile_fingerprint": "8888888888888888888888888888888888888888888888888888888888888888",
+          "currency_code": "EUR"
+        }
+      ],
+      "eligibility_rules": [
+        {
+          "id": "correctness_floor",
+          "metric_id": "correctness_ratio",
+          "comparator": "gte",
+          "unit": "ratio_ppm",
+          "threshold": 850000
+        },
+        {
+          "id": "grounding_floor",
+          "metric_id": "grounding_ratio",
+          "comparator": "gte",
+          "unit": "ratio_ppm",
+          "threshold": 850000
+        }
+      ]
+    }
+  },
+  "evidence_cases": [
+    { "id": "high_boundary", "correctness_passes": 19, "grounding_passes": 19, "latency_ms": 100, "cost_microunits": 100 },
+    { "id": "high_quality", "correctness_passes": 20, "grounding_passes": 20, "latency_ms": 200, "cost_microunits": 200 },
+    { "id": "high_dominated", "correctness_passes": 19, "grounding_passes": 19, "latency_ms": 150, "cost_microunits": 150 },
+    { "id": "high_unsafe_cheap", "correctness_passes": 18, "grounding_passes": 20, "latency_ms": 50, "cost_microunits": 50 },
+    { "id": "general_boundary", "correctness_passes": 17, "grounding_passes": 17, "latency_ms": 100, "cost_microunits": 100 },
+    { "id": "general_under_floor", "correctness_passes": 16, "grounding_passes": 20, "latency_ms": 50, "cost_microunits": 50 },
+    { "id": "infrastructure_excluded", "correctness_passes": 19, "grounding_passes": 19, "latency_ms": 100, "cost_microunits": 100, "infrastructure_failures": 1 },
+    { "id": "all_infrastructure", "correctness_passes": 0, "grounding_passes": 0, "latency_ms": 100, "latency_step_ms": 7, "cost_microunits": 10, "cost_step_microunits": 3, "infrastructure_failures": 20 },
+    { "id": "synthetic_pii_canary", "correctness_passes": 19, "grounding_passes": 19, "latency_ms": 110, "cost_microunits": 110, "include_pii_canary": true }
+  ]
+}

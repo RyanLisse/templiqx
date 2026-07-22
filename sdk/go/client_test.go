@@ -102,6 +102,121 @@ func TestCompileContractBuildsRequestAndDecodesEnvelope(t *testing.T) {
 	}
 }
 
+func TestAssessQualityProposalsUsesTypedPackageScopedRoute(t *testing.T) {
+	transport := roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		if request.Method != http.MethodPost {
+			t.Fatalf("method = %s", request.Method)
+		}
+		if request.URL.EscapedPath() != "/operations/v1/packages/demo%20package/quality/proposals:assess" {
+			t.Fatalf("path = %s", request.URL.EscapedPath())
+		}
+		var body map[string]any
+		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if body["contract_id"] != "greeting" {
+			t.Fatalf("request body = %#v", body)
+		}
+		return jsonHTTPResponse(http.StatusOK, `{
+            "api_version":"templiqx/v1alpha1","operation":"assess_quality_proposals",
+            "ok":true,"diagnostics":[],"fingerprints":{}
+        }`, nil), nil
+	})
+	client, err := NewClient("https://example.test", WithHTTPClient(&http.Client{Transport: transport}))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	fingerprint := QualityFingerprint(strings.Repeat("a", 64))
+	body := QualityProposalRequest{
+		Package:                         "demo package",
+		ContractId:                      "greeting",
+		ExpectedPackageFingerprint:      fingerprint,
+		ExpectedBaseContractFingerprint: fingerprint,
+		ExpectedFixtureSetFingerprint:   fingerprint,
+		Policy: QualityPolicy{
+			Id: "quality-policy", ReplicatesPerFixture: 1, MinimumSemanticCases: 1,
+			ClaimedEvaluatorProfileFingerprint: fingerprint,
+			ClaimedModelProfileFingerprint:     fingerprint,
+			BinaryScorers:                      []BinaryScorer{}, Objectives: []QualityObjective{}, EligibilityRules: []EligibilityRule{},
+		},
+		Candidates: []QualityCandidateSubmission{},
+	}
+	response, err := client.AssessQualityProposals(context.Background(), "demo package", body)
+	if err != nil {
+		t.Fatalf("AssessQualityProposals: %v", err)
+	}
+	if response.Data.Operation != "assess_quality_proposals" {
+		t.Fatalf("response = %#v", response.Data)
+	}
+}
+
+func TestGeneratedQualityIntegersUseInt64AndRoundTripMaxSafe(t *testing.T) {
+	const maxPublicInteger int64 = 9_007_199_254_740_991
+	fingerprint := QualityFingerprint(strings.Repeat("a", 64))
+	observation := MetricObservation{
+		MetricId: "total_tokens", Unit: TokenCount, Value: maxPublicInteger,
+		ClaimedMeasurementProfileFingerprint: fingerprint,
+	}
+
+	if kind := reflect.TypeOf(observation.Value).Kind(); kind != reflect.Int64 {
+		t.Fatalf("MetricObservation.Value kind = %s, want int64", kind)
+	}
+	encoded, err := json.Marshal(observation)
+	if err != nil {
+		t.Fatalf("marshal observation: %v", err)
+	}
+	var decoded MetricObservation
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatalf("unmarshal observation: %v", err)
+	}
+	if decoded.Value != maxPublicInteger {
+		t.Fatalf("round-tripped value = %d, want %d", decoded.Value, maxPublicInteger)
+	}
+
+	identities := ClaimedQualityIdentities{
+		ClaimedCandidateContractFingerprint:   fingerprint,
+		ClaimedEvaluatorProfileFingerprint:    fingerprint,
+		ClaimedModelProfileFingerprint:        fingerprint,
+		ClaimedScorerFingerprints:             map[string]QualityFingerprint{"grounded": fingerprint},
+		ClaimedMeasurementProfileFingerprints: map[string]QualityFingerprint{"total_tokens": fingerprint},
+	}
+	encoded, err = json.Marshal(identities)
+	if err != nil {
+		t.Fatalf("marshal identities: %v", err)
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(encoded, &fields); err != nil {
+		t.Fatalf("unmarshal identity fields: %v", err)
+	}
+	if _, ok := fields["claimed_candidate_contract_fingerprint"]; !ok {
+		t.Fatalf("claimed identity fields = %v", fields)
+	}
+	if _, ok := fields["candidate_contract_fingerprint"]; ok {
+		t.Fatalf("legacy unclaimed identity field present: %v", fields)
+	}
+
+	var invalidAssessment CandidateAssessment
+	if err := json.Unmarshal([]byte(`{
+		"eligibility":{"eligible":false,"total_trial_count":0,"semantic_trial_count":0,"infrastructure_trial_count":0,"semantic_coverage_ppm":0,"infrastructure_failure_ppm":0,"gates":[]},
+		"aggregates":[],"trial_summaries":[],"proposal_change_paths":[],"diagnostics":[]
+	}`), &invalidAssessment); err != nil {
+		t.Fatalf("unmarshal assessment without claims: %v", err)
+	}
+	if invalidAssessment.ClaimedIdentities != nil {
+		t.Fatalf("invalid assessment reflected claims: %#v", invalidAssessment.ClaimedIdentities)
+	}
+	encoded, err = json.Marshal(invalidAssessment)
+	if err != nil {
+		t.Fatalf("marshal assessment without claims: %v", err)
+	}
+	if err := json.Unmarshal(encoded, &fields); err != nil {
+		t.Fatalf("unmarshal assessment fields: %v", err)
+	}
+	if _, ok := fields["claimed_identities"]; ok {
+		t.Fatalf("optional claimed identities were not omitted: %s", encoded)
+	}
+}
+
 func TestDefaultRequestIDIsUUID(t *testing.T) {
 	var requestID string
 	transport := roundTripFunc(func(request *http.Request) (*http.Response, error) {
@@ -256,11 +371,11 @@ func TestCompatibilityAndOperationCoverage(t *testing.T) {
 	if err := AssertCompatibility(); err != nil {
 		t.Fatalf("AssertCompatibility: %v", err)
 	}
-	if Compatibility.OpsApiVersion != "1.0.0-alpha.1" || Compatibility.ContractFormat != "templiqx/v1alpha1" {
+	if Compatibility.OpsApiVersion != "1.0.0-alpha.2" || Compatibility.ContractFormat != "templiqx/v1alpha1" {
 		t.Fatalf("compatibility = %#v", Compatibility)
 	}
 	expected := []string{
-		"Catalog", "CompileContract", "CreatePackage", "DeleteContract", "DeletePackage",
+		"AssessQualityProposals", "Catalog", "CompileContract", "CreatePackage", "DeleteContract", "DeletePackage",
 		"DeleteWorkspaceArtifact", "DiffContract", "DiscoverPackages", "ExecuteContract",
 		"ExplainContract", "ExportPackageIdentity", "GetOperationsV1Liveness",
 		"GetOperationsV1OpenAPI", "GetOperationsV1OpenAPIYaml", "GetOperationsV1Readiness",

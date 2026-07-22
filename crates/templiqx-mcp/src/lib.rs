@@ -29,7 +29,8 @@ use templiqx_application::{
 use templiqx_contracts::{
     ArtifactContent, CompiledInteraction, CompiledMessage, Contract, ContractDiff, ContractSummary,
     ExecutionReceipt, Explanation, OperationEnvelope, PackageIdentity, PackageManifest,
-    PackageTrustReport, RenderRequest, StreamEvent, TestCaseResult, TestReport, WorkspaceArtifact,
+    PackageTrustReport, QualityProposalReport, QualityProposalRequest, RenderRequest, StreamEvent,
+    TestCaseResult, TestReport, WorkspaceArtifact,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentInspector, DocumentRenderer, LegacyImportAdapter, PackageStore,
@@ -99,6 +100,10 @@ pub trait Operations: Send + Sync + 'static {
     -> OperationEnvelope<TestReport>;
     fn list_evals(&self, package: &str) -> OperationEnvelope<Vec<templiqx_application::EvalCase>>;
     fn run_eval(&self, request: &RunEvalInput) -> OperationEnvelope<TestCaseResult>;
+    fn assess_quality_proposals(
+        &self,
+        request: &QualityProposalRequest,
+    ) -> OperationEnvelope<QualityProposalReport>;
     fn diff_contract(&self, request: &DiffContractInput) -> OperationEnvelope<ContractDiff>;
     fn explain_contract(&self, package: &str, contract: &str) -> OperationEnvelope<Explanation>;
 }
@@ -271,6 +276,12 @@ where
     }
     fn run_eval(&self, r: &RunEvalInput) -> OperationEnvelope<TestCaseResult> {
         self.run_eval(&r.package, &r.contract, &r.fixture_id, &r.capabilities)
+    }
+    fn assess_quality_proposals(
+        &self,
+        request: &QualityProposalRequest,
+    ) -> OperationEnvelope<QualityProposalReport> {
+        TempliqxService::assess_quality_proposals(self, request)
     }
     fn diff_contract(&self, r: &DiffContractInput) -> OperationEnvelope<ContractDiff> {
         self.diff_contract(
@@ -460,6 +471,235 @@ pub struct RunEvalInput {
     pub fixture_id: String,
     #[serde(default)]
     pub capabilities: Vec<String>,
+}
+
+mod quality_schema {
+    #![allow(dead_code)]
+
+    use super::*;
+
+    // `templiqx-contracts` intentionally has no dependency on an MCP schema
+    // implementation. Keep the MCP discovery model local while the actual tool
+    // input below continues to deserialize directly into the canonical contracts
+    // DTO. These schema-only mirrors must therefore match the canonical serde
+    // shape exactly; they are never used to handle a call.
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    pub(super) struct QualityProposalRequestSchema {
+        package: String,
+        contract_id: String,
+        expected_package_fingerprint: String,
+        expected_base_contract_fingerprint: String,
+        expected_fixture_set_fingerprint: String,
+        policy: QualityPolicySchema,
+        candidates: Vec<QualityCandidateSubmissionSchema>,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct QualityPolicySchema {
+        id: String,
+        replicates_per_fixture: u16,
+        minimum_semantic_cases: u64,
+        maximum_infrastructure_failure_ppm: u64,
+        claimed_evaluator_profile_fingerprint: String,
+        claimed_model_profile_fingerprint: String,
+        binary_scorers: Vec<BinaryScorerSchema>,
+        objectives: Vec<QualityObjectiveSchema>,
+        eligibility_rules: Vec<EligibilityRuleSchema>,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct BinaryScorerSchema {
+        id: String,
+        metric_id: String,
+        claimed_scorer_fingerprint: String,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct QualityObjectiveSchema {
+        id: String,
+        metric_id: String,
+        unit: MetricUnitSchema,
+        aggregation: MetricAggregationSchema,
+        direction: ObjectiveDirectionSchema,
+        claimed_measurement_profile_fingerprint: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        currency_code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        token_kind: Option<TokenKindSchema>,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct EligibilityRuleSchema {
+        id: String,
+        metric_id: String,
+        comparator: EligibilityComparatorSchema,
+        unit: MetricUnitSchema,
+        threshold: u64,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    enum MetricUnitSchema {
+        RatioPpm,
+        Milliseconds,
+        TokenCount,
+        CurrencyMicrounits,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    enum MetricAggregationSchema {
+        BinaryRatioPpm,
+        Mean,
+        Sum,
+        P95NearestRank,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    enum ObjectiveDirectionSchema {
+        Maximize,
+        Minimize,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    enum EligibilityComparatorSchema {
+        Gte,
+        Lte,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    enum TokenKindSchema {
+        Prompt,
+        Completion,
+        Total,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct QualityCandidateSubmissionSchema {
+        candidate_source: String,
+        synthetic_or_sanitized_data_attestation: bool,
+        evidence: CandidateEvidenceSchema,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct CandidateEvidenceSchema {
+        claimed_package_fingerprint: String,
+        claimed_base_contract_fingerprint: String,
+        claimed_fixture_set_fingerprint: String,
+        claimed_candidate_contract_fingerprint: String,
+        claimed_quality_policy_fingerprint: String,
+        claimed_evaluator_profile_fingerprint: String,
+        claimed_model_profile_fingerprint: String,
+        claimed_scorer_fingerprints: BTreeMap<String, String>,
+        claimed_measurement_profile_fingerprints: BTreeMap<String, String>,
+        trials: Vec<TrialEvidenceSchema>,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct TrialEvidenceSchema {
+        fixture_id: String,
+        replicate_index: u16,
+        provider_attempt_count: u32,
+        outcome: TrialOutcomeSchema,
+        #[serde(default)]
+        passed_scorers: Vec<String>,
+        #[serde(default)]
+        failed_scorers: Vec<String>,
+        observations: Vec<MetricObservationSchema>,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+    enum TrialOutcomeSchema {
+        Scored,
+        CandidateQualityFailure {
+            reason: CandidateQualityFailureReasonSchema,
+        },
+        InfrastructureFailure {
+            reason: InfrastructureFailureReasonSchema,
+        },
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    enum CandidateQualityFailureReasonSchema {
+        Schema,
+        Assertion,
+        InvalidOutput,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    enum InfrastructureFailureReasonSchema {
+        Transport,
+        Timeout,
+        RateLimit,
+        ProviderUnavailable,
+        ProviderInternal,
+        Cancellation,
+        Budget,
+        EvaluatorInfrastructure,
+    }
+
+    #[derive(JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct MetricObservationSchema {
+        metric_id: String,
+        unit: MetricUnitSchema,
+        value: u64,
+        claimed_measurement_profile_fingerprint: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        currency_code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        token_kind: Option<TokenKindSchema>,
+    }
+}
+
+/// MCP input for actor-neutral quality assessment.
+///
+/// The object wrapper preserves the canonical contracts DTO (including its
+/// fail-closed unknown-field behavior) instead of maintaining a transport copy
+/// that can drift. It must remain an object because MCP requires every tool
+/// input schema to declare `type: object` at the root.
+#[derive(Debug, Clone, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AssessQualityProposalsInput {
+    #[schemars(with = "quality_schema::QualityProposalRequestSchema")]
+    pub request: QualityProposalRequest,
+}
+
+impl<'de> Deserialize<'de> for AssessQualityProposalsInput {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const INVALID_QUALITY_PARAMETERS: &str = "quality assessment request is invalid";
+
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct QualityParameters {
+            request: QualityProposalRequest,
+        }
+
+        let value = Value::deserialize(deserializer)
+            .map_err(|_| <D::Error as serde::de::Error>::custom(INVALID_QUALITY_PARAMETERS))?;
+        let parameters: QualityParameters = serde_json::from_value(value)
+            .map_err(|_| <D::Error as serde::de::Error>::custom(INVALID_QUALITY_PARAMETERS))?;
+        Ok(Self {
+            request: parameters.request,
+        })
+    }
 }
 
 /// Typed structured-content envelope. Application result DTOs are retained as JSON.
@@ -843,6 +1083,17 @@ impl TempliqxMcp {
             self.operations.run_eval(&i),
         ))
     }
+    #[tool(
+        description = "Assess host-evaluated contract proposals without selection, mutation, or promotion"
+    )]
+    fn assess_quality_proposals(
+        &self,
+        Parameters(i): Parameters<AssessQualityProposalsInput>,
+    ) -> Json<StructuredEnvelope> {
+        Json(StructuredEnvelope::from_operation(
+            self.operations.assess_quality_proposals(&i.request),
+        ))
+    }
     #[tool(description = "Diff two canonical contracts")]
     fn diff_contract(
         &self,
@@ -1016,6 +1267,43 @@ mod tests {
         serde_json::from_value(value).expect("test arguments are an object")
     }
 
+    fn dereference_schema<'a>(root: &'a Value, schema: &'a Value) -> &'a Value {
+        match schema.get("$ref").and_then(Value::as_str) {
+            Some(reference) => {
+                let target = reference
+                    .strip_prefix('#')
+                    .and_then(|pointer| root.pointer(pointer))
+                    .unwrap_or_else(|| panic!("unresolved schema reference: {reference}"));
+                dereference_schema(root, target)
+            }
+            None => schema,
+        }
+    }
+
+    fn assert_required_object<'a>(
+        root: &'a Value,
+        schema: &'a Value,
+        required_fields: &[&str],
+    ) -> &'a serde_json::Map<String, Value> {
+        let schema = dereference_schema(root, schema);
+        assert_eq!(schema.get("type"), Some(&json!("object")));
+        assert_eq!(schema.get("additionalProperties"), Some(&json!(false)));
+        let required = schema
+            .get("required")
+            .and_then(Value::as_array)
+            .expect("object schema has required fields");
+        for field in required_fields {
+            assert!(
+                required.iter().any(|candidate| candidate == field),
+                "schema did not require {field}: {schema}"
+            );
+        }
+        schema
+            .get("properties")
+            .and_then(Value::as_object)
+            .expect("object schema has typed properties")
+    }
+
     #[tokio::test]
     async fn initializes_and_lists_the_exact_typed_catalog() -> anyhow::Result<()> {
         let temp = tempfile::tempdir()?;
@@ -1065,6 +1353,157 @@ mod tests {
                 .and_then(Value::as_object)
                 .unwrap()
                 .contains_key("diagnostics")
+        );
+
+        let quality = listed
+            .tools
+            .iter()
+            .find(|tool| tool.name == "assess_quality_proposals")
+            .expect("quality tool is discoverable");
+        let quality_schema = serde_json::to_value(&quality.input_schema)?;
+        let root_properties =
+            assert_required_object(&quality_schema, &quality_schema, &["request"]);
+        let request_properties = assert_required_object(
+            &quality_schema,
+            &root_properties["request"],
+            &["package", "contract_id", "policy", "candidates"],
+        );
+        let policy_properties = assert_required_object(
+            &quality_schema,
+            &request_properties["policy"],
+            &[
+                "replicates_per_fixture",
+                "binary_scorers",
+                "objectives",
+                "eligibility_rules",
+            ],
+        );
+        assert!(policy_properties.contains_key("maximum_infrastructure_failure_ppm"));
+        let candidate = dereference_schema(
+            &quality_schema,
+            request_properties["candidates"]
+                .get("items")
+                .expect("candidate array has typed items"),
+        );
+        let candidate_properties = assert_required_object(
+            &quality_schema,
+            candidate,
+            &[
+                "candidate_source",
+                "synthetic_or_sanitized_data_attestation",
+                "evidence",
+            ],
+        );
+        let evidence_properties = assert_required_object(
+            &quality_schema,
+            &candidate_properties["evidence"],
+            &[
+                "claimed_package_fingerprint",
+                "claimed_candidate_contract_fingerprint",
+                "claimed_scorer_fingerprints",
+                "trials",
+            ],
+        );
+        let trial = dereference_schema(
+            &quality_schema,
+            evidence_properties["trials"]
+                .get("items")
+                .expect("trial array has typed items"),
+        );
+        let trial_properties = assert_required_object(
+            &quality_schema,
+            trial,
+            &["fixture_id", "outcome", "observations"],
+        );
+        assert!(
+            trial_properties["observations"].get("items").is_some(),
+            "observations must not be advertised as arbitrary JSON"
+        );
+
+        client.cancel().await?;
+        server_task.await??;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn quality_call_uses_the_canonical_request_and_matches_direct_service()
+    -> anyhow::Result<()> {
+        let temp = tempfile::tempdir()?;
+        let request: QualityProposalRequest = serde_json::from_value(json!({
+            "package": "missing",
+            "contract_id": "greeting",
+            "expected_package_fingerprint": "0".repeat(64),
+            "expected_base_contract_fingerprint": "1".repeat(64),
+            "expected_fixture_set_fingerprint": "2".repeat(64),
+            "policy": {
+                "id": "general-advisory",
+                "replicates_per_fixture": 1,
+                "minimum_semantic_cases": 1,
+                "maximum_infrastructure_failure_ppm": 0,
+                "claimed_evaluator_profile_fingerprint": "3".repeat(64),
+                "claimed_model_profile_fingerprint": "4".repeat(64),
+                "binary_scorers": [{
+                    "id": "correctness",
+                    "metric_id": "correctness_ratio",
+                    "claimed_scorer_fingerprint": "5".repeat(64)
+                }],
+                "objectives": [{
+                    "id": "correctness",
+                    "metric_id": "correctness_ratio",
+                    "unit": "ratio_ppm",
+                    "aggregation": "binary_ratio_ppm",
+                    "direction": "maximize",
+                    "claimed_measurement_profile_fingerprint": "6".repeat(64)
+                }],
+                "eligibility_rules": [{
+                    "id": "correctness-floor",
+                    "metric_id": "correctness_ratio",
+                    "comparator": "gte",
+                    "unit": "ratio_ppm",
+                    "threshold": 850000
+                }]
+            },
+            "candidates": [{
+                "candidate_source": "schema_version: templiqx/v1alpha1",
+                "synthetic_or_sanitized_data_attestation": true,
+                "evidence": {
+                    "claimed_package_fingerprint": "0".repeat(64),
+                    "claimed_base_contract_fingerprint": "1".repeat(64),
+                    "claimed_fixture_set_fingerprint": "2".repeat(64),
+                    "claimed_candidate_contract_fingerprint": "7".repeat(64),
+                    "claimed_quality_policy_fingerprint": "8".repeat(64),
+                    "claimed_evaluator_profile_fingerprint": "3".repeat(64),
+                    "claimed_model_profile_fingerprint": "4".repeat(64),
+                    "claimed_scorer_fingerprints": {"correctness": "5".repeat(64)},
+                    "claimed_measurement_profile_fingerprints": {
+                        "correctness_ratio": "6".repeat(64)
+                    },
+                    "trials": [{
+                        "fixture_id": "fixture",
+                        "replicate_index": 0,
+                        "provider_attempt_count": 1,
+                        "outcome": {"kind": "scored"},
+                        "passed_scorers": ["correctness"],
+                        "failed_scorers": [],
+                        "observations": []
+                    }]
+                }
+            }]
+        }))?;
+        let direct = serde_json::to_value(
+            templiqx_local::compose(temp.path())?.assess_quality_proposals(&request),
+        )?;
+        let (client, server_task) = client(temp.path()).await?;
+        let mcp = client
+            .call_tool(
+                CallToolRequestParams::new("assess_quality_proposals")
+                    .with_arguments(arguments(json!({"request": request}))),
+            )
+            .await?;
+        assert_ne!(mcp.is_error, Some(true));
+        assert_eq!(
+            mcp.structured_content.expect("typed structured content"),
+            direct
         );
 
         client.cancel().await?;

@@ -1,26 +1,26 @@
-opsApiVersion: 1.0.0-alpha.1
-openApiDigest: "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914"
+opsApiVersion: 1.0.0-alpha.2
+openApiDigest: "sha256:f9aa381dee153007e3298afb7ab85f00ff114dd93a056ea6f54cef7d280432d4"
 contractFormat: "templiqx/v1alpha1"
-engineApiVersion: "0.1"
-engineVersion: "0.1.0"
+engineApiVersion: "0.2"
+engineVersion: "0.2.0"
 sdks:
   - language: typescript
     package: "@blinqx/templiqx-adapter"
-    supportedEngineRange: ">=0.1.0,<0.2.0"
-    sdkVersion: "0.1.0"
+    supportedEngineRange: ">=0.2.0,<0.3.0"
+    sdkVersion: "0.2.0"
   - language: dotnet
     package: "Templiqx.Adapter"
-    supportedEngineRange: ">=0.1.0,<0.2.0"
-    sdkVersion: "0.1.0"
+    supportedEngineRange: ">=0.2.0,<0.3.0"
+    sdkVersion: "0.2.0"
   - language: python
     package: "templiqx-adapter"
-    supportedEngineRange: ">=0.1.0,<0.2.0"
-    sdkVersion: "0.1.0"
+    supportedEngineRange: ">=0.2.0,<0.3.0"
+    sdkVersion: "0.2.0"
   - language: go
     package: "github.com/blinqx/templiqx-adapter-go"
-    supportedEngineRange: ">=0.1.0,<0.2.0"
-    sdkVersion: "0.1.0"
+    supportedEngineRange: ">=0.2.0,<0.3.0"
+    sdkVersion: "0.2.0"
   - language: rust
     package: "templiqx-adapter-rust"
-    supportedEngineRange: ">=0.1.0,<0.2.0"
-    sdkVersion: "0.1.0"
+    supportedEngineRange: ">=0.2.0,<0.3.0"
+    sdkVersion: "0.2.0"

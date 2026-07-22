@@ -406,6 +406,11 @@ func (c *Client) RunEval(ctx context.Context, packageName string, body RunEvalRe
 	return dispatchJSON[JsonValueEnvelope](ctx, c, dispatchRequest{method: http.MethodPost, path: packagePath(packageName) + "/evals/run", body: body}, options...)
 }
 
+// AssessQualityProposals calls assessQualityProposals.
+func (c *Client) AssessQualityProposals(ctx context.Context, packageName string, body QualityProposalRequest, options ...CallOption) (*TempliqxResponse[QualityProposalReportEnvelope], error) {
+	return dispatchJSON[QualityProposalReportEnvelope](ctx, c, dispatchRequest{method: http.MethodPost, path: packagePath(packageName) + "/quality/proposals:assess", body: body}, options...)
+}
+
 // RenderContract calls renderContract.
 func (c *Client) RenderContract(ctx context.Context, packageName, contract string, body CompileRequest, options ...CallOption) (*TempliqxResponse[JsonValueEnvelope], error) {
 	return dispatchJSON[JsonValueEnvelope](ctx, c, dispatchRequest{method: http.MethodPost, path: contractPath(packageName, contract) + "/render", body: body}, options...)

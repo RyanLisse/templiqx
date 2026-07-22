@@ -10,5 +10,6 @@ export default defineMeta({
     "odt-compatibility",
     "http-server-release-artifact",
     "high-complexity-rust-modules",
+    "quality-evidence-protocol",
   ],
 });

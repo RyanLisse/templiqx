@@ -9,6 +9,7 @@ from ._generated.operations_v1 import (
     InspectDocumentRequest,
     JsonValue,
     MigrateLegacyRequest,
+    QualityProposalRequest,
     RenderDocumentRequest,
     RenderRequest,
     RunEvalRequest,
@@ -30,6 +31,7 @@ __all__ = [
     "InspectDocumentRequest",
     "JsonValue",
     "MigrateLegacyRequest",
+    "QualityProposalRequest",
     "RenderDocumentRequest",
     "RenderRequest",
     "RunEvalRequest",
@@ -42,4 +44,3 @@ __all__ = [
     "VerifyPackageTrustRequest",
     "compatibility",
 ]
-

@@ -64,6 +64,269 @@ pub struct AdapterDescriptor {
     pub id: ::std::string::String,
     pub version: ::std::string::String,
 }
+///`BinaryScorer`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "claimed_scorer_fingerprint",
+///    "id",
+///    "metric_id"
+///  ],
+///  "properties": {
+///    "claimed_scorer_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "metric_id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct BinaryScorer {
+    pub claimed_scorer_fingerprint: QualityFingerprint,
+    pub id: QualityIdentifier,
+    pub metric_id: QualityIdentifier,
+}
+///`CandidateAssessment`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "aggregates",
+///    "diagnostics",
+///    "eligibility",
+///    "proposal_change_paths",
+///    "trial_summaries"
+///  ],
+///  "properties": {
+///    "aggregates": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/MetricAggregate"
+///      }
+///    },
+///    "candidate_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_identities": {
+///      "description": "Host-attested identities, omitted unless every returned claim is syntactically valid and consistent with the validated protocol profile.",
+///      "$ref": "#/definitions/ClaimedQualityIdentities"
+///    },
+///    "diagnostics": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/Diagnostic"
+///      },
+///      "maxItems": 256
+///    },
+///    "eligibility": {
+///      "$ref": "#/definitions/EligibilityAssessment"
+///    },
+///    "proposal_change_paths": {
+///      "type": "array",
+///      "items": {
+///        "type": "string"
+///      }
+///    },
+///    "trial_summaries": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/QualityTrialSummary"
+///      }
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CandidateAssessment {
+    pub aggregates: ::std::vec::Vec<MetricAggregate>,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub candidate_fingerprint: ::std::option::Option<QualityFingerprint>,
+    ///Host-attested identities, omitted unless every returned claim is syntactically valid and consistent with the validated protocol profile.
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub claimed_identities: ::std::option::Option<ClaimedQualityIdentities>,
+    pub diagnostics: ::std::vec::Vec<Diagnostic>,
+    pub eligibility: EligibilityAssessment,
+    pub proposal_change_paths: ::std::vec::Vec<::std::string::String>,
+    pub trial_summaries: ::std::vec::Vec<QualityTrialSummary>,
+}
+///`CandidateEvidence`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "claimed_base_contract_fingerprint",
+///    "claimed_candidate_contract_fingerprint",
+///    "claimed_evaluator_profile_fingerprint",
+///    "claimed_fixture_set_fingerprint",
+///    "claimed_measurement_profile_fingerprints",
+///    "claimed_model_profile_fingerprint",
+///    "claimed_package_fingerprint",
+///    "claimed_quality_policy_fingerprint",
+///    "claimed_scorer_fingerprints",
+///    "trials"
+///  ],
+///  "properties": {
+///    "claimed_base_contract_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_candidate_contract_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_evaluator_profile_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_fixture_set_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_measurement_profile_fingerprints": {
+///      "type": "object",
+///      "maxProperties": 16,
+///      "additionalProperties": {
+///        "$ref": "#/definitions/QualityFingerprint"
+///      }
+///    },
+///    "claimed_model_profile_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_package_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_quality_policy_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_scorer_fingerprints": {
+///      "type": "object",
+///      "maxProperties": 16,
+///      "additionalProperties": {
+///        "$ref": "#/definitions/QualityFingerprint"
+///      }
+///    },
+///    "trials": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/TrialEvidence"
+///      },
+///      "maxItems": 10240
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct CandidateEvidence {
+    pub claimed_base_contract_fingerprint: QualityFingerprint,
+    pub claimed_candidate_contract_fingerprint: QualityFingerprint,
+    pub claimed_evaluator_profile_fingerprint: QualityFingerprint,
+    pub claimed_fixture_set_fingerprint: QualityFingerprint,
+    pub claimed_measurement_profile_fingerprints:
+        ::std::collections::BTreeMap<::std::string::String, QualityFingerprint>,
+    pub claimed_model_profile_fingerprint: QualityFingerprint,
+    pub claimed_package_fingerprint: QualityFingerprint,
+    pub claimed_quality_policy_fingerprint: QualityFingerprint,
+    pub claimed_scorer_fingerprints:
+        ::std::collections::BTreeMap<::std::string::String, QualityFingerprint>,
+    pub trials: ::std::vec::Vec<TrialEvidence>,
+}
+///`CandidateQualityFailureReason`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "enum": [
+///    "schema",
+///    "assertion",
+///    "invalid_output"
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(
+    ::serde::Deserialize,
+    ::serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum CandidateQualityFailureReason {
+    #[serde(rename = "schema")]
+    Schema,
+    #[serde(rename = "assertion")]
+    Assertion,
+    #[serde(rename = "invalid_output")]
+    InvalidOutput,
+}
+impl ::std::fmt::Display for CandidateQualityFailureReason {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Schema => f.write_str("schema"),
+            Self::Assertion => f.write_str("assertion"),
+            Self::InvalidOutput => f.write_str("invalid_output"),
+        }
+    }
+}
+impl ::std::str::FromStr for CandidateQualityFailureReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "schema" => Ok(Self::Schema),
+            "assertion" => Ok(Self::Assertion),
+            "invalid_output" => Ok(Self::InvalidOutput),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CandidateQualityFailureReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for CandidateQualityFailureReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CandidateQualityFailureReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 ///`CapabilitiesRequest`
 ///
 /// <details><summary>JSON schema</summary>
@@ -164,6 +427,58 @@ pub struct CatalogEnvelope {
     pub result: ::std::vec::Vec<::std::string::String>,
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub stream_events: ::std::vec::Vec<StreamEvent>,
+}
+///`ClaimedQualityIdentities`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "claimed_candidate_contract_fingerprint",
+///    "claimed_evaluator_profile_fingerprint",
+///    "claimed_measurement_profile_fingerprints",
+///    "claimed_model_profile_fingerprint",
+///    "claimed_scorer_fingerprints"
+///  ],
+///  "properties": {
+///    "claimed_candidate_contract_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_evaluator_profile_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_measurement_profile_fingerprints": {
+///      "type": "object",
+///      "additionalProperties": {
+///        "$ref": "#/definitions/QualityFingerprint"
+///      }
+///    },
+///    "claimed_model_profile_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_scorer_fingerprints": {
+///      "type": "object",
+///      "additionalProperties": {
+///        "$ref": "#/definitions/QualityFingerprint"
+///      }
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ClaimedQualityIdentities {
+    pub claimed_candidate_contract_fingerprint: QualityFingerprint,
+    pub claimed_evaluator_profile_fingerprint: QualityFingerprint,
+    pub claimed_measurement_profile_fingerprints:
+        ::std::collections::BTreeMap<::std::string::String, QualityFingerprint>,
+    pub claimed_model_profile_fingerprint: QualityFingerprint,
+    pub claimed_scorer_fingerprints:
+        ::std::collections::BTreeMap<::std::string::String, QualityFingerprint>,
 }
 ///`CompileRequest`
 ///
@@ -333,6 +648,50 @@ pub struct CompiledInteractionEnvelope {
 pub struct CompiledInteractionMessagesItem {
     pub content: ::std::string::String,
     pub role: ::std::string::String,
+}
+///`ComputedQualityIdentities`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "base_contract_fingerprint",
+///    "fixture_set_fingerprint",
+///    "package_fingerprint",
+///    "quality_policy_fingerprint",
+///    "request_fingerprint"
+///  ],
+///  "properties": {
+///    "base_contract_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "fixture_set_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "package_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "quality_policy_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "request_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ComputedQualityIdentities {
+    pub base_contract_fingerprint: QualityFingerprint,
+    pub fixture_set_fingerprint: QualityFingerprint,
+    pub package_fingerprint: QualityFingerprint,
+    pub quality_policy_fingerprint: QualityFingerprint,
+    pub request_fingerprint: QualityFingerprint,
 }
 ///`Contract`
 ///
@@ -795,6 +1154,252 @@ pub struct DiffContractRequest {
     pub right_contract: ::std::string::String,
     pub right_package: ::std::string::String,
 }
+///`EligibilityAssessment`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "eligible",
+///    "gates",
+///    "infrastructure_failure_ppm",
+///    "infrastructure_trial_count",
+///    "semantic_coverage_ppm",
+///    "semantic_trial_count",
+///    "total_trial_count"
+///  ],
+///  "properties": {
+///    "eligible": {
+///      "type": "boolean"
+///    },
+///    "gates": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/EligibilityGate"
+///      }
+///    },
+///    "infrastructure_failure_ppm": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 1000000.0,
+///      "minimum": 0.0
+///    },
+///    "infrastructure_trial_count": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    },
+///    "semantic_coverage_ppm": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 1000000.0,
+///      "minimum": 0.0
+///    },
+///    "semantic_trial_count": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    },
+///    "total_trial_count": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct EligibilityAssessment {
+    pub eligible: bool,
+    pub gates: ::std::vec::Vec<EligibilityGate>,
+    pub infrastructure_failure_ppm: i64,
+    pub infrastructure_trial_count: i64,
+    pub semantic_coverage_ppm: i64,
+    pub semantic_trial_count: i64,
+    pub total_trial_count: i64,
+}
+///`EligibilityComparator`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "enum": [
+///    "gte",
+///    "lte"
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(
+    ::serde::Deserialize,
+    ::serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum EligibilityComparator {
+    #[serde(rename = "gte")]
+    Gte,
+    #[serde(rename = "lte")]
+    Lte,
+}
+impl ::std::fmt::Display for EligibilityComparator {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Gte => f.write_str("gte"),
+            Self::Lte => f.write_str("lte"),
+        }
+    }
+}
+impl ::std::str::FromStr for EligibilityComparator {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "gte" => Ok(Self::Gte),
+            "lte" => Ok(Self::Lte),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for EligibilityComparator {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for EligibilityComparator {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for EligibilityComparator {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+///`EligibilityGate`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "comparator",
+///    "passed",
+///    "rule_id",
+///    "threshold",
+///    "unit"
+///  ],
+///  "properties": {
+///    "actual": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    },
+///    "comparator": {
+///      "$ref": "#/definitions/EligibilityComparator"
+///    },
+///    "passed": {
+///      "type": "boolean"
+///    },
+///    "rule_id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "threshold": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    },
+///    "unit": {
+///      "$ref": "#/definitions/MetricUnit"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct EligibilityGate {
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub actual: ::std::option::Option<i64>,
+    pub comparator: EligibilityComparator,
+    pub passed: bool,
+    pub rule_id: QualityIdentifier,
+    pub threshold: i64,
+    pub unit: MetricUnit,
+}
+///`EligibilityRule`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "comparator",
+///    "id",
+///    "metric_id",
+///    "threshold",
+///    "unit"
+///  ],
+///  "properties": {
+///    "comparator": {
+///      "$ref": "#/definitions/EligibilityComparator"
+///    },
+///    "id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "metric_id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "threshold": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    },
+///    "unit": {
+///      "$ref": "#/definitions/MetricUnit"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct EligibilityRule {
+    pub comparator: EligibilityComparator,
+    pub id: QualityIdentifier,
+    pub metric_id: QualityIdentifier,
+    pub threshold: i64,
+    pub unit: MetricUnit,
+}
 ///`ExecuteRequest`
 ///
 /// <details><summary>JSON schema</summary>
@@ -1074,6 +1679,108 @@ impl ::std::convert::TryFrom<::std::string::String> for HealthStatusStatus {
         value.parse()
     }
 }
+///`InfrastructureFailureReason`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "enum": [
+///    "transport",
+///    "timeout",
+///    "rate_limit",
+///    "provider_unavailable",
+///    "provider_internal",
+///    "cancellation",
+///    "budget",
+///    "evaluator_infrastructure"
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(
+    ::serde::Deserialize,
+    ::serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum InfrastructureFailureReason {
+    #[serde(rename = "transport")]
+    Transport,
+    #[serde(rename = "timeout")]
+    Timeout,
+    #[serde(rename = "rate_limit")]
+    RateLimit,
+    #[serde(rename = "provider_unavailable")]
+    ProviderUnavailable,
+    #[serde(rename = "provider_internal")]
+    ProviderInternal,
+    #[serde(rename = "cancellation")]
+    Cancellation,
+    #[serde(rename = "budget")]
+    Budget,
+    #[serde(rename = "evaluator_infrastructure")]
+    EvaluatorInfrastructure,
+}
+impl ::std::fmt::Display for InfrastructureFailureReason {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Transport => f.write_str("transport"),
+            Self::Timeout => f.write_str("timeout"),
+            Self::RateLimit => f.write_str("rate_limit"),
+            Self::ProviderUnavailable => f.write_str("provider_unavailable"),
+            Self::ProviderInternal => f.write_str("provider_internal"),
+            Self::Cancellation => f.write_str("cancellation"),
+            Self::Budget => f.write_str("budget"),
+            Self::EvaluatorInfrastructure => f.write_str("evaluator_infrastructure"),
+        }
+    }
+}
+impl ::std::str::FromStr for InfrastructureFailureReason {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "transport" => Ok(Self::Transport),
+            "timeout" => Ok(Self::Timeout),
+            "rate_limit" => Ok(Self::RateLimit),
+            "provider_unavailable" => Ok(Self::ProviderUnavailable),
+            "provider_internal" => Ok(Self::ProviderInternal),
+            "cancellation" => Ok(Self::Cancellation),
+            "budget" => Ok(Self::Budget),
+            "evaluator_infrastructure" => Ok(Self::EvaluatorInfrastructure),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for InfrastructureFailureReason {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for InfrastructureFailureReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for InfrastructureFailureReason {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 ///`InspectDocumentEnvelope`
 ///
 /// <details><summary>JSON schema</summary>
@@ -1235,6 +1942,340 @@ pub struct JsonValueEnvelope {
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub stream_events: ::std::vec::Vec<StreamEvent>,
 }
+///`MetricAggregate`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "aggregation",
+///    "direction",
+///    "metric_id",
+///    "unit",
+///    "value"
+///  ],
+///  "properties": {
+///    "aggregation": {
+///      "$ref": "#/definitions/MetricAggregation"
+///    },
+///    "direction": {
+///      "$ref": "#/definitions/ObjectiveDirection"
+///    },
+///    "metric_id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "unit": {
+///      "$ref": "#/definitions/MetricUnit"
+///    },
+///    "value": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct MetricAggregate {
+    pub aggregation: MetricAggregation,
+    pub direction: ObjectiveDirection,
+    pub metric_id: QualityIdentifier,
+    pub unit: MetricUnit,
+    pub value: i64,
+}
+///`MetricAggregation`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "enum": [
+///    "binary_ratio_ppm",
+///    "mean",
+///    "sum",
+///    "p95_nearest_rank"
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(
+    ::serde::Deserialize,
+    ::serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum MetricAggregation {
+    #[serde(rename = "binary_ratio_ppm")]
+    BinaryRatioPpm,
+    #[serde(rename = "mean")]
+    Mean,
+    #[serde(rename = "sum")]
+    Sum,
+    #[serde(rename = "p95_nearest_rank")]
+    P95NearestRank,
+}
+impl ::std::fmt::Display for MetricAggregation {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::BinaryRatioPpm => f.write_str("binary_ratio_ppm"),
+            Self::Mean => f.write_str("mean"),
+            Self::Sum => f.write_str("sum"),
+            Self::P95NearestRank => f.write_str("p95_nearest_rank"),
+        }
+    }
+}
+impl ::std::str::FromStr for MetricAggregation {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "binary_ratio_ppm" => Ok(Self::BinaryRatioPpm),
+            "mean" => Ok(Self::Mean),
+            "sum" => Ok(Self::Sum),
+            "p95_nearest_rank" => Ok(Self::P95NearestRank),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for MetricAggregation {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for MetricAggregation {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for MetricAggregation {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+///`MetricObservation`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "claimed_measurement_profile_fingerprint",
+///    "metric_id",
+///    "unit",
+///    "value"
+///  ],
+///  "properties": {
+///    "claimed_measurement_profile_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "currency_code": {
+///      "type": "string",
+///      "pattern": "^[A-Z]{3}$"
+///    },
+///    "metric_id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "token_kind": {
+///      "$ref": "#/definitions/TokenKind"
+///    },
+///    "unit": {
+///      "$ref": "#/definitions/MetricUnit"
+///    },
+///    "value": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct MetricObservation {
+    pub claimed_measurement_profile_fingerprint: QualityFingerprint,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub currency_code: ::std::option::Option<MetricObservationCurrencyCode>,
+    pub metric_id: QualityIdentifier,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub token_kind: ::std::option::Option<TokenKind>,
+    pub unit: MetricUnit,
+    pub value: i64,
+}
+///`MetricObservationCurrencyCode`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "pattern": "^[A-Z]{3}$"
+///}
+/// ```
+/// </details>
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct MetricObservationCurrencyCode(::std::string::String);
+impl ::std::ops::Deref for MetricObservationCurrencyCode {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<MetricObservationCurrencyCode> for ::std::string::String {
+    fn from(value: MetricObservationCurrencyCode) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for MetricObservationCurrencyCode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Z]{3}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for MetricObservationCurrencyCode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for MetricObservationCurrencyCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for MetricObservationCurrencyCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for MetricObservationCurrencyCode {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+///`MetricUnit`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "enum": [
+///    "ratio_ppm",
+///    "milliseconds",
+///    "token_count",
+///    "currency_microunits"
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(
+    ::serde::Deserialize,
+    ::serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum MetricUnit {
+    #[serde(rename = "ratio_ppm")]
+    RatioPpm,
+    #[serde(rename = "milliseconds")]
+    Milliseconds,
+    #[serde(rename = "token_count")]
+    TokenCount,
+    #[serde(rename = "currency_microunits")]
+    CurrencyMicrounits,
+}
+impl ::std::fmt::Display for MetricUnit {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::RatioPpm => f.write_str("ratio_ppm"),
+            Self::Milliseconds => f.write_str("milliseconds"),
+            Self::TokenCount => f.write_str("token_count"),
+            Self::CurrencyMicrounits => f.write_str("currency_microunits"),
+        }
+    }
+}
+impl ::std::str::FromStr for MetricUnit {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "ratio_ppm" => Ok(Self::RatioPpm),
+            "milliseconds" => Ok(Self::Milliseconds),
+            "token_count" => Ok(Self::TokenCount),
+            "currency_microunits" => Ok(Self::CurrencyMicrounits),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for MetricUnit {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for MetricUnit {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for MetricUnit {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
 ///`MigrateLegacyRequest`
 ///
 /// <details><summary>JSON schema</summary>
@@ -1273,6 +2314,78 @@ pub struct MigrateLegacyRequest {
     pub dialect: ::std::string::String,
     pub package: ::std::string::String,
     pub source: ::std::string::String,
+}
+///`ObjectiveDirection`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "enum": [
+///    "maximize",
+///    "minimize"
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(
+    ::serde::Deserialize,
+    ::serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum ObjectiveDirection {
+    #[serde(rename = "maximize")]
+    Maximize,
+    #[serde(rename = "minimize")]
+    Minimize,
+}
+impl ::std::fmt::Display for ObjectiveDirection {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Maximize => f.write_str("maximize"),
+            Self::Minimize => f.write_str("minimize"),
+        }
+    }
+}
+impl ::std::str::FromStr for ObjectiveDirection {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "maximize" => Ok(Self::Maximize),
+            "minimize" => Ok(Self::Minimize),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ObjectiveDirection {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for ObjectiveDirection {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ObjectiveDirection {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
 }
 ///`OperationEnvelopeBase`
 ///
@@ -1534,6 +2647,731 @@ pub struct PackageSignature {
     pub algorithm: ::std::string::String,
     pub key_id: ::std::string::String,
     pub value: ::std::string::String,
+}
+///`ParetoFront`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "candidate_fingerprints",
+///    "rank"
+///  ],
+///  "properties": {
+///    "candidate_fingerprints": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/QualityFingerprint"
+///      }
+///    },
+///    "rank": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 4294967295.0,
+///      "minimum": 0.0
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct ParetoFront {
+    pub candidate_fingerprints: ::std::vec::Vec<QualityFingerprint>,
+    pub rank: i64,
+}
+///`QualityCandidateSubmission`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "candidate_source",
+///    "evidence",
+///    "synthetic_or_sanitized_data_attestation"
+///  ],
+///  "properties": {
+///    "candidate_source": {
+///      "description": "Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.",
+///      "type": "string",
+///      "maxLength": 524288
+///    },
+///    "evidence": {
+///      "$ref": "#/definitions/CandidateEvidence"
+///    },
+///    "synthetic_or_sanitized_data_attestation": {
+///      "type": "boolean"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct QualityCandidateSubmission {
+    ///Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.
+    pub candidate_source: QualityCandidateSubmissionCandidateSource,
+    pub evidence: CandidateEvidence,
+    pub synthetic_or_sanitized_data_attestation: bool,
+}
+///Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "description": "Complete candidate contract YAML. Templiqx enforces the normative 512 KiB UTF-8 byte limit even when code-point length is smaller.",
+///  "type": "string",
+///  "maxLength": 524288
+///}
+/// ```
+/// </details>
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct QualityCandidateSubmissionCandidateSource(::std::string::String);
+impl ::std::ops::Deref for QualityCandidateSubmissionCandidateSource {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<QualityCandidateSubmissionCandidateSource> for ::std::string::String {
+    fn from(value: QualityCandidateSubmissionCandidateSource) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for QualityCandidateSubmissionCandidateSource {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 524288usize {
+            return Err("longer than 524288 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for QualityCandidateSubmissionCandidateSource {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for QualityCandidateSubmissionCandidateSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for QualityCandidateSubmissionCandidateSource {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for QualityCandidateSubmissionCandidateSource {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+///Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "description": "Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.",
+///  "type": "string",
+///  "maxLength": 64,
+///  "minLength": 64,
+///  "pattern": "^[A-Fa-f0-9]{64}$"
+///}
+/// ```
+/// </details>
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct QualityFingerprint(::std::string::String);
+impl ::std::ops::Deref for QualityFingerprint {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<QualityFingerprint> for ::std::string::String {
+    fn from(value: QualityFingerprint) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for QualityFingerprint {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 64usize {
+            return Err("longer than 64 characters".into());
+        }
+        if value.chars().count() < 64usize {
+            return Err("shorter than 64 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Fa-f0-9]{64}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Fa-f0-9]{64}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for QualityFingerprint {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for QualityFingerprint {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for QualityFingerprint {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for QualityFingerprint {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+///Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "description": "Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.",
+///  "type": "string",
+///  "maxLength": 128,
+///  "minLength": 1,
+///  "pattern": "^[A-Za-z0-9._:-]+$"
+///}
+/// ```
+/// </details>
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct QualityIdentifier(::std::string::String);
+impl ::std::ops::Deref for QualityIdentifier {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<QualityIdentifier> for ::std::string::String {
+    fn from(value: QualityIdentifier) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for QualityIdentifier {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 128usize {
+            return Err("longer than 128 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Za-z0-9._:-]+$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Za-z0-9._:-]+$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for QualityIdentifier {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for QualityIdentifier {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for QualityIdentifier {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for QualityIdentifier {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+///`QualityObjective`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "aggregation",
+///    "claimed_measurement_profile_fingerprint",
+///    "direction",
+///    "id",
+///    "metric_id",
+///    "unit"
+///  ],
+///  "properties": {
+///    "aggregation": {
+///      "$ref": "#/definitions/MetricAggregation"
+///    },
+///    "claimed_measurement_profile_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "currency_code": {
+///      "type": "string",
+///      "pattern": "^[A-Z]{3}$"
+///    },
+///    "direction": {
+///      "$ref": "#/definitions/ObjectiveDirection"
+///    },
+///    "id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "metric_id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "token_kind": {
+///      "$ref": "#/definitions/TokenKind"
+///    },
+///    "unit": {
+///      "$ref": "#/definitions/MetricUnit"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct QualityObjective {
+    pub aggregation: MetricAggregation,
+    pub claimed_measurement_profile_fingerprint: QualityFingerprint,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub currency_code: ::std::option::Option<QualityObjectiveCurrencyCode>,
+    pub direction: ObjectiveDirection,
+    pub id: QualityIdentifier,
+    pub metric_id: QualityIdentifier,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub token_kind: ::std::option::Option<TokenKind>,
+    pub unit: MetricUnit,
+}
+///`QualityObjectiveCurrencyCode`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "pattern": "^[A-Z]{3}$"
+///}
+/// ```
+/// </details>
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct QualityObjectiveCurrencyCode(::std::string::String);
+impl ::std::ops::Deref for QualityObjectiveCurrencyCode {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<QualityObjectiveCurrencyCode> for ::std::string::String {
+    fn from(value: QualityObjectiveCurrencyCode) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for QualityObjectiveCurrencyCode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[A-Z]{3}$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[A-Z]{3}$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for QualityObjectiveCurrencyCode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for QualityObjectiveCurrencyCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for QualityObjectiveCurrencyCode {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for QualityObjectiveCurrencyCode {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| {
+                <D::Error as ::serde::de::Error>::custom(e.to_string())
+            })
+    }
+}
+///`QualityPolicy`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "binary_scorers",
+///    "claimed_evaluator_profile_fingerprint",
+///    "claimed_model_profile_fingerprint",
+///    "eligibility_rules",
+///    "id",
+///    "maximum_infrastructure_failure_ppm",
+///    "minimum_semantic_cases",
+///    "objectives",
+///    "replicates_per_fixture"
+///  ],
+///  "properties": {
+///    "binary_scorers": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/BinaryScorer"
+///      },
+///      "maxItems": 16,
+///      "minItems": 1
+///    },
+///    "claimed_evaluator_profile_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "claimed_model_profile_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "eligibility_rules": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/EligibilityRule"
+///      },
+///      "minItems": 1
+///    },
+///    "id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "maximum_infrastructure_failure_ppm": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 1000000.0,
+///      "minimum": 0.0
+///    },
+///    "minimum_semantic_cases": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 9007199254740991.0,
+///      "minimum": 0.0
+///    },
+///    "objectives": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/QualityObjective"
+///      },
+///      "maxItems": 16,
+///      "minItems": 1
+///    },
+///    "replicates_per_fixture": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 20.0,
+///      "minimum": 1.0
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct QualityPolicy {
+    pub binary_scorers: ::std::vec::Vec<BinaryScorer>,
+    pub claimed_evaluator_profile_fingerprint: QualityFingerprint,
+    pub claimed_model_profile_fingerprint: QualityFingerprint,
+    pub eligibility_rules: ::std::vec::Vec<EligibilityRule>,
+    pub id: QualityIdentifier,
+    pub maximum_infrastructure_failure_ppm: i64,
+    pub minimum_semantic_cases: i64,
+    pub objectives: ::std::vec::Vec<QualityObjective>,
+    pub replicates_per_fixture: ::std::num::NonZeroU64,
+}
+///`QualityProposalReport`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "candidate_assessments",
+///    "computed_identities",
+///    "pareto_fronts",
+///    "report_fingerprint"
+///  ],
+///  "properties": {
+///    "candidate_assessments": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/CandidateAssessment"
+///      },
+///      "maxItems": 32
+///    },
+///    "computed_identities": {
+///      "$ref": "#/definitions/ComputedQualityIdentities"
+///    },
+///    "pareto_fronts": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/ParetoFront"
+///      },
+///      "maxItems": 32
+///    },
+///    "report_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct QualityProposalReport {
+    pub candidate_assessments: ::std::vec::Vec<CandidateAssessment>,
+    pub computed_identities: ComputedQualityIdentities,
+    pub pareto_fronts: ::std::vec::Vec<ParetoFront>,
+    pub report_fingerprint: QualityFingerprint,
+}
+///`QualityProposalReportEnvelope`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "allOf": [
+///    {
+///      "$ref": "#/definitions/OperationEnvelopeBase"
+///    },
+///    {
+///      "type": "object",
+///      "properties": {
+///        "result": {
+///          "$ref": "#/definitions/QualityProposalReport"
+///        }
+///      }
+///    }
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct QualityProposalReportEnvelope {
+    pub api_version: ::std::string::String,
+    pub diagnostics: ::std::vec::Vec<Diagnostic>,
+    pub fingerprints: ::std::collections::BTreeMap<::std::string::String, ::std::string::String>,
+    pub ok: bool,
+    pub operation: ::std::string::String,
+    #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
+    pub result: ::std::option::Option<QualityProposalReport>,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub stream_events: ::std::vec::Vec<StreamEvent>,
+}
+///`QualityProposalRequest`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "candidates",
+///    "contract_id",
+///    "expected_base_contract_fingerprint",
+///    "expected_fixture_set_fingerprint",
+///    "expected_package_fingerprint",
+///    "package",
+///    "policy"
+///  ],
+///  "properties": {
+///    "candidates": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/QualityCandidateSubmission"
+///      },
+///      "maxItems": 32,
+///      "minItems": 1
+///    },
+///    "contract_id": {
+///      "type": "string"
+///    },
+///    "expected_base_contract_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "expected_fixture_set_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "expected_package_fingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "package": {
+///      "type": "string"
+///    },
+///    "policy": {
+///      "$ref": "#/definitions/QualityPolicy"
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct QualityProposalRequest {
+    pub candidates: ::std::vec::Vec<QualityCandidateSubmission>,
+    pub contract_id: ::std::string::String,
+    pub expected_base_contract_fingerprint: QualityFingerprint,
+    pub expected_fixture_set_fingerprint: QualityFingerprint,
+    pub expected_package_fingerprint: QualityFingerprint,
+    pub package: ::std::string::String,
+    pub policy: QualityPolicy,
+}
+///`QualityTrialSummary`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "failed_scorers",
+///    "fixture_id",
+///    "observations",
+///    "outcome",
+///    "passed_scorers",
+///    "provider_attempt_count",
+///    "replicate_index"
+///  ],
+///  "properties": {
+///    "failed_scorers": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/QualityIdentifier"
+///      }
+///    },
+///    "fixture_id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "observations": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/MetricObservation"
+///      }
+///    },
+///    "outcome": {
+///      "$ref": "#/definitions/TrialOutcome"
+///    },
+///    "passed_scorers": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/QualityIdentifier"
+///      }
+///    },
+///    "provider_attempt_count": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 4294967295.0,
+///      "minimum": 0.0
+///    },
+///    "replicate_index": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 65535.0,
+///      "minimum": 0.0
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct QualityTrialSummary {
+    pub failed_scorers: ::std::vec::Vec<QualityIdentifier>,
+    pub fixture_id: QualityIdentifier,
+    pub observations: ::std::vec::Vec<MetricObservation>,
+    pub outcome: TrialOutcome,
+    pub passed_scorers: ::std::vec::Vec<QualityIdentifier>,
+    pub provider_attempt_count: i64,
+    pub replicate_index: i64,
 }
 ///`RenderDocumentRequest`
 ///
@@ -1914,6 +3752,18 @@ pub struct SummaryEnvelope {
 ///    "AdapterDescriptor": {
 ///      "$ref": "#/definitions/AdapterDescriptor"
 ///    },
+///    "BinaryScorer": {
+///      "$ref": "#/definitions/BinaryScorer"
+///    },
+///    "CandidateAssessment": {
+///      "$ref": "#/definitions/CandidateAssessment"
+///    },
+///    "CandidateEvidence": {
+///      "$ref": "#/definitions/CandidateEvidence"
+///    },
+///    "CandidateQualityFailureReason": {
+///      "$ref": "#/definitions/CandidateQualityFailureReason"
+///    },
 ///    "CapabilitiesRequest": {
 ///      "$ref": "#/definitions/CapabilitiesRequest"
 ///    },
@@ -1923,6 +3773,9 @@ pub struct SummaryEnvelope {
 ///    "CatalogEnvelope": {
 ///      "$ref": "#/definitions/CatalogEnvelope"
 ///    },
+///    "ClaimedQualityIdentities": {
+///      "$ref": "#/definitions/ClaimedQualityIdentities"
+///    },
 ///    "CompileRequest": {
 ///      "$ref": "#/definitions/CompileRequest"
 ///    },
@@ -1931,6 +3784,9 @@ pub struct SummaryEnvelope {
 ///    },
 ///    "CompiledInteractionEnvelope": {
 ///      "$ref": "#/definitions/CompiledInteractionEnvelope"
+///    },
+///    "ComputedQualityIdentities": {
+///      "$ref": "#/definitions/ComputedQualityIdentities"
 ///    },
 ///    "Contract": {
 ///      "$ref": "#/definitions/Contract"
@@ -1950,6 +3806,18 @@ pub struct SummaryEnvelope {
 ///    "DiffContractRequest": {
 ///      "$ref": "#/definitions/DiffContractRequest"
 ///    },
+///    "EligibilityAssessment": {
+///      "$ref": "#/definitions/EligibilityAssessment"
+///    },
+///    "EligibilityComparator": {
+///      "$ref": "#/definitions/EligibilityComparator"
+///    },
+///    "EligibilityGate": {
+///      "$ref": "#/definitions/EligibilityGate"
+///    },
+///    "EligibilityRule": {
+///      "$ref": "#/definitions/EligibilityRule"
+///    },
 ///    "ExecuteRequest": {
 ///      "$ref": "#/definitions/ExecuteRequest"
 ///    },
@@ -1964,6 +3832,9 @@ pub struct SummaryEnvelope {
 ///    },
 ///    "HealthStatus": {
 ///      "$ref": "#/definitions/HealthStatus"
+///    },
+///    "InfrastructureFailureReason": {
+///      "$ref": "#/definitions/InfrastructureFailureReason"
 ///    },
 ///    "InspectDocumentEnvelope": {
 ///      "$ref": "#/definitions/InspectDocumentEnvelope"
@@ -1980,8 +3851,23 @@ pub struct SummaryEnvelope {
 ///    "JsonValueEnvelope": {
 ///      "$ref": "#/definitions/JsonValueEnvelope"
 ///    },
+///    "MetricAggregate": {
+///      "$ref": "#/definitions/MetricAggregate"
+///    },
+///    "MetricAggregation": {
+///      "$ref": "#/definitions/MetricAggregation"
+///    },
+///    "MetricObservation": {
+///      "$ref": "#/definitions/MetricObservation"
+///    },
+///    "MetricUnit": {
+///      "$ref": "#/definitions/MetricUnit"
+///    },
 ///    "MigrateLegacyRequest": {
 ///      "$ref": "#/definitions/MigrateLegacyRequest"
+///    },
+///    "ObjectiveDirection": {
+///      "$ref": "#/definitions/ObjectiveDirection"
 ///    },
 ///    "OperationEnvelopeBase": {
 ///      "$ref": "#/definitions/OperationEnvelopeBase"
@@ -1997,6 +3883,36 @@ pub struct SummaryEnvelope {
 ///    },
 ///    "PackageSignature": {
 ///      "$ref": "#/definitions/PackageSignature"
+///    },
+///    "ParetoFront": {
+///      "$ref": "#/definitions/ParetoFront"
+///    },
+///    "QualityCandidateSubmission": {
+///      "$ref": "#/definitions/QualityCandidateSubmission"
+///    },
+///    "QualityFingerprint": {
+///      "$ref": "#/definitions/QualityFingerprint"
+///    },
+///    "QualityIdentifier": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "QualityObjective": {
+///      "$ref": "#/definitions/QualityObjective"
+///    },
+///    "QualityPolicy": {
+///      "$ref": "#/definitions/QualityPolicy"
+///    },
+///    "QualityProposalReport": {
+///      "$ref": "#/definitions/QualityProposalReport"
+///    },
+///    "QualityProposalReportEnvelope": {
+///      "$ref": "#/definitions/QualityProposalReportEnvelope"
+///    },
+///    "QualityProposalRequest": {
+///      "$ref": "#/definitions/QualityProposalRequest"
+///    },
+///    "QualityTrialSummary": {
+///      "$ref": "#/definitions/QualityTrialSummary"
 ///    },
 ///    "RenderDocumentRequest": {
 ///      "$ref": "#/definitions/RenderDocumentRequest"
@@ -2022,8 +3938,17 @@ pub struct SummaryEnvelope {
 ///    "SummaryEnvelope": {
 ///      "$ref": "#/definitions/SummaryEnvelope"
 ///    },
+///    "TokenKind": {
+///      "$ref": "#/definitions/TokenKind"
+///    },
 ///    "TransportError": {
 ///      "$ref": "#/definitions/TransportError"
+///    },
+///    "TrialEvidence": {
+///      "$ref": "#/definitions/TrialEvidence"
+///    },
+///    "TrialOutcome": {
+///      "$ref": "#/definitions/TrialOutcome"
 ///    },
 ///    "UpdatePackageRequest": {
 ///      "$ref": "#/definitions/UpdatePackageRequest"
@@ -2044,6 +3969,30 @@ pub struct TempliqxOperationsV1 {
     )]
     pub adapter_descriptor: ::std::option::Option<AdapterDescriptor>,
     #[serde(
+        rename = "BinaryScorer",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub binary_scorer: ::std::option::Option<BinaryScorer>,
+    #[serde(
+        rename = "CandidateAssessment",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub candidate_assessment: ::std::option::Option<CandidateAssessment>,
+    #[serde(
+        rename = "CandidateEvidence",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub candidate_evidence: ::std::option::Option<CandidateEvidence>,
+    #[serde(
+        rename = "CandidateQualityFailureReason",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub candidate_quality_failure_reason: ::std::option::Option<CandidateQualityFailureReason>,
+    #[serde(
         rename = "CapabilitiesRequest",
         default,
         skip_serializing_if = "::std::option::Option::is_none"
@@ -2062,6 +4011,12 @@ pub struct TempliqxOperationsV1 {
     )]
     pub catalog_envelope: ::std::option::Option<CatalogEnvelope>,
     #[serde(
+        rename = "ClaimedQualityIdentities",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub claimed_quality_identities: ::std::option::Option<ClaimedQualityIdentities>,
+    #[serde(
         rename = "CompileRequest",
         default,
         skip_serializing_if = "::std::option::Option::is_none"
@@ -2079,6 +4034,12 @@ pub struct TempliqxOperationsV1 {
         skip_serializing_if = "::std::option::Option::is_none"
     )]
     pub compiled_interaction_envelope: ::std::option::Option<CompiledInteractionEnvelope>,
+    #[serde(
+        rename = "ComputedQualityIdentities",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub computed_quality_identities: ::std::option::Option<ComputedQualityIdentities>,
     #[serde(
         rename = "Contract",
         default,
@@ -2116,6 +4077,30 @@ pub struct TempliqxOperationsV1 {
     )]
     pub diff_contract_request: ::std::option::Option<DiffContractRequest>,
     #[serde(
+        rename = "EligibilityAssessment",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub eligibility_assessment: ::std::option::Option<EligibilityAssessment>,
+    #[serde(
+        rename = "EligibilityComparator",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub eligibility_comparator: ::std::option::Option<EligibilityComparator>,
+    #[serde(
+        rename = "EligibilityGate",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub eligibility_gate: ::std::option::Option<EligibilityGate>,
+    #[serde(
+        rename = "EligibilityRule",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub eligibility_rule: ::std::option::Option<EligibilityRule>,
+    #[serde(
         rename = "ExecuteRequest",
         default,
         skip_serializing_if = "::std::option::Option::is_none"
@@ -2145,6 +4130,12 @@ pub struct TempliqxOperationsV1 {
         skip_serializing_if = "::std::option::Option::is_none"
     )]
     pub health_status: ::std::option::Option<HealthStatus>,
+    #[serde(
+        rename = "InfrastructureFailureReason",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub infrastructure_failure_reason: ::std::option::Option<InfrastructureFailureReason>,
     #[serde(
         rename = "InspectDocumentEnvelope",
         default,
@@ -2176,11 +4167,41 @@ pub struct TempliqxOperationsV1 {
     )]
     pub json_value_envelope: ::std::option::Option<JsonValueEnvelope>,
     #[serde(
+        rename = "MetricAggregate",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub metric_aggregate: ::std::option::Option<MetricAggregate>,
+    #[serde(
+        rename = "MetricAggregation",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub metric_aggregation: ::std::option::Option<MetricAggregation>,
+    #[serde(
+        rename = "MetricObservation",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub metric_observation: ::std::option::Option<MetricObservation>,
+    #[serde(
+        rename = "MetricUnit",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub metric_unit: ::std::option::Option<MetricUnit>,
+    #[serde(
         rename = "MigrateLegacyRequest",
         default,
         skip_serializing_if = "::std::option::Option::is_none"
     )]
     pub migrate_legacy_request: ::std::option::Option<MigrateLegacyRequest>,
+    #[serde(
+        rename = "ObjectiveDirection",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub objective_direction: ::std::option::Option<ObjectiveDirection>,
     #[serde(
         rename = "OperationEnvelopeBase",
         default,
@@ -2211,6 +4232,66 @@ pub struct TempliqxOperationsV1 {
         skip_serializing_if = "::std::option::Option::is_none"
     )]
     pub package_signature: ::std::option::Option<PackageSignature>,
+    #[serde(
+        rename = "ParetoFront",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub pareto_front: ::std::option::Option<ParetoFront>,
+    #[serde(
+        rename = "QualityCandidateSubmission",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_candidate_submission: ::std::option::Option<QualityCandidateSubmission>,
+    #[serde(
+        rename = "QualityFingerprint",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_fingerprint: ::std::option::Option<QualityFingerprint>,
+    #[serde(
+        rename = "QualityIdentifier",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_identifier: ::std::option::Option<QualityIdentifier>,
+    #[serde(
+        rename = "QualityObjective",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_objective: ::std::option::Option<QualityObjective>,
+    #[serde(
+        rename = "QualityPolicy",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_policy: ::std::option::Option<QualityPolicy>,
+    #[serde(
+        rename = "QualityProposalReport",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_proposal_report: ::std::option::Option<QualityProposalReport>,
+    #[serde(
+        rename = "QualityProposalReportEnvelope",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_proposal_report_envelope: ::std::option::Option<QualityProposalReportEnvelope>,
+    #[serde(
+        rename = "QualityProposalRequest",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_proposal_request: ::std::option::Option<QualityProposalRequest>,
+    #[serde(
+        rename = "QualityTrialSummary",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub quality_trial_summary: ::std::option::Option<QualityTrialSummary>,
     #[serde(
         rename = "RenderDocumentRequest",
         default,
@@ -2260,11 +4341,29 @@ pub struct TempliqxOperationsV1 {
     )]
     pub summary_envelope: ::std::option::Option<SummaryEnvelope>,
     #[serde(
+        rename = "TokenKind",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub token_kind: ::std::option::Option<TokenKind>,
+    #[serde(
         rename = "TransportError",
         default,
         skip_serializing_if = "::std::option::Option::is_none"
     )]
     pub transport_error: ::std::option::Option<TransportError>,
+    #[serde(
+        rename = "TrialEvidence",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub trial_evidence: ::std::option::Option<TrialEvidence>,
+    #[serde(
+        rename = "TrialOutcome",
+        default,
+        skip_serializing_if = "::std::option::Option::is_none"
+    )]
+    pub trial_outcome: ::std::option::Option<TrialOutcome>,
     #[serde(
         rename = "UpdatePackageRequest",
         default,
@@ -2282,34 +4381,60 @@ impl ::std::default::Default for TempliqxOperationsV1 {
     fn default() -> Self {
         Self {
             adapter_descriptor: Default::default(),
+            binary_scorer: Default::default(),
+            candidate_assessment: Default::default(),
+            candidate_evidence: Default::default(),
+            candidate_quality_failure_reason: Default::default(),
             capabilities_request: Default::default(),
             capability_profile_request: Default::default(),
             catalog_envelope: Default::default(),
+            claimed_quality_identities: Default::default(),
             compile_request: Default::default(),
             compiled_interaction: Default::default(),
             compiled_interaction_envelope: Default::default(),
+            computed_quality_identities: Default::default(),
             contract: Default::default(),
             contract_envelope: Default::default(),
             contract_summary: Default::default(),
             create_package_request: Default::default(),
             diagnostic: Default::default(),
             diff_contract_request: Default::default(),
+            eligibility_assessment: Default::default(),
+            eligibility_comparator: Default::default(),
+            eligibility_gate: Default::default(),
+            eligibility_rule: Default::default(),
             execute_request: Default::default(),
             execution_receipt: Default::default(),
             execution_receipt_envelope: Default::default(),
             field_spec: Default::default(),
             health_status: Default::default(),
+            infrastructure_failure_reason: Default::default(),
             inspect_document_envelope: Default::default(),
             inspect_document_request: Default::default(),
             inspect_document_result: Default::default(),
             json_value: Default::default(),
             json_value_envelope: Default::default(),
+            metric_aggregate: Default::default(),
+            metric_aggregation: Default::default(),
+            metric_observation: Default::default(),
+            metric_unit: Default::default(),
             migrate_legacy_request: Default::default(),
+            objective_direction: Default::default(),
             operation_envelope_base: Default::default(),
             package_envelope: Default::default(),
             package_list_envelope: Default::default(),
             package_manifest: Default::default(),
             package_signature: Default::default(),
+            pareto_front: Default::default(),
+            quality_candidate_submission: Default::default(),
+            quality_fingerprint: Default::default(),
+            quality_identifier: Default::default(),
+            quality_objective: Default::default(),
+            quality_policy: Default::default(),
+            quality_proposal_report: Default::default(),
+            quality_proposal_report_envelope: Default::default(),
+            quality_proposal_request: Default::default(),
+            quality_trial_summary: Default::default(),
             render_document_request: Default::default(),
             render_request: Default::default(),
             run_eval_request: Default::default(),
@@ -2318,10 +4443,90 @@ impl ::std::default::Default for TempliqxOperationsV1 {
             stream_event: Default::default(),
             string_list_envelope: Default::default(),
             summary_envelope: Default::default(),
+            token_kind: Default::default(),
             transport_error: Default::default(),
+            trial_evidence: Default::default(),
+            trial_outcome: Default::default(),
             update_package_request: Default::default(),
             verify_package_trust_request: Default::default(),
         }
+    }
+}
+///`TokenKind`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "string",
+///  "enum": [
+///    "prompt",
+///    "completion",
+///    "total"
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(
+    ::serde::Deserialize,
+    ::serde::Serialize,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+)]
+pub enum TokenKind {
+    #[serde(rename = "prompt")]
+    Prompt,
+    #[serde(rename = "completion")]
+    Completion,
+    #[serde(rename = "total")]
+    Total,
+}
+impl ::std::fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Prompt => f.write_str("prompt"),
+            Self::Completion => f.write_str("completion"),
+            Self::Total => f.write_str("total"),
+        }
+    }
+}
+impl ::std::str::FromStr for TokenKind {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "prompt" => Ok(Self::Prompt),
+            "completion" => Ok(Self::Completion),
+            "total" => Ok(Self::Total),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for TokenKind {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<&::std::string::String> for TokenKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: &::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for TokenKind {
+    type Error = self::error::ConversionError;
+    fn try_from(
+        value: ::std::string::String,
+    ) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
     }
 }
 ///`TransportError`
@@ -2360,6 +4565,155 @@ pub struct TransportError {
     pub message: ::std::string::String,
     #[serde(default, skip_serializing_if = "::std::option::Option::is_none")]
     pub request_id: ::std::option::Option<::std::string::String>,
+}
+///`TrialEvidence`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "type": "object",
+///  "required": [
+///    "fixture_id",
+///    "observations",
+///    "outcome",
+///    "provider_attempt_count",
+///    "replicate_index"
+///  ],
+///  "properties": {
+///    "failed_scorers": {
+///      "default": [],
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/QualityIdentifier"
+///      },
+///      "maxItems": 16
+///    },
+///    "fixture_id": {
+///      "$ref": "#/definitions/QualityIdentifier"
+///    },
+///    "observations": {
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/MetricObservation"
+///      },
+///      "maxItems": 16
+///    },
+///    "outcome": {
+///      "$ref": "#/definitions/TrialOutcome"
+///    },
+///    "passed_scorers": {
+///      "default": [],
+///      "type": "array",
+///      "items": {
+///        "$ref": "#/definitions/QualityIdentifier"
+///      },
+///      "maxItems": 16
+///    },
+///    "provider_attempt_count": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 4294967295.0,
+///      "minimum": 1.0
+///    },
+///    "replicate_index": {
+///      "type": "integer",
+///      "format": "int64",
+///      "maximum": 65535.0,
+///      "minimum": 0.0
+///    }
+///  },
+///  "additionalProperties": false
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct TrialEvidence {
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub failed_scorers: ::std::vec::Vec<QualityIdentifier>,
+    pub fixture_id: QualityIdentifier,
+    pub observations: ::std::vec::Vec<MetricObservation>,
+    pub outcome: TrialOutcome,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub passed_scorers: ::std::vec::Vec<QualityIdentifier>,
+    pub provider_attempt_count: ::std::num::NonZeroU64,
+    pub replicate_index: i64,
+}
+///`TrialOutcome`
+///
+/// <details><summary>JSON schema</summary>
+///
+/// ```json
+///{
+///  "oneOf": [
+///    {
+///      "type": "object",
+///      "required": [
+///        "kind"
+///      ],
+///      "properties": {
+///        "kind": {
+///          "const": "scored"
+///        }
+///      },
+///      "additionalProperties": false
+///    },
+///    {
+///      "type": "object",
+///      "required": [
+///        "kind",
+///        "reason"
+///      ],
+///      "properties": {
+///        "kind": {
+///          "const": "candidate_quality_failure"
+///        },
+///        "reason": {
+///          "$ref": "#/definitions/CandidateQualityFailureReason"
+///        }
+///      },
+///      "additionalProperties": false
+///    },
+///    {
+///      "type": "object",
+///      "required": [
+///        "kind",
+///        "reason"
+///      ],
+///      "properties": {
+///        "kind": {
+///          "const": "infrastructure_failure"
+///        },
+///        "reason": {
+///          "$ref": "#/definitions/InfrastructureFailureReason"
+///        }
+///      },
+///      "additionalProperties": false
+///    }
+///  ]
+///}
+/// ```
+/// </details>
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(tag = "kind", content = "reason")]
+pub enum TrialOutcome {
+    #[serde(rename = "scored")]
+    Scored,
+    #[serde(rename = "candidate_quality_failure")]
+    CandidateQualityFailure(CandidateQualityFailureReason),
+    #[serde(rename = "infrastructure_failure")]
+    InfrastructureFailure(InfrastructureFailureReason),
+}
+impl ::std::convert::From<CandidateQualityFailureReason> for TrialOutcome {
+    fn from(value: CandidateQualityFailureReason) -> Self {
+        Self::CandidateQualityFailure(value)
+    }
+}
+impl ::std::convert::From<InfrastructureFailureReason> for TrialOutcome {
+    fn from(value: InfrastructureFailureReason) -> Self {
+        Self::InfrastructureFailure(value)
+    }
 }
 ///`UpdatePackageRequest`
 ///
@@ -2435,9 +4789,9 @@ pub mod defaults {
 }
 
 /// Codegen metadata used by the compatibility self-check.
-pub const GENERATED_OPENAPI_VERSION: &str = "1.0.0-alpha.1";
+pub const GENERATED_OPENAPI_VERSION: &str = "1.0.0-alpha.2";
 pub const GENERATED_OPENAPI_DIGEST: &str =
-    "sha256:7cd1c2251d87c27a77efcc35523209d8916cc59d222c8f770b095ecc078a1914";
+    "sha256:f9aa381dee153007e3298afb7ab85f00ff114dd93a056ea6f54cef7d280432d4";
 pub const GENERATED_CONTRACT_FORMAT: &str = "templiqx/v1alpha1";
-pub const GENERATED_ENGINE_VERSION: &str = "0.1.0";
-pub const GENERATED_SDK_VERSION: &str = "0.1.0";
+pub const GENERATED_ENGINE_VERSION: &str = "0.2.0";
+pub const GENERATED_SDK_VERSION: &str = "0.2.0";

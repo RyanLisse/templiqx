@@ -12,6 +12,7 @@ export default defineMeta({
     "agent-skills",
     "pre-crm3-readiness",
     "host-integration",
+    "quality-evidence-host-integration",
     "report-engine-compatibility",
     "releasing",
   ],

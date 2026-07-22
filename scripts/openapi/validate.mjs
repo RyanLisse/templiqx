@@ -65,6 +65,56 @@ for (const required of ['catalog', 'discoverPackages', 'inspectContract', 'valid
 for (const schema of ['Diagnostic', 'OperationEnvelopeBase', 'StringListEnvelope', 'JsonValueEnvelope']) {
   if (!spec.components.schemas[schema]) fail(`missing required schema: ${schema}`);
 }
+
+const qualityIntegerFields = {
+  'EligibilityRule.threshold': [0, 9007199254740991],
+  'QualityPolicy.replicates_per_fixture': [1, 20],
+  'QualityPolicy.minimum_semantic_cases': [0, 9007199254740991],
+  'QualityPolicy.maximum_infrastructure_failure_ppm': [0, 1000000],
+  'TrialEvidence.replicate_index': [0, 65535],
+  'TrialEvidence.provider_attempt_count': [1, 4294967295],
+  'MetricObservation.value': [0, 9007199254740991],
+  'MetricAggregate.value': [0, 9007199254740991],
+  'EligibilityGate.actual': [0, 9007199254740991],
+  'EligibilityGate.threshold': [0, 9007199254740991],
+  'EligibilityAssessment.total_trial_count': [0, 9007199254740991],
+  'EligibilityAssessment.semantic_trial_count': [0, 9007199254740991],
+  'EligibilityAssessment.infrastructure_trial_count': [0, 9007199254740991],
+  'EligibilityAssessment.semantic_coverage_ppm': [0, 1000000],
+  'EligibilityAssessment.infrastructure_failure_ppm': [0, 1000000],
+  'QualityTrialSummary.replicate_index': [0, 65535],
+  'QualityTrialSummary.provider_attempt_count': [0, 4294967295],
+  'ParetoFront.rank': [0, 4294967295],
+};
+for (const [qualifiedName, [minimum, maximum]] of Object.entries(qualityIntegerFields)) {
+  const [schemaName, propertyName] = qualifiedName.split('.');
+  const property = spec.components.schemas[schemaName]?.properties?.[propertyName];
+  if (property?.type !== 'integer') fail(`${qualifiedName} must be a JSON integer`);
+  if (property?.format !== 'int64') fail(`${qualifiedName} must use format int64`);
+  if (property?.minimum !== minimum) fail(`${qualifiedName} must have minimum ${minimum}`);
+  if (property?.maximum !== maximum) fail(`${qualifiedName} must have maximum ${maximum}`);
+}
+const claimedIdentityNames = [
+  'claimed_candidate_contract_fingerprint',
+  'claimed_evaluator_profile_fingerprint',
+  'claimed_measurement_profile_fingerprints',
+  'claimed_model_profile_fingerprint',
+  'claimed_scorer_fingerprints',
+];
+const claimedIdentities = spec.components.schemas.ClaimedQualityIdentities;
+if ([...(claimedIdentities?.required ?? [])].sort().join(',') !== claimedIdentityNames.join(',')) {
+  fail('ClaimedQualityIdentities required fields must use explicit claimed_* names');
+}
+if (Object.keys(claimedIdentities?.properties ?? {}).sort().join(',') !== claimedIdentityNames.join(',')) {
+  fail('ClaimedQualityIdentities properties must use explicit claimed_* names');
+}
+const candidateAssessment = spec.components.schemas.CandidateAssessment;
+if ((candidateAssessment?.required ?? []).includes('claimed_identities')) {
+  fail('CandidateAssessment.claimed_identities must remain optional for invalid claims');
+}
+if (candidateAssessment?.properties?.claimed_identities?.$ref !== '#/components/schemas/ClaimedQualityIdentities') {
+  fail('CandidateAssessment.claimed_identities must reference ClaimedQualityIdentities');
+}
 const report = {
   status: errors.length ? 'fail' : 'ok',
   specPath,

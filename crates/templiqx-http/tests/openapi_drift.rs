@@ -39,8 +39,8 @@ fn registered_operation_routes_and_openapi_paths_do_not_drift() {
     );
     assert_eq!(
         routed.len(),
-        27,
-        "the catalog must expose exactly 27 operations"
+        28,
+        "the catalog must expose exactly 28 operations"
     );
 
     let openapi_operations = documented_operation_ids(&document);
@@ -74,6 +74,7 @@ fn registered_operation_routes_and_openapi_paths_do_not_drift() {
 fn json_request_dto_fields_and_openapi_schemas_do_not_drift() {
     let http_source = include_str!("../src/lib.rs");
     let application_source = include_str!("../../templiqx-application/src/lib.rs");
+    let quality_contract_source = include_str!("../../templiqx-contracts/src/quality.rs");
     let document: Value =
         serde_yaml_ng::from_str(include_str!("../../../openapi/templiqx-operations-v1.yaml"))
             .expect("checked-in OpenAPI must parse as YAML");
@@ -117,7 +118,10 @@ fn json_request_dto_fields_and_openapi_schemas_do_not_drift() {
                     .collect::<BTreeSet<_>>()
             })
             .unwrap_or_default();
-        let (dto_properties, dto_required) = dto_fields(&dto, &[http_source, application_source]);
+        let (dto_properties, dto_required) = dto_fields(
+            &dto,
+            &[http_source, application_source, quality_contract_source],
+        );
 
         assert_eq!(
             documented_properties, dto_properties,
@@ -130,7 +134,7 @@ fn json_request_dto_fields_and_openapi_schemas_do_not_drift() {
         checked += 1;
     }
 
-    assert_eq!(checked, 13, "every JSON request-body DTO must be checked");
+    assert_eq!(checked, 14, "every JSON request-body DTO must be checked");
 }
 
 fn documented_operation_ids(document: &Value) -> BTreeSet<String> {

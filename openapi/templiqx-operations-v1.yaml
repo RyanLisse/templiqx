@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Templiqx Operations API
-  version: 1.0.0-alpha.1
+  version: 1.0.0-alpha.2
   summary: Versioned northbound HTTP contract for Templiqx operations.
   description: >-
     Representative v1 Operations API contract. The API is a thin transport over
@@ -23,6 +23,7 @@ tags:
   - name: Discovery
   - name: Contracts
   - name: Execution
+  - name: Quality
   - name: Mutation
 paths:
   /operations/v1/health/live:
@@ -442,6 +443,43 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/OperationEnvelope'
+  /operations/v1/packages/{package}/quality/proposals:assess:
+    post:
+      tags: [Quality]
+      summary: Assess host-evaluated contract proposals without mutation or winner selection
+      description: >-
+        Validates complete candidate contract sources and structurally validates
+        host-attested evaluation evidence. Applies policy safety floors and
+        returns deterministic fixed-point aggregates and Pareto fronts. The
+        response never echoes candidate source or raw evaluator payloads.
+      operationId: assessQualityProposals
+      x-templiqx-idempotency: idempotent
+      x-templiqx-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/PackageName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QualityProposalRequest'
+      responses:
+        '200':
+          description: >-
+            Proposal assessment envelope. Invalid proposals and failed safety
+            floors are represented by deterministic diagnostics and eligibility
+            results rather than transport-level errors.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualityProposalReportEnvelope'
+        '413':
+          $ref: '#/components/responses/TransportFailure'
   /operations/v1/packages/{package}/contracts/{contract}/render:
     post:
       tags: [Contracts]
@@ -842,6 +880,577 @@ components:
           properties:
             result:
               $ref: '#/components/schemas/InspectDocumentResult'
+    QualityProposalReportEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/OperationEnvelopeBase'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/QualityProposalReport'
+    QualityIdentifier:
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: '^[A-Za-z0-9._:-]+$'
+      description: Portable ASCII identifier, bounded to 128 UTF-8 bytes by Templiqx.
+    QualityFingerprint:
+      type: string
+      minLength: 64
+      maxLength: 64
+      pattern: '^[A-Fa-f0-9]{64}$'
+      description: Host-attested or Templiqx-computed SHA-256-compatible hexadecimal fingerprint.
+    MetricUnit:
+      type: string
+      enum: [ratio_ppm, milliseconds, token_count, currency_microunits]
+    MetricAggregation:
+      type: string
+      enum: [binary_ratio_ppm, mean, sum, p95_nearest_rank]
+    ObjectiveDirection:
+      type: string
+      enum: [maximize, minimize]
+    EligibilityComparator:
+      type: string
+      enum: [gte, lte]
+    TokenKind:
+      type: string
+      enum: [prompt, completion, total]
+    CandidateQualityFailureReason:
+      type: string
+      enum: [schema, assertion, invalid_output]
+    InfrastructureFailureReason:
+      type: string
+      enum:
+        - transport
+        - timeout
+        - rate_limit
+        - provider_unavailable
+        - provider_internal
+        - cancellation
+        - budget
+        - evaluator_infrastructure
+    BinaryScorer:
+      type: object
+      required: [id, metric_id, claimed_scorer_fingerprint]
+      properties:
+        id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        metric_id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        claimed_scorer_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+      additionalProperties: false
+    QualityObjective:
+      type: object
+      required:
+        - id
+        - metric_id
+        - unit
+        - aggregation
+        - direction
+        - claimed_measurement_profile_fingerprint
+      properties:
+        id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        metric_id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        unit:
+          $ref: '#/components/schemas/MetricUnit'
+        aggregation:
+          $ref: '#/components/schemas/MetricAggregation'
+        direction:
+          $ref: '#/components/schemas/ObjectiveDirection'
+        claimed_measurement_profile_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        currency_code:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        token_kind:
+          $ref: '#/components/schemas/TokenKind'
+      additionalProperties: false
+    EligibilityRule:
+      type: object
+      required: [id, metric_id, comparator, unit, threshold]
+      properties:
+        id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        metric_id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        comparator:
+          $ref: '#/components/schemas/EligibilityComparator'
+        unit:
+          $ref: '#/components/schemas/MetricUnit'
+        threshold:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+      additionalProperties: false
+    QualityPolicy:
+      type: object
+      required:
+        - id
+        - replicates_per_fixture
+        - minimum_semantic_cases
+        - maximum_infrastructure_failure_ppm
+        - claimed_evaluator_profile_fingerprint
+        - claimed_model_profile_fingerprint
+        - binary_scorers
+        - objectives
+        - eligibility_rules
+      properties:
+        id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        replicates_per_fixture:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 20
+        minimum_semantic_cases:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        maximum_infrastructure_failure_ppm:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000
+        claimed_evaluator_profile_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_model_profile_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        binary_scorers:
+          type: array
+          minItems: 1
+          maxItems: 16
+          items:
+            $ref: '#/components/schemas/BinaryScorer'
+        objectives:
+          type: array
+          minItems: 1
+          maxItems: 16
+          items:
+            $ref: '#/components/schemas/QualityObjective'
+        eligibility_rules:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/EligibilityRule'
+      additionalProperties: false
+    QualityProposalRequest:
+      type: object
+      required:
+        - package
+        - contract_id
+        - expected_package_fingerprint
+        - expected_base_contract_fingerprint
+        - expected_fixture_set_fingerprint
+        - policy
+        - candidates
+      properties:
+        package:
+          type: string
+        contract_id:
+          type: string
+        expected_package_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        expected_base_contract_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        expected_fixture_set_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        policy:
+          $ref: '#/components/schemas/QualityPolicy'
+        candidates:
+          type: array
+          minItems: 1
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/QualityCandidateSubmission'
+      additionalProperties: false
+    QualityCandidateSubmission:
+      type: object
+      required: [candidate_source, synthetic_or_sanitized_data_attestation, evidence]
+      properties:
+        candidate_source:
+          type: string
+          maxLength: 524288
+          description: >-
+            Complete candidate contract YAML. Templiqx enforces the normative
+            512 KiB UTF-8 byte limit even when code-point length is smaller.
+        synthetic_or_sanitized_data_attestation:
+          type: boolean
+        evidence:
+          $ref: '#/components/schemas/CandidateEvidence'
+      additionalProperties: false
+    CandidateEvidence:
+      type: object
+      required:
+        - claimed_package_fingerprint
+        - claimed_base_contract_fingerprint
+        - claimed_fixture_set_fingerprint
+        - claimed_candidate_contract_fingerprint
+        - claimed_quality_policy_fingerprint
+        - claimed_evaluator_profile_fingerprint
+        - claimed_model_profile_fingerprint
+        - claimed_scorer_fingerprints
+        - claimed_measurement_profile_fingerprints
+        - trials
+      properties:
+        claimed_package_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_base_contract_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_fixture_set_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_candidate_contract_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_quality_policy_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_evaluator_profile_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_model_profile_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_scorer_fingerprints:
+          type: object
+          maxProperties: 16
+          additionalProperties:
+            $ref: '#/components/schemas/QualityFingerprint'
+        claimed_measurement_profile_fingerprints:
+          type: object
+          maxProperties: 16
+          additionalProperties:
+            $ref: '#/components/schemas/QualityFingerprint'
+        trials:
+          type: array
+          maxItems: 10240
+          items:
+            $ref: '#/components/schemas/TrialEvidence'
+      additionalProperties: false
+    TrialEvidence:
+      type: object
+      required:
+        - fixture_id
+        - replicate_index
+        - provider_attempt_count
+        - outcome
+        - observations
+      properties:
+        fixture_id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        replicate_index:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 65535
+        provider_attempt_count:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 4294967295
+        outcome:
+          $ref: '#/components/schemas/TrialOutcome'
+        passed_scorers:
+          type: array
+          default: []
+          maxItems: 16
+          items:
+            $ref: '#/components/schemas/QualityIdentifier'
+        failed_scorers:
+          type: array
+          default: []
+          maxItems: 16
+          items:
+            $ref: '#/components/schemas/QualityIdentifier'
+        observations:
+          type: array
+          maxItems: 16
+          items:
+            $ref: '#/components/schemas/MetricObservation'
+      additionalProperties: false
+    TrialOutcome:
+      oneOf:
+        - type: object
+          required: [kind]
+          properties:
+            kind:
+              const: scored
+          additionalProperties: false
+        - type: object
+          required: [kind, reason]
+          properties:
+            kind:
+              const: candidate_quality_failure
+            reason:
+              $ref: '#/components/schemas/CandidateQualityFailureReason'
+          additionalProperties: false
+        - type: object
+          required: [kind, reason]
+          properties:
+            kind:
+              const: infrastructure_failure
+            reason:
+              $ref: '#/components/schemas/InfrastructureFailureReason'
+          additionalProperties: false
+    MetricObservation:
+      type: object
+      required: [metric_id, unit, value, claimed_measurement_profile_fingerprint]
+      properties:
+        metric_id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        unit:
+          $ref: '#/components/schemas/MetricUnit'
+        value:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        claimed_measurement_profile_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        currency_code:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        token_kind:
+          $ref: '#/components/schemas/TokenKind'
+      additionalProperties: false
+    ComputedQualityIdentities:
+      type: object
+      required:
+        - package_fingerprint
+        - base_contract_fingerprint
+        - fixture_set_fingerprint
+        - quality_policy_fingerprint
+        - request_fingerprint
+      properties:
+        package_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        base_contract_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        fixture_set_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        quality_policy_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        request_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+      additionalProperties: false
+    ClaimedQualityIdentities:
+      type: object
+      required:
+        - claimed_candidate_contract_fingerprint
+        - claimed_evaluator_profile_fingerprint
+        - claimed_model_profile_fingerprint
+        - claimed_scorer_fingerprints
+        - claimed_measurement_profile_fingerprints
+      properties:
+        claimed_candidate_contract_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_evaluator_profile_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_model_profile_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_scorer_fingerprints:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/QualityFingerprint'
+        claimed_measurement_profile_fingerprints:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/QualityFingerprint'
+      additionalProperties: false
+    MetricAggregate:
+      type: object
+      required: [metric_id, unit, aggregation, direction, value]
+      properties:
+        metric_id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        unit:
+          $ref: '#/components/schemas/MetricUnit'
+        aggregation:
+          $ref: '#/components/schemas/MetricAggregation'
+        direction:
+          $ref: '#/components/schemas/ObjectiveDirection'
+        value:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+      additionalProperties: false
+    EligibilityGate:
+      type: object
+      required: [rule_id, passed, comparator, threshold, unit]
+      properties:
+        rule_id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        passed:
+          type: boolean
+        actual:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        comparator:
+          $ref: '#/components/schemas/EligibilityComparator'
+        threshold:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        unit:
+          $ref: '#/components/schemas/MetricUnit'
+      additionalProperties: false
+    EligibilityAssessment:
+      type: object
+      required:
+        - eligible
+        - total_trial_count
+        - semantic_trial_count
+        - infrastructure_trial_count
+        - semantic_coverage_ppm
+        - infrastructure_failure_ppm
+        - gates
+      properties:
+        eligible:
+          type: boolean
+        total_trial_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        semantic_trial_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        infrastructure_trial_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        semantic_coverage_ppm:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000
+        infrastructure_failure_ppm:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000
+        gates:
+          type: array
+          items:
+            $ref: '#/components/schemas/EligibilityGate'
+      additionalProperties: false
+    QualityTrialSummary:
+      type: object
+      required:
+        - fixture_id
+        - replicate_index
+        - provider_attempt_count
+        - outcome
+        - passed_scorers
+        - failed_scorers
+        - observations
+      properties:
+        fixture_id:
+          $ref: '#/components/schemas/QualityIdentifier'
+        replicate_index:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 65535
+        provider_attempt_count:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+        outcome:
+          $ref: '#/components/schemas/TrialOutcome'
+        passed_scorers:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualityIdentifier'
+        failed_scorers:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualityIdentifier'
+        observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricObservation'
+      additionalProperties: false
+    CandidateAssessment:
+      type: object
+      required:
+        - eligibility
+        - aggregates
+        - trial_summaries
+        - proposal_change_paths
+        - diagnostics
+      properties:
+        candidate_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+        claimed_identities:
+          $ref: '#/components/schemas/ClaimedQualityIdentities'
+          description: >-
+            Host-attested identities, omitted unless every returned claim is
+            syntactically valid and consistent with the validated protocol profile.
+        eligibility:
+          $ref: '#/components/schemas/EligibilityAssessment'
+        aggregates:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricAggregate'
+        trial_summaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualityTrialSummary'
+        proposal_change_paths:
+          type: array
+          items:
+            type: string
+        diagnostics:
+          type: array
+          maxItems: 256
+          items:
+            $ref: '#/components/schemas/Diagnostic'
+      additionalProperties: false
+    ParetoFront:
+      type: object
+      required: [rank, candidate_fingerprints]
+      properties:
+        rank:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+        candidate_fingerprints:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualityFingerprint'
+      additionalProperties: false
+    QualityProposalReport:
+      type: object
+      required:
+        - computed_identities
+        - candidate_assessments
+        - pareto_fronts
+        - report_fingerprint
+      properties:
+        computed_identities:
+          $ref: '#/components/schemas/ComputedQualityIdentities'
+        candidate_assessments:
+          type: array
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/CandidateAssessment'
+        pareto_fronts:
+          type: array
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/ParetoFront'
+        report_fingerprint:
+          $ref: '#/components/schemas/QualityFingerprint'
+      additionalProperties: false
     PackageManifest:
       type: object
       required: [api_version, package, version]

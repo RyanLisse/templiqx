@@ -107,6 +107,14 @@ fn binary_stdio_is_protocol_clean_and_serves_tools() -> Result<()> {
             .is_some_and(|tools| tools.iter().any(|tool| tool["name"] == "discover_packages")),
         "tools/list omitted discover_packages: {listed}"
     );
+    ensure!(
+        listed["result"]["tools"].as_array().is_some_and(|tools| {
+            tools
+                .iter()
+                .any(|tool| tool["name"] == "assess_quality_proposals")
+        }),
+        "tools/list omitted assess_quality_proposals: {listed}"
+    );
 
     send(
         &mut stdin,
@@ -161,6 +169,35 @@ fn binary_stdio_is_protocol_clean_and_serves_tools() -> Result<()> {
     ensure!(
         called["result"]["structuredContent"]["operation"] == "discover_packages",
         "unexpected tool response: {called}"
+    );
+
+    send(
+        &mut stdin,
+        &json!({
+            "jsonrpc":"2.0",
+            "id":6,
+            "method":"tools/call",
+            "params":{
+                "name":"assess_quality_proposals",
+                "arguments":{"customer.email.secret-7319@example.invalid":true}
+            }
+        }),
+    )?;
+    let rejected = response(&rx, 6, &mut seen)?;
+    ensure!(
+        rejected.get("error").is_some() || rejected["result"]["isError"] == true,
+        "unknown quality request fields must fail closed: {rejected}"
+    );
+    let rejected_text = serde_json::to_string(&rejected)?;
+    ensure!(
+        rejected_text.contains("quality assessment request is invalid"),
+        "quality parameter rejection did not use the generic message: {rejected}"
+    );
+    ensure!(
+        !rejected_text.contains("customer.email.secret-7319@example.invalid")
+            && !rejected_text.contains("secret-7319")
+            && !rejected_text.contains("example.invalid"),
+        "quality parameter rejection reflected the PII-shaped canary: {rejected}"
     );
 
     drop(stdin);

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "templiqx-adapter"
-version = "0.1.0"
+version = "0.2.0"
 description = "Thin Python transport adapter for the Templiqx Operations API"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -39,8 +39,9 @@ use templiqx_application::{
 use templiqx_contracts::{
     API_VERSION, ArtifactContent, CompiledInteraction, CompiledMessage, Contract, ContractDiff,
     ContractSummary, Diagnostic, ExecutionReceipt, Explanation, OperationEnvelope, PackageIdentity,
-    PackageManifest, PackageTrustReport, RenderRequest, Severity, TestCaseResult, TestReport,
-    WorkspaceArtifact,
+    PackageManifest, PackageTrustReport, QUALITY_MAX_REQUEST_BYTES, QualityProposalReport,
+    QualityProposalRequest, RenderRequest, Severity, TQX_QUALITY_BINDING_MISMATCH, TestCaseResult,
+    TestReport, WorkspaceArtifact,
 };
 use templiqx_ports::{
     ArtifactWorkspace, DocumentInspector, DocumentRenderer, LegacyImportAdapter, PackageStore,
@@ -55,6 +56,11 @@ const SWAGGER_UI_PATH: &str = "/swagger-ui";
 const MAX_BODY_BYTES: usize = 1024 * 1024;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 const REQUEST_ID_HEADER: HeaderName = HeaderName::from_static("x-request-id");
+const QUALITY_JSON_REJECTION_CODE: &str = "TQX_HTTP_QUALITY_JSON";
+const QUALITY_JSON_REJECTION_MESSAGE: &str = "quality assessment request body is invalid";
+const QUALITY_JSON_REJECTION_PATH: &str = "/";
+const QUALITY_PAYLOAD_TOO_LARGE_CODE: &str = "TQX_TRANSPORT_PAYLOAD_TOO_LARGE";
+const QUALITY_PAYLOAD_TOO_LARGE_MESSAGE: &str = "request body exceeds the maximum allowed size";
 const OPENAPI_YAML: &str = include_str!("../../../openapi/templiqx-operations-v1.yaml");
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
 static OPENAPI_JSON: OnceLock<Value> = OnceLock::new();
@@ -122,6 +128,10 @@ pub trait HttpOperations: Send + Sync + 'static {
         fixture_id: &str,
         capabilities: &[String],
     ) -> OperationEnvelope<TestCaseResult>;
+    fn assess_quality_proposals(
+        &self,
+        request: &QualityProposalRequest,
+    ) -> OperationEnvelope<QualityProposalReport>;
     fn diff_contract(
         &self,
         left_package: &str,
@@ -288,6 +298,13 @@ where
         self.run_eval(package, contract, fixture_id, capabilities)
     }
 
+    fn assess_quality_proposals(
+        &self,
+        request: &QualityProposalRequest,
+    ) -> OperationEnvelope<QualityProposalReport> {
+        TempliqxService::assess_quality_proposals(self, request)
+    }
+
     fn diff_contract(
         &self,
         left_package: &str,
@@ -398,6 +415,10 @@ pub fn router(service: impl HttpOperations) -> Router {
         .route(
             "/operations/v1/packages/{package}/evals/run",
             post(run_eval),
+        )
+        .route(
+            "/operations/v1/packages/{package}/quality/proposals:assess",
+            post(assess_quality_proposals).layer(DefaultBodyLimit::max(QUALITY_MAX_REQUEST_BYTES)),
         )
         .route(
             "/operations/v1/packages/{package}/contracts/{contract}",
@@ -790,6 +811,29 @@ async fn list_evals(State(state): State<HttpState>, Path(package): Path<String>)
     envelope_response(state.service.list_evals(&package))
 }
 
+async fn assess_quality_proposals(
+    State(state): State<HttpState>,
+    Path(package): Path<String>,
+    body: Result<Json<QualityProposalRequest>, JsonRejection>,
+) -> Response {
+    let Json(body) = match body {
+        Ok(body) => body,
+        Err(error) => return quality_json_rejection(error),
+    };
+    if body.package != package {
+        return envelope_response(OperationEnvelope::<QualityProposalReport>::new(
+            "assess_quality_proposals",
+            None,
+            vec![Diagnostic::error(
+                TQX_QUALITY_BINDING_MISMATCH,
+                "request package does not match the route package",
+                "/package",
+            )],
+        ));
+    }
+    envelope_response(state.service.assess_quality_proposals(&body))
+}
+
 async fn diff_contract(
     State(state): State<HttpState>,
     Path((package, contract)): Path<(String, String)>,
@@ -1024,6 +1068,28 @@ fn json_rejection(operation: &str, error: JsonRejection) -> Response {
     body_rejection(operation, error.body_text())
 }
 
+fn quality_json_rejection(error: JsonRejection) -> Response {
+    if error.status() == StatusCode::PAYLOAD_TOO_LARGE {
+        return (
+            StatusCode::PAYLOAD_TOO_LARGE,
+            Json(serde_json::json!({
+                "code": QUALITY_PAYLOAD_TOO_LARGE_CODE,
+                "message": QUALITY_PAYLOAD_TOO_LARGE_MESSAGE,
+            })),
+        )
+            .into_response();
+    }
+    envelope_response(OperationEnvelope::<Value>::new(
+        "assess_quality_proposals",
+        None,
+        vec![Diagnostic::error(
+            QUALITY_JSON_REJECTION_CODE,
+            QUALITY_JSON_REJECTION_MESSAGE,
+            QUALITY_JSON_REJECTION_PATH,
+        )],
+    ))
+}
+
 fn body_rejection(operation: &str, message: String) -> Response {
     envelope_response(OperationEnvelope::<Value>::new(
         operation,
@@ -1109,6 +1175,7 @@ const _: fn(OperationEnvelope<ExecutionReceipt>) = |_| {};
 const _: fn(OperationEnvelope<TestReport>) = |_| {};
 const _: fn(OperationEnvelope<Vec<EvalCase>>) = |_| {};
 const _: fn(OperationEnvelope<TestCaseResult>) = |_| {};
+const _: fn(OperationEnvelope<QualityProposalReport>) = |_| {};
 const _: fn(OperationEnvelope<ContractDiff>) = |_| {};
 const _: fn(OperationEnvelope<Explanation>) = |_| {};
 const _: fn(OperationEnvelope<MigrationResult>) = |_| {};
