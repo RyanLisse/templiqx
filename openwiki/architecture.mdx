@@ -22,6 +22,8 @@ actor-neutral capability catalog"]
 filesystem composition + CAS writes"]
     CLI["templiqx-cli"]
     MCP["templiqx-mcp"]
+    HTTP["templiqx-http / templiqx-http-server
+northbound /operations/v1"]
 
     Contracts --> Core
     Ports --> Core
@@ -31,7 +33,10 @@ filesystem composition + CAS writes"]
     Application --> Local
     Local --> CLI
     Local --> MCP
+    Local --> HTTP
 ```
+
+The CLI, MCP server, and HTTP transport are peers: three thin surfaces over one service. Adding a transport never changes product semantics.
 
 Source evidence:
 
@@ -39,7 +44,7 @@ Source evidence:
 - `crates/templiqx-application/src/lib.rs` defines the canonical capability catalog and the `TempliqxService` methods.
 - `crates/templiqx-ports/src/lib.rs` defines the host-facing traits for package storage, artifact workspaces, runtime execution, legacy import, and document rendering.
 - `crates/templiqx-local/src/lib.rs` composes filesystem-backed implementations and deterministic adapters.
-- `crates/templiqx-cli/src/main.rs` and `crates/templiqx-mcp/src/lib.rs` are surfaces over the same operations.
+- `crates/templiqx-cli/src/main.rs`, `crates/templiqx-mcp/src/lib.rs`, and `crates/templiqx-http/src/lib.rs` are surfaces over the same operations.
 
 ## Why the split exists
 
@@ -51,7 +56,8 @@ The split keeps policy and transport out of the portable core:
 - `templiqx-application` exposes actor-neutral operations and catalog introspection.
 - `templiqx-local` assembles a concrete local runtime from filesystem-backed and deterministic adapters.
 - `templiqx-mock` and `adapters/templiqx-runtime-http-mock` are deterministic/conformance-oriented runtime adapters rather than production policy engines.
-- `adapters/templiqx-docx-v5` handles explicit DOCX V5 compatibility for the CRM3 fixture.
+- `adapters/templiqx-runtime-langfuse` is the host-owned production runtime that runs a real chat completion and traces to Langfuse; it is never in default composition.
+- `adapters/templiqx-docx-v5` handles explicit DOCX V5 compatibility for the CRM3 fixture, and the bounded render adapters (`templiqx-html-plain`, `templiqx-markdown`, `templiqx-rtf`, `templiqx-typst`, `templiqx-xlsx`, `templiqx-tabular`) are host-constructed, deterministic document renderers kept out of the portable core.
 
 This is deliberate: auth, tenant policy, approval, retries, retrieval, workflow, schema/query access, and secrets remain host concerns and are not embedded into the core graph.
 

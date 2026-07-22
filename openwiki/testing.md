@@ -23,7 +23,7 @@ The Rust workspace tests cover service behavior, local composition, CLI behavior
 - `crates/templiqx-cli/tests/*.rs`
 - `crates/templiqx-conformance/tests/*.rs`
 
-These tests are the fastest way to detect semantic drift.
+These tests are the fastest way to detect semantic drift. Alongside `crm3.rs`, the conformance crate carries per-format render suites (`html_render.rs`, `markdown_render.rs`, `rtf_render.rs`, `typst_render.rs`, `xlsx_render.rs`, `pdf_render.rs`), plus `streaming.rs`, `document_inspection.rs`, `http_gateway.rs`, and the `cross_opco_*` breadth checks — each pinned to its adapter under `adapters/`.
 
 ### Boundary enforcement
 
